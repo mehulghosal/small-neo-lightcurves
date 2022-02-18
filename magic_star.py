@@ -27,13 +27,14 @@ input_file = np.loadtxt('input.csv', dtype=object, skiprows=1, usecols=(i for i 
 mins = {'g':100, 'r': 150, 'i': 250}
 
 from scipy.optimize import curve_fit
+from scipy.optimize import least_squares
 
 # rotate points by angle a [degrees]
 def point_rotation(x,y,a,img,img_rot):
 	a = -a * np.pi/180
 	x_0, y_0 = 0, 0
 	x_0_, y_0_ = img.shape[0]*np.abs(np.sin(a)), img.shape[1]*np.abs(np.sin(a))
-	x_, y_ = int((x-x_0)*np.cos(a) - (y-y_0)*np.sin(a)), int((x-x_0)*np.sin(a) + (y-y_0)*np.cos(a))
+	x_, y_ = np.array((x-x_0)*np.cos(a) - (y-y_0)*np.sin(a), dtype=int), np.array((x-x_0)*np.sin(a) + (y-y_0)*np.cos(a), dtype=int)
 	# to account for direction of rotation
 	if a>0: x_+= int(x_0_)
 	elif a<0: y_+= int(y_0_)
@@ -46,31 +47,74 @@ def model(x, s, m, a, c, b, d):
 def quadratic(x, a, b, c, d, e):
 	return a*x**2 + b*x + c + d*x**3 + e*x**4
 
-img_rot, centroid = 0, 0
+img_rot, centroid, pixels = 0, 0, 0
 count = 0
+
 # Veres 2012 eq 3
 # r = [x,y], s = sigma, L is length, a is angle, b is background noise (holding constant for now)
 # img_rot and centroid are not fitting variables - want to pass these in as constants; centroid = [x,y]
-def trail_model(r, s, L, a, b):
-	global img_rot, centroid, count
-	img = rotate(img_rot, a)
-	centroid_x, centroid_y = point_rotation(centroid[0], centroid[1], a, img_rot, img)
-	print(r, count)
-	x, y = point_rotation(r[0], r[1], a, img_rot, img)
-	# x, y = r[0], r[1]
-	x-=centroid_x
-	y-=centroid_y
+def trail_model(x, y, s, L, a, b):
 
-	trail = img[centroid_x-s:centroid_x+s, centroid_y-L, centroid_y+L]
+	global img_rot, centroid, pixels
+
+	img = pixels
+	
+	# print(x, y)
+	x, y = point_rotation(x, y, a, img_rot, img)
+	centroids = np.array(point_rotation(centroid[0], centroid[1], a, img_rot, img))
+	x-=centroids[0]
+	y-=centroids[1]
+
+	trail = img[int(centroid[1]-L+0.5):int(centroid[1]+L+.5), int(centroid[0]-s*2.355+.5): int(centroid[0]+s*2.355+.5)]
 
 	flux = np.sum(trail)
 
 
 	return flux/(L/2 * s * (8 * np.pi)**.5) * np.exp(-((x+y)**2 )/(2*s**2)) * erf((x+y + L/4)/ (s*2**.5)) - erf((x+y - L/4)/ (s*2**.5)) + b
 
+def draw_model(s, L, a, b):	
 
+	global pixels
 
+	# dont actually know if this meshgrid business works??? come back to this first if breaks
+	xx, yy = np.meshgrid(np.arange(0, pixels.shape[0]), np.arange(0, pixels.shape[1]))
 
+	model = trail_model(xx, yy, s, L, a, b)	#assuming this is 2FWHM wide and 2L tall
+	
+	# another thing to think about is adding or replacing to original img
+	# img[  int(centroid[1]-L+.5)  :  int(centroid[1]+L+.5)    ,    int(centroid[0]-s*2.355+.5)  :   int(centroid[0]+s*2.355 + .5)] = model
+	# model = rotate(model, a)
+
+	# print(img.shape, rotate(img,-a).shape)
+	return model
+	# img_rot_1 = img_rot.copy()
+	# try:
+	# 	img_rot_1[  int(centroid[0] - model_shape[0]/2+.5) :  int(centroid[0] + model_shape[0]/2+.5)   ,  int(centroid[1] - model_shape[1]/2 +.5) :  int(.5+centroid[1] + model_shape[1]/2)] = model
+	# except Exception as e:
+	# 	print(s, L, a, b)
+	# 	a = 360-a
+	# # return rotate(img, 360-a)\
+	# return img_rot_1
+
+def residual(par):
+	global pixels, centroid, img_rot
+	s, L, a, b = par[0], par[1], par[2], par[3]
+
+	img = rotate(img_rot, a) #star's reference point
+	centroids = np.array(point_rotation(centroid[0], centroid[1], a, img_rot, img))
+	pixels = img
+	
+	model = draw_model(s, L, a, b)
+	
+	observed = img[  int(centroids[1]-L+.5)  :  int(centroids[1]+L+.5)    ,    centroids[0]-int(s*2.355+.5)  :  centroids[0]+int(s*2.355 + .5)]
+
+	# print(int(centroid[0]-s*2.355+.5)- int(centroid[0]+s*2.355+.5))
+	print()
+	print(observed.shape)
+
+	residual = np.sqrt( np.sum( ( observed - model )**2 ) )
+
+	return residual
 
 
 for d in dir_names:
@@ -237,26 +281,24 @@ for d in dir_names:
 		star_y_max = np.delete(star_y_max, bad_stars, 0)
 		# global centroid
 
-		coords = np.indices(img_rotated.shape).T.reshape((img_rotated.shape[0], img_rotated.shape[1], 2)).flatten().reshape((img_rotated.shape[0] * img_rotated.shape[1], 2))
-		coords = list(zip(coords[:,0], coords[:,1]))
-		img_rot = img_rotated
-		flattened_img = img_rotated.flatten()
-		print(flattened_img.shape)
-		print(coords[0], coords[-1])
-		print()
 		for i in range(len(star_x)):
 			centroid = star_x[i], star_y[i]
-		
-			p, p_cov = curve_fit(trail_model, coords, flattened_img, p0=[3, trail_length, 0, np.mean(sky_row_avg)])
-			print(p)
-			print(cov)
+			img_rot = img_rotated
+
+			p0 = np.array([3, trail_length, -1*np.arctan2(star_x_max[i]-star_x_min[i], star_y_max[i]-star_y_min[i]) * 180/np.pi, np.mean(sky_row_avg)])
+
+			fit = least_squares(residual, p0, ftol=.5, xtol=0.5, gtol=.05, bounds=([1, trail_length/2, -180, 0],[10, trail_length*5, 180, 1e3]))
+			print(fit.x)
+	
+			# p, p_cov = curve_fit(trail_model, coords, flattened_img, p0=[3, trail_length, 0, np.mean(sky_row_avg)])
+			
 
 
 
 
 		ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
-		ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
-		ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
+		# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
+		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
 		ax[0].legend()
 
 
