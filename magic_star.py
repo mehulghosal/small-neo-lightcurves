@@ -55,11 +55,12 @@ count = 0
 # img_rot and centroid are not fitting variables - want to pass these in as constants; centroid = [x,y]
 def trail_model(x, y, s, L, a, b, c_x, c_y):
 
-	global img_rot, centroid
+	global img_rot, star_x_ext, star_y_ext, centroid
 	
 	# print(x, y)
 
-	trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
+	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
+	trail = img_rot[int(star_y_ext[0]):int(star_y_ext[1]), int(star_x_ext[0]): int(star_x_ext[1])]
 
 	flux = np.sum(trail)
 	a *= np.pi/180
