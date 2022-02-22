@@ -47,70 +47,53 @@ def model(x, s, m, a, c, b, d):
 def quadratic(x, a, b, c, d, e):
 	return a*x**2 + b*x + c + d*x**3 + e*x**4
 
-img_rot, centroid, pixels = 0, 0, 0
+img_rot, centroid, = 0, 0
 count = 0
 
 # Veres 2012 eq 3
 # r = [x,y], s = sigma, L is length, a is angle, b is background noise (holding constant for now)
 # img_rot and centroid are not fitting variables - want to pass these in as constants; centroid = [x,y]
-def trail_model(x, y, s, L, a, b):
+def trail_model(x, y, s, L, a, b, c_x, c_y):
 
-	global img_rot, centroid, pixels
-
-	img = pixels
+	global img_rot, centroid
 	
 	# print(x, y)
-	x, y = point_rotation(x, y, a, img_rot, img)
-	centroids = np.array(point_rotation(centroid[0], centroid[1], a, img_rot, img))
-	x-=centroids[0]
-	y-=centroids[1]
 
-	trail = img[int(centroid[1]-L+0.5):int(centroid[1]+L+.5), int(centroid[0]-s*2.355+.5): int(centroid[0]+s*2.355+.5)]
+	trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
 
 	flux = np.sum(trail)
+	a *= np.pi/180
 
+	return flux/(L/2 * 2 * s * (2 * np.pi)**.5) * np.exp(-(((x-c_x)*np.sin(a)+(y-c_y)*np.cos(a))**2 )/(2*s**2)) * erf(((x-c_x)*np.cos(a)+(y-c_y)*np.sin(a) + L/4)/ (s*2**.5)) - erf(((x-c_x)*np.cos(a)+(y-c_y)*np.sin(a) - L/4)/ (s*2**.5)) + b
 
-	return flux/(L/2 * s * (8 * np.pi)**.5) * np.exp(-((x+y)**2 )/(2*s**2)) * erf((x+y + L/4)/ (s*2**.5)) - erf((x+y - L/4)/ (s*2**.5)) + b
+def draw_model(s, L, a, b, c_x, c_y):
 
-def draw_model(s, L, a, b):	
-
-	global pixels
+	global img_rot, star_x_ext, star_y_ext, centroid
 
 	# dont actually know if this meshgrid business works??? come back to this first if breaks
-	xx, yy = np.meshgrid(np.arange(0, pixels.shape[0]), np.arange(0, pixels.shape[1]))
+	# xx, yy = np.meshgrid(np.arange(0, img_rot.shape[1]), np.arange(0, img_rot.shape[0]))
+	xx, yy = np.meshgrid( np.arange(star_x_ext[0], star_x_ext[1]), np.arange(star_y_ext[0], star_y_ext[1]) )
 
-	model = trail_model(xx, yy, s, L, a, b)	#assuming this is 2FWHM wide and 2L tall
-	
-	# another thing to think about is adding or replacing to original img
-	# img[  int(centroid[1]-L+.5)  :  int(centroid[1]+L+.5)    ,    int(centroid[0]-s*2.355+.5)  :   int(centroid[0]+s*2.355 + .5)] = model
-	# model = rotate(model, a)
+	model = trail_model(xx, yy, s, L, a, b, c_x, c_y)	#assuming this is 2FWHM wide and 2L tall
 
 	# print(img.shape, rotate(img,-a).shape)
 	return model
-	# img_rot_1 = img_rot.copy()
-	# try:
-	# 	img_rot_1[  int(centroid[0] - model_shape[0]/2+.5) :  int(centroid[0] + model_shape[0]/2+.5)   ,  int(centroid[1] - model_shape[1]/2 +.5) :  int(.5+centroid[1] + model_shape[1]/2)] = model
-	# except Exception as e:
-	# 	print(s, L, a, b)
-	# 	a = 360-a
-	# # return rotate(img, 360-a)\
-	# return img_rot_1
+	
 
 def residual(par):
-	global pixels, centroid, img_rot
-	s, L, a, b = par[0], par[1], par[2], par[3]
-
-	img = rotate(img_rot, a) #star's reference point
-	centroids = np.array(point_rotation(centroid[0], centroid[1], a, img_rot, img))
-	pixels = img
+	global img_rot, star_x_ext, star_y_ext, centroid
+	s, L, a, b, c_x, c_y = par[0], par[1], par[2], par[3], par[4], par[5]
 	
-	model = draw_model(s, L, a, b)
-	
-	observed = img[  int(centroids[1]-L+.5)  :  int(centroids[1]+L+.5)    ,    centroids[0]-int(s*2.355+.5)  :  centroids[0]+int(s*2.355 + .5)]
+	model = draw_model(s, L, a, b, c_x, c_y)
 
-	# print(int(centroid[0]-s*2.355+.5)- int(centroid[0]+s*2.355+.5))
-	print()
-	print(observed.shape)
+	# observed_length = L
+	# observed_s		= s	
+	# observed = img_rot[  int(centroid[1]-observed_length+.5)  :  int(centroid[1]+observed_length+.5)    ,    int(centroid[0]-observed_s*2.355+.5)  :  int(centroid[0]+observed_s*2.355 + .5)]
+	observed = img_rot[int(star_y_ext[0]):int(star_y_ext[1]),int( star_x_ext[0]): int(star_x_ext[1])]
+
+	# print()
+	# print(model.shape)
+	# print(observed.shape)
 
 	residual = np.sqrt( np.sum( ( observed - model )**2 ) )
 
@@ -119,6 +102,7 @@ def residual(par):
 
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
+	yea = False
 
 	for f in file_names:
 		try:
@@ -195,6 +179,8 @@ for d in dir_names:
 		trail_start[1] -= height_correction
 		trail_end[1]   += height_correction
 
+		trail_centroid = np.array([trail_start[0], np.mean([trail_start[1], trail_end[1]])])
+
 		print(trail_end-trail_start)
 		# asteroid trail length in 70o13 is 101 tall
 		ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
@@ -226,11 +212,12 @@ for d in dir_names:
 		# ax[1].plot(x, obj_minus_sky)
 
 		param_vals, param_covs = curve_fit(quadratic, x, obj_minus_sky, sigma=sigma_row)
-		ax[1].plot(x, quadratic(x, *param_vals))
+		# ax[1].plot(x, quadratic(x, *param_vals))
 		# ax[1].set_ylim([np.min(obj_minus_sky),25000])
 		print(param_vals)
 		print(np.diag(param_covs))
-		ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1)
+		# UNCOMMENT LATER, maybe
+		# ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1)
 
 		# WCS stuff
 		w = WCS(hdr)
@@ -265,13 +252,28 @@ for d in dir_names:
 		star_y_min = sex_output[:,2]
 		star_x_max = sex_output[:,3]
 		star_y_max = sex_output[:,4]
+
+		dist_to_asteroid = []
+
 		for i in range(len(star_x)):
 			star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
+			dist_to_asteroid.append((star_x[i] - trail_centroid[0])**2 + (star_y[i] - trail_centroid[1])**2)
 			star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i], star_y_min[i], angle, img, img_rotated)
 			star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i], star_y_max[i], angle, img, img_rotated)
 			# print(star_x[i], star_y[i])
 
+		dist_to_asteroid = np.array(dist_to_asteroid)
+		dist_sorted = np.argsort(dist_to_asteroid)
+		star_x = star_x[dist_sorted][:10]
+		star_y = star_y[dist_sorted][:10]
+		star_x_min = star_x_min[dist_sorted][:10]
+		star_y_min = star_y_min[dist_sorted][:10]
+		star_x_max = star_x_max[dist_sorted][:10]
+		star_y_max = star_y_max[dist_sorted][:10]
+
 		bad_stars = np.where((star_x<trail_length) | (star_x>img_rotated.shape[1]-trail_length) | (star_y<trail_length) | (star_y>img_rotated.shape[0]-trail_length))
+		bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
+		bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
 		print(bad_stars)
 		star_x = np.delete(star_x, bad_stars, 0)
 		star_y = np.delete(star_y, bad_stars, 0)
@@ -281,14 +283,23 @@ for d in dir_names:
 		star_y_max = np.delete(star_y_max, bad_stars, 0)
 		# global centroid
 
-		for i in range(len(star_x)):
+		# for i in range(len(star_x)):
+		for i in range(1):
 			centroid = star_x[i], star_y[i]
 			img_rot = img_rotated
+			star_x_ext = int(star_x_min[i]), (star_x_max[i])
+			star_y_ext = int(star_y_min[i]), int(star_y_max[i])
+			print(centroid, star_x_ext, star_y_ext)
 
-			p0 = np.array([3, trail_length, -1*np.arctan2(star_x_max[i]-star_x_min[i], star_y_max[i]-star_y_min[i]) * 180/np.pi, np.mean(sky_row_avg)])
+			p0 = np.array([3, 112, 119, np.mean(sky_row_avg), centroid[0], centroid[1]])
+			print(p0)
 
-			fit = least_squares(residual, p0, ftol=.5, xtol=0.5, gtol=.05, bounds=([1, trail_length/2, -180, 0],[10, trail_length*5, 180, 1e3]))
+			fit = least_squares(residual, p0, ftol=.005, xtol=0.005, gtol=.0005, bounds=([1, trail_length/2, 0, 0, 0, 0],[10, trail_length*5, 360, 5e3, img_rotated.shape[1], img_rotated.shape[0]]))
 			print(fit.x)
+
+			model = draw_model(*fit.x)
+			ax[1].imshow(model)
+			# if fit.x[-2] == centroid[0] and fit.x[-1] == centroid[1]: print(True)
 	
 			# p, p_cov = curve_fit(trail_model, coords, flattened_img, p0=[3, trail_length, 0, np.mean(sky_row_avg)])
 			
@@ -300,6 +311,7 @@ for d in dir_names:
 		# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
 		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
 		ax[0].legend()
+		yea = True
 
 
 		# ax[0].legend()
@@ -307,5 +319,5 @@ for d in dir_names:
 	
 		
 	plt.show()
-	# if True: break
+	if yea: break
 # output.close()
