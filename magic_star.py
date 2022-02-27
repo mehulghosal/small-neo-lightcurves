@@ -73,12 +73,12 @@ def trail_model(x, y, s, L, a, b, x_0, y_0):
 	cosine = np.cos(a)
 	sine   = np.sin(a)
 
-	normalizing = flux/(L * 2 * s * (2 * np.pi)**.5)
+	flux_term   = flux/(L * 2 * s * (2 * np.pi)**.5)
 	exponential = np.exp( -(( (x-x_0)*sine + (y-y_0)*cosine )**2 ) / (2*s**2) )
 	erf1 = erf(( (x-x_0) * cosine + (y-y_0) * sine + L/2) / (s*2**.5)) 
 	erf2 = erf(( (x-x_0) * cosine + (y-y_0) * sine - L/2) / (s*2**.5))
 
-	return normalizing * exponential * (erf1-erf2) + b
+	return flux_term * exponential * (erf1-erf2) + b
 
 def draw_model(s, L, a, b, c_x, c_y):
 
@@ -142,7 +142,7 @@ for d in dir_names:
 		# if '2016 CD3' not in obj_id: continue
 
 		# plt.figure()
-		fig, ax = plt.subplots(1,4)
+		fig, ax = plt.subplots(1,3)
 		ax[0].set_title(f)
 		# ax[0].imshow(img, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
 
@@ -176,7 +176,7 @@ for d in dir_names:
 		# ax[0].imshow(obj_rect, cmap='gray', norm=colors.LogNorm(vmin=300))
 
 		col_sums = np.sum(obj_rect, axis=0)
-		print(col_sums.shape)
+		
 		# col_sums /= np.max(col_sums)
 		rect_width = np.arange(0, 2*obj_width, 1)
 		param_vals, param_covs = curve_fit(model, rect_width, col_sums, p0=[3, obj_width, .03, 60000, 20000, -3])
@@ -201,7 +201,7 @@ for d in dir_names:
 
 		trail_centroid = np.array([trail_start[0], np.mean([trail_start[1], trail_end[1]])])
 
-		print(trail_end-trail_start)
+		print('trail length: ', trail_length)
 		# asteroid trail length in 70o13 is 101 tall
 		ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
@@ -221,10 +221,9 @@ for d in dir_names:
 
 		obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
-		ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=np.median(sky_row_avg)))
-		# ax[0].imshow(obj_rect, cmap='gray', norm=colors.LogNorm(vmin=np.median(sky_row_avg)))
+		ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=np.median(sky_row_avg))) #  setting min value to sky background median 
 
-		sigma_row = obj_minus_sky + (len(obj_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**.5
+		sigma_row = obj_minus_sky + (len(obj_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**.5 # from magnier
 		sigma_row = sigma_row ** .5
 
 		# x = np.arange(0, 101, 101/len(obj_row_sums))
@@ -294,7 +293,7 @@ for d in dir_names:
 		star_y_max = star_y_max[dist_sorted][:num]
 
 		# filtering bad stars from sextractor
-		bad_stars = np.where((star_x<trail_length) | (star_x>img_rotated.shape[1]-trail_length) | (star_y<trail_length) | (star_y>img_rotated.shape[0]-trail_length))
+		bad_stars = np.where((star_x<trail_length) | (star_x>img_rotated.shape[1]-trail_length) | (star_y<trail_length) | (star_y>img_rotated.shape[0]-trail_length)) # too close to edge
 		bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
 		bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
 		print(bad_stars)
@@ -310,13 +309,14 @@ for d in dir_names:
 		stars        = []
 		trail_starts = []
 		trail_ends   = []
+		residuals    = []
 
 		for i in range(len(star_x)):
 		# for i in range(1):
 			centroid = star_x[i], star_y[i]
 			img_rot = img_rotated
-			x_correction = (star_x_min[i] - star_x_max[i])*.10
-			y_correction = (star_y_min[i] - star_y_max[i])*.10
+			x_correction = (star_x_min[i] - star_x_max[i])*.20
+			y_correction = (star_y_min[i] - star_y_max[i])*.20
 			star_x_ext = int(star_x_min[i]-x_correction), int(star_x_max[i]+x_correction)
 			star_y_ext = int(star_y_min[i]-y_correction), int(star_y_max[i]+y_correction)
 			# print(centroid, star_x_ext, star_y_ext)
@@ -327,13 +327,14 @@ for d in dir_names:
 			p0 = np.array([4, 227, 180-a_0[i]*180/np.pi, np.mean(sky_row_avg), centroid[0], centroid[1]])
 			# p0 = np.array([2, L_0[i], 180-a_0[i]*180/np.pi, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
-			print('p0:', p0)
-			print('residual(p0): ', (residual(p0)))
 
 			fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=([1, trail_length/2, -180, 0, 0, 0],[10, trail_length*5, 180, 5e3, img_rotated.shape[1], img_rotated.shape[0]]))
-			print('residual(fit params): ', (residual(fit.x)))
+			residuals.append([residual(p0), residual(fit.x)])
 
-			# print('resiudal(my best fit):', np.sum())
+			print('p0:', p0)
+			print('residual(p0): ', residuals[i][0])
+			print('residual(fit params): ', residuals[i][1])
+
 			# fit = least_squares(residual, p0, loss='linear', method='lm', ftol=0.5, xtol=0.5, gtol=0.5)
 			# np.append(stars, fit.x, axis=0)
 			# fit = least_squares(residual, p0, loss='linear')
@@ -362,10 +363,10 @@ for d in dir_names:
 			print('fit success', fit.success)
 
 			model = draw_model(*fit.x)
-			if i<10:
-				# ax_stars[int(i/5), i%5].set_title(str(centroid))
-				# ax_stars[int(i/5), i%5].imshow(model)
-				ax[3].imshow(model)
+			# if i<10: 
+			# 	ax_stars[int(i/5), i%5].set_title(str(centroid))
+			# 	ax_stars[int(i/5), i%5].imshow(model)
+			# 	a/x[3].imshow(model)
 			
 			# y coords flipped for wacky pyplot reasons
 			# star_trail_start = np.array([x_0 - L/2 * np.cos(a*np.pi/180), y_0 + L/2 * np.sin(a*np.pi/180)])
@@ -413,6 +414,9 @@ for d in dir_names:
 		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
 		ax[0].legend()
 		yea = True
+
+		# star_residuals = open('star_Residuals.txt', 'w+')
+		# star_residuals.writelines(str(residuals))
 
 		# ax[0].legend()
 	
