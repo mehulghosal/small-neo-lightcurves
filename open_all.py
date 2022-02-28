@@ -42,8 +42,8 @@ for d in dir_names:
 		obj_id = f.split('_')
 		obj_id = obj_id[0][2:] + ' ' + obj_id[1]
 		# if '2016 GE1' not in obj_id: continue
-		# if '2015 VH65' not in obj_id: continue
-		if not ('2016 GE1' in obj_id and '70o13' in f): continue
+		if '2015 VH65' not in obj_id: continue
+		# if not ('2016 GE1' in obj_id and '70o13' in f): continue
 
 		plt.figure()
 		plt.title(f)

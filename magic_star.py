@@ -63,10 +63,12 @@ def trail_model(x, y, s, L, a, b, x_0, y_0):
 
 	global img_rot, star_x_ext, star_y_ext, centroid
 	
-	# print(x, y)
+	L_but_longer = L*1.4
+	s_but_wider  = s*1.4
 
 	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
-	trail = img_rot[int(star_y_ext[0]):int(star_y_ext[1]), int(star_x_ext[0]): int(star_x_ext[1])]
+	trail = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
+	# print( 'trail shape', trail.shape)
 
 	flux   = np.sum(trail)
 	a      = (a) * np.pi/180
@@ -96,19 +98,27 @@ def draw_model(s, L, a, b, c_x, c_y):
 
 def residual(par):
 	global img_rot, star_x_ext, star_y_ext, centroid
-	s, L, a, b, c_x, c_y = par[0], par[1], par[2], par[3], par[4], par[5]
+	s, L, a, b, x_0, y_0 = par[0], par[1], par[2], par[3], par[4], par[5]
 	
-	model = draw_model(s, L, a, b, c_x, c_y)
+	model = draw_model(s, L, a, b, x_0, y_0)
 
-	observed = img_rot[int(star_y_ext[0]):int(star_y_ext[1]),int( star_x_ext[0]): int(star_x_ext[1])]
+	# L_but_longer = L*1.2
+	s_but_wider  = s*1.2
+
+	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1.2
+	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.2
+
+	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
+	observed = img_rot[int(centroid[1] - box_y_width/2):int(centroid[1] + box_y_width/2) , int(centroid[0] - s_but_wider*2.355):int(centroid[0] + s_but_wider*2.355)]
 	# observed_row_sums = np.array([np.sum(i) for i in observed])
 	# observed_col_sums = np.sum(observed, axis=0)
 
-	model_slice = model[int(star_y_ext[0]):int(star_y_ext[1]),int( star_x_ext[0]): int(star_x_ext[1])]
+	# model_slice = model[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
+	model_slice = model[int(centroid[1] - box_y_width/2):int(centroid[1] + box_y_width/2) , int(centroid[0] - s_but_wider*2.355):int(centroid[0] + s_but_wider*2.355)]
 	# model_row_sums = np.array([np.sum(i) for i in model_slice])
 	# model_col_sums = np.sum(model_slice, axis=0)
 
-	# print(model.shape, observed.shape)
+	# print(model_slice.shape, observed.shape)
 	# print()
 	# print(model.shape)
 	# print(observed.shape)
@@ -139,7 +149,10 @@ for d in dir_names:
 		obj_id = obj_id[0][2:] + ' ' + obj_id[1]
 
 		if not ('2016 GE1' in obj_id and '70o13' in f): continue
-		# if '2016 CD3' not in obj_id: continue
+		# if not ('2015 VH65' in obj_id and '01o31' in f): continue
+
+		# if '2016 CD31' not in obj_id: continue
+
 
 		# plt.figure()
 		fig, ax = plt.subplots(1,3)
@@ -303,41 +316,53 @@ for d in dir_names:
 		star_y_min = np.delete(star_y_min, bad_stars, 0)
 		star_x_max = np.delete(star_x_max, bad_stars, 0)
 		star_y_max = np.delete(star_y_max, bad_stars, 0)
+
+
+		L_0 = ((star_x_max-star_x_min)**2 + ((star_y_max-star_y_min)))**.5
+		# to rotate image -- negative angle from vertical
+		a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
 		
-		# f_stars, ax_stars = plt.subplots(2, 5)
+		f_stars, ax_stars = plt.subplots(2, 5)
 		
 		stars        = []
 		trail_starts = []
 		trail_ends   = []
 		residuals    = []
 
+
 		for i in range(len(star_x)):
 		# for i in range(1):
 			centroid = star_x[i], star_y[i]
-			img_rot = img_rotated
-			x_correction = (star_x_min[i] - star_x_max[i])*.20
-			y_correction = (star_y_min[i] - star_y_max[i])*.20
+			# img_rot = img_rotated
+			# x_correction = (star_x_min[i] - star_x_max[i])*.10
+			# y_correction = (star_y_min[i] - star_y_max[i])*.10
+			x_correction, y_correction = 0,0
 			star_x_ext = int(star_x_min[i]-x_correction), int(star_x_max[i]+x_correction)
 			star_y_ext = int(star_y_min[i]-y_correction), int(star_y_max[i]+y_correction)
 			# print(centroid, star_x_ext, star_y_ext)
 
-			L_0 = ((star_x_max-star_x_min)**2 + ((star_y_max-star_y_min)))**.5
-			a_0 = np.arctan2( star_y_max-star_y_min , star_x_max-star_x_min) # in radians
+			img_star_rotated = rotate(img_rotated, a_0[i])
+			img_rot = img_star_rotated
 
-			p0 = np.array([4, 227, 180-a_0[i]*180/np.pi, np.mean(sky_row_avg), centroid[0], centroid[1]])
+			centroid = point_rotation(centroid[0], centroid[1], a_0[i], img_rotated, img_star_rotated)
+			upper_left = point_rotation(star_x_min[i] , star_y_min[i] , a_0[i], img_rotated, img_star_rotated)
+			lower_rite = point_rotation(star_x_max[i] , star_y_max[i] , a_0[i], img_rotated, img_star_rotated)
+
+			star_x_ext = upper_left[0], lower_rite[0]
+			star_y_ext = upper_left[1], lower_rite[1]
+
+			p0 = np.array([3, 225, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 			# p0 = np.array([2, L_0[i], 180-a_0[i]*180/np.pi, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
+			param_bounds = ([1, L_0[i]/2, 90+2*a_0[i], 0, 0, 0], [10, L_0[i]*5, 90-2*a_0[i], 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
-			fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=([1, trail_length/2, -180, 0, 0, 0],[10, trail_length*5, 180, 5e3, img_rotated.shape[1], img_rotated.shape[0]]))
+			fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
 			residuals.append([residual(p0), residual(fit.x)])
 
 			print('p0:', p0)
 			print('residual(p0): ', residuals[i][0])
 			print('residual(fit params): ', residuals[i][1])
 
-			# fit = least_squares(residual, p0, loss='linear', method='lm', ftol=0.5, xtol=0.5, gtol=0.5)
-			# np.append(stars, fit.x, axis=0)
-			# fit = least_squares(residual, p0, loss='linear')
 			param = fit.x
 			s, L, a, b, x_0, y_0 = fit.x[0], fit.x[1], fit.x[2], fit.x[3], fit.x[4], fit.x[5]
 			
@@ -361,16 +386,26 @@ for d in dir_names:
 
 			print('fit', fit.x)
 			print('fit success', fit.success)
+			star_model = draw_model(*fit.x)
+			L*=1.2
+			s*=1.2
+			if i<10: 
+				ax_stars[int(i/5), i%5].set_title(str(centroid))
+				ax_stars[int(i/5), i%5].imshow(img_star_rotated[int(centroid[1] - L/2): int(centroid[1] + L/2), int(centroid[0] - s*2.355): int(centroid[0] + s*2.355)])
 
-			model = draw_model(*fit.x)
-			# if i<10: 
-			# 	ax_stars[int(i/5), i%5].set_title(str(centroid))
-			# 	ax_stars[int(i/5), i%5].imshow(model)
-			# 	a/x[3].imshow(model)
+			
+				# ax[3].imshow(model)
 			
 			# y coords flipped for wacky pyplot reasons
 			# star_trail_start = np.array([x_0 - L/2 * np.cos(a*np.pi/180), y_0 + L/2 * np.sin(a*np.pi/180)])
 			# star_trail_end   = np.array([x_0 + L/2 * np.cos(a*np.pi/180), y_0 - L/2 * np.sin(a*np.pi/180)])
+			
+			# now rotating back to the asteroids reference
+			centroid = star_x[i], star_y[i]
+			star_x_ext = int(star_x_min[i]-x_correction), int(star_x_max[i]+x_correction)
+			star_y_ext = int(star_y_min[i]-y_correction), int(star_y_max[i]+y_correction)
+			a -= a_0[i]
+
 			star_trail_start = np.array([centroid[0] - L/2 * np.cos(a*np.pi/180), centroid[1] + L/2 * np.sin(a*np.pi/180)])
 			star_trail_end   = np.array([centroid[0] + L/2 * np.cos(a*np.pi/180), centroid[1] - L/2 * np.sin(a*np.pi/180)])
 
@@ -379,6 +414,8 @@ for d in dir_names:
 
 			stars.append(param)
 			print(' ')
+
+			
 
 
 			# if fit.x[-2] == centroid[0] and fit.x[-1] == centroid[1]: print(True)
@@ -410,8 +447,8 @@ for d in dir_names:
 		ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
 
 		ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
-		# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
-		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
+		ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
+		ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
 		ax[0].legend()
 		yea = True
 
