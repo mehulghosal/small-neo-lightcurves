@@ -155,10 +155,11 @@ for d in dir_names:
 		obj_id = f.split('_')
 		obj_id = obj_id[0][2:] + ' ' + obj_id[1]
 
-		if not ('2016 GE1' in obj_id and '70o13' in f): continue
+		# if not ('2016 GE1' in obj_id and '70o13' in f): continue
 		# if not ('2015 VH65' in obj_id and '01o31' in f): continue
 
 		# if '2016 CD31' not in obj_id: continue
+		if '2016 GE1' not in obj_id: continue
 
 
 		# plt.figure()
@@ -364,7 +365,7 @@ for d in dir_names:
 
 			param_bounds = ([1, L_0[i]/2, 90+2*a_0[i], 0, 0, 0, 0, 0], [10, L_0[i]*5, 90-2*a_0[i], 2e3, 500, 500, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
-			fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
+			fit = least_squares(residual, p0, loss='huber', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
 			residuals.append([residual(p0), residual(fit.x)])
 
 			print('p0:', p0)
@@ -440,39 +441,64 @@ for d in dir_names:
 		# lightcurves of stars
 		for i in range(len(stars)):
 		# for i in range(1):
-			trail_start = point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated)
-			trail_end   = point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated)
+			trail_end     = np.array(point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated))
+			trail_start   = np.array(point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated))
+			print(trail_start, trail_end)
+
 			fwhm = stars[i,0] * 2.355
-			L = stars[i,1]
+			L = int(stars[i,1]*.2+.5)
+
+			trail_start[1] -= L
+			trail_end[1]   += L
 
 			img_star_rotated = img_stars[i]
 
-			str_width = int(4*fwhm)
+			str_width = int(1*fwhm)
+			sky_width = int(2*fwhm)
 			str_rect = img_star_rotated[trail_start[1]:trail_end[1], trail_start[0]-str_width:trail_start[0]+str_width]
 
-			str_row_sums = np.array([np.sum(j) for j in obj_rect])
+			str_row_sums = np.array([np.sum(j) for j in str_rect])
+
+			sky_left  = img_star_rotated[trail_start[1]:trail_end[1], trail_start[0]-str_width-sky_width:trail_start[0]-str_width]
+			sky_right = img_star_rotated[trail_start[1]:trail_end[1], trail_start[0]+str_width:trail_start[0]+str_width+sky_width]
+
+			sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
+			sky_right_row_sum = np.array([np.sum(i) for i in sky_right])
+			sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
+
+			str_minus_sky = str_row_sums - sky_row_avg * str_rect.shape[1]
+
+			sigma_row = str_minus_sky + (len(str_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(str_row_sums))**2 * sky_row_avg**.5 # from magnier
+			sigma_row = sigma_row ** .5
 			
-			x = np.arange(0, 60, 60/len(obj_row_sums))
+			x = np.arange(0, len(str_row_sums))
 
-			normalize = np.max(str_row_sums)
-			str_row_sums /= normalize
+			normalize = np.max(str_minus_sky)
+			# str_minus_sky /= normalize
+
+			n_bins   = 5  # smooths over this many bins
+			smoothed = np.array([np.sum(str_minus_sky[j:j+n_bins])/n_bins for j in range(0, len(str_minus_sky)-n_bins, n_bins)])
+			x_smooth = np.arange(0, len(smoothed))
+
+			print(str_minus_sky.shape)
+			print(smoothed.shape)
 
 
-			param_star, param_covs_star = curve_fit(star_box_model, x, str_row_sums, p0=[9.8, 51.4, .2, 2*np.pi/11, 0, .8, .01, 2*np.pi/.8, 0, .27])
-			print(param_star)
+			param_star, param_covs_star = curve_fit(star_box_model, x_smooth, smoothed, p0=[70, 290, 2000, 2*np.pi/10, 0, 17300, .01, 2*np.pi/20, 0, 0])
+			print(i,param_star)
 
 
 			if i<10 and i<stars.shape[0] : 
-				ax_stars[int(i/5), i%5].set_title(str(trail_start))
+				ax_stars[int(i/5), i%5].set_title(str([star_x[i], star_y[i]]))
 				# ax_stars[int(i/5), i%5].imshow(img_star_rotated[int(centroid[1] - L/2): int(centroid[1] + L/2), int(centroid[0] - s*2.355): int(centroid[0] + s*2.355)])		
-				ax_stars[int(i/5), i%5].plot(x, str_row_sums)
-				ax_stars[int(i/5), i%5].plot(x, star_box_model(x,*param_star))
+				ax_stars[int(i/5), i%5].plot(x, str_minus_sky)
+				# ax_stars[int(i/5), i%5].plot(x_smooth, smoothed)
+				# ax_stars[int(i/5), i%5].plot(x, star_box_model(x,*param_star))
+				# ax_stars[int(i/5), i%5].errorbar(x, str_minus_sky, yerr = sigma_row, fmt='o', capsize=3, linewidth=2, elinewidth=1)
 
 
-		yea = True
 
 		# ax[0].legend()
 	
 	plt.show()
-	if yea: break
 # output.close()
