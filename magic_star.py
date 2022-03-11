@@ -73,7 +73,7 @@ def fourier(x, *params):
     c = params[:, 2]
     ret = a[0] * np.sin(np.pi / b[0] * x) + c[0]
     for deg in range(1, len(a)):
-        ret += a[deg] * np.sin((deg+1) * np.pi / b[deg] * x) + c[0]
+        ret += a[deg] * np.sin((deg+1) * np.pi / b[deg] * x) + c[deg]
     return ret
 
 img_rot, centroid, = 0, 0
@@ -274,7 +274,7 @@ for d in dir_names:
 		print(param_vals)
 		print(np.diag(param_covs))
 		# UNCOMMENT LATER, maybe
-		ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1)
+		ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1, alpha=.7)
 
 		# WCS stuff
 		w = WCS(hdr)
@@ -464,6 +464,9 @@ for d in dir_names:
 		a_0          = a_0 + 90 - stars[:,2]
 		print('after filtering trails: ',len(stars))
 
+		row_sums = []
+		row_sums_smooth = []
+
 		# lightcurves of stars
 		for i in range(len(stars)):
 
@@ -477,8 +480,8 @@ for d in dir_names:
 			L_= int(stars[i,1]+.5)
 			L = int(stars[i,1]*.2+.5)
 
-			trail_start[1] -= L
-			trail_end  [1] += L
+			# trail_start[1] -= L
+			# trail_end  [1] += L
 
 			str_width = int(1*fwhm)
 			sky_width = int(2*fwhm)
@@ -501,31 +504,58 @@ for d in dir_names:
 			
 			x = np.arange(0, len(str_row_sums))
 
-			n_bins   = int((L_)/trail_length + 0.5) # smooths over this many bins
-			smoothed = np.array([np.sum(str_minus_sky[j:j+n_bins])/n_bins for j in range(0, len(str_minus_sky)-n_bins, n_bins)])
-			x_smooth = np.arange(0, len(smoothed))
-			smooth_norm_ = np.max(smoothed)
-			smoothed/=smooth_norm_
+			# n_bins   = int((L_)/trail_length + 0.5) # smooths over this many bins
+			# smoothed = np.array([np.sum(str_minus_sky[j:j+n_bins])/n_bins for j in range(0, len(str_minus_sky)-n_bins, n_bins)])
+			# x_smooth = np.arange(0, len(smoothed))
+			# smooth_norm_ = np.max(smoothed)
+			# smoothed/=smooth_norm_
 
+			bins = np.linspace(0, len(x), trail_length)
+			d = np.digitize(x, bins)
+			smoothed = []
+			for i in range(trail_length):
+				ind_to_sum = np.where(i==d)
+				bin_sum = np.sum(str_minus_sky[ind_to_sum])
+				smoothed.append(bin_sum/len(ind_to_sum))
+
+			smooth_norm = np.max(smoothed)
+			smoothed /= smooth_norm
 
 			param_star, param_covs_star = curve_fit(box_model, x, str_minus_sky, p0=[49, 268, 1500, 0])
-			param_smooth, param_covs_smooth = curve_fit(box_model, x_smooth, smoothed, p0=[25, 125, .8, 0])
+			# param_smooth, param_covs_smooth = curve_fit(box_model_sine, np.arange(trail_length), smoothed, p0=[25, 125, .2, 2*np.pi/7, 0, .8, 0])
+
+			fourier_terms = 5
+			param_smooth_box, param_smooth_box_cov = curve_fit(box_model, np.arange(trail_length), smoothed, p0=[25, 125, .8, 0])
+			start, end = int(param_smooth_box[0]), int(param_smooth_box[1])
 
 			normalize = param_star[2]
 			str_minus_sky /= normalize
 
-			smooth_norm = param_smooth[2]
+			smooth_norm = param_smooth_box[2]
 			smoothed /= smooth_norm
+
+			param_smooth, param_covs_smooth = curve_fit(fourier, np.arange(trail_length)[start:end], smoothed[start:end], p0=[.2, 2*np.pi/7, .8]*fourier_terms)
+
+			row_sums.append(str_minus_sky)
+			row_sums_smooth.append(smoothed)
 
 			if i<10 and i<stars.shape[0] : 
 				ax_stars[int(i/5), i%5].set_title(str([star_x[i], star_y[i]]))
 
 				ax_stars[int(i/5), i%5].plot(x, str_minus_sky)
-				ax_stars[int(i/5), i%5].plot(x_smooth, smoothed, label='binned to asteroid length')
+				ax_stars[int(i/5), i%5].plot(np.arange(len(smoothed)), smoothed, label='binned to asteroid length')
 				
 				ax_stars[int(i/5), i%5].legend()
 
+		# row_sums = np.array(row_sums, dtype=object)
+		# row_sums_smooth = np.array(row_sums_smooth, dtype=object)
 
+		# row_medians = np.median(row_sums, axis=0)
+		# row_medians_smooth = np.median(row_sums_smooth, axis=0)
+
+		# obj_minus_sky /= row_medians_smooth
+
+		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 
 		# ax[0].legend()
 	
