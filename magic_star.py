@@ -1,8 +1,10 @@
 import warnings, subprocess, sep
 import numpy as np
 import astropy as ap
+import lightkurve as lk
 import matplotlib.pyplot as plt
-from numpy.fft import fft
+from astropy.timeseries import LombScargle
+from scipy.fft import fft, fftfreq
 from matplotlib import colors
 from astropy.io import fits
 from scipy.ndimage import rotate
@@ -61,10 +63,17 @@ def box_model_sine(x, t_1, t_2, a, w, d, c, s):
 	r[filt] = a * np.sin(w*x[filt]+d) + c
 	return r
 
-def box_model(x, t_1, t_2, s_1, s_2):
+def box_model_(x, t_1, t_2, s_1, s_2):
 	r = np.zeros(x.shape) + s_2
 	r[np.where((x<=t_2) & (x>=t_1))] = s_1
 	return r
+
+
+def box_model(x, t_1, t_2, s_1):
+	r = np.zeros(x.shape) 
+	r[np.where((x<=t_2) & (x>=t_1))] = s_1
+	return r
+
 
 def fourier(x, *params):
     params = np.array(params).reshape(-1,3)
@@ -157,21 +166,32 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
+	if '2016_GE1' not in d: continue
+
+	start_times = []
+	lightcurves = []
+
+	fig_ast, ax_ast = plt.subplots()
+	ax_ast.set_xlabel('Julian date')
+
 	for f in file_names:
 		try:
 			file = fits.open(f)
+			print(f)
 		except Exception as e:
 			print(f)
 			continue
 		hdr = file[0].header
 		img = file[0].data
 
+		exp_time = float(hdr['EXPMEAS'])
+
 
 		# object id from directory name --> string splicing
 		obj_id = f.split('_')
 		obj_id = obj_id[0][2:] + ' ' + obj_id[1]
 
-		if not ('2016 GE1' in obj_id and '70o13' in f): continue
+		# if not ('2016 GE1' in obj_id and '69o13' in f): continue
 		# if not ('2015 VH65' in obj_id and '01o31' in f): continue
 
 		# if '2016 CD31' not in obj_id: continue
@@ -190,6 +210,7 @@ for d in dir_names:
 			obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
 			trail_start = np.array(obj[-4:-2], dtype=int)
 			trail_end	= np.array(obj[-2:], dtype=int)
+			start_time  = float(obj[6])
 			# trail_start = np.array([1196, 3980])
 			# trail_end = np.array([1303, 4175])
 		except Exception as e:
@@ -221,7 +242,7 @@ for d in dir_names:
 		fwhm = int(param_vals[0] * 2.355)
 		# fwhm = 6
 		print(param_vals)
-		print(np.diag(param_covs))
+		# print(np.diag(param_covs))
 
 		ax[2].scatter(rect_width, col_sums, label='column sums')
 		ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
@@ -268,13 +289,8 @@ for d in dir_names:
 		x = np.arange(0, len(obj_row_sums), 1)
 		# ax[1].plot(x, obj_minus_sky)
 
-		param_vals, param_covs = curve_fit(quadratic, x, obj_minus_sky, sigma=sigma_row)
-		# ax[1].plot(x, quadratic(x, *param_vals))
-		# ax[1].set_ylim([np.min(obj_minus_sky),25000])
-		print(param_vals)
-		print(np.diag(param_covs))
 		# UNCOMMENT LATER, maybe
-		ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1, alpha=.7)
+		ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1, alpha=.6)
 
 		# WCS stuff
 		w = WCS(hdr)
@@ -284,7 +300,7 @@ for d in dir_names:
 		# source extractor !!
 		sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		sex_output = np.loadtxt('test.cat', skiprows=9)
-		print(sex_output.shape)
+		print('SExtractor found stars: ',sex_output.shape[0])
 		star_x = sex_output[:,5]
 		star_y = sex_output[:,6]
 
@@ -318,7 +334,7 @@ for d in dir_names:
 		bad_stars = np.where((star_x<trail_length) | (star_x>img_rotated.shape[1]-trail_length) | (star_y<trail_length) | (star_y>img_rotated.shape[0]-trail_length)) # too close to edge
 		bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too
 		# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
-		print(bad_stars)
+		print('filter on sextractor', len(bad_stars))
 		star_x = np.delete(star_x, bad_stars, 0)
 		star_y = np.delete(star_y, bad_stars, 0)
 		star_x_min = np.delete(star_x_min, bad_stars, 0)
@@ -331,7 +347,8 @@ for d in dir_names:
 		# to rotate image -- negative angle from vertical
 		a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
 		
-		f_stars, ax_stars = plt.subplots(2, 5)
+		f_stars, ax_stars = plt.subplots(3, 5)
+		f_stars_sm, ax_stars_sm = plt.subplots(3, 5)
 		
 		stars        = []
 		trail_starts = []
@@ -365,7 +382,7 @@ for d in dir_names:
 			p0 = np.array([3, 225, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 			# p0 = np.array([2, L_0[i], 180-a_0[i]*180/np.pi, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
-			param_bounds = ([1, L_0[i]/2, 90+2*a_0[i], 0, 0, 0], [10, L_0[i]*5, 90-2*a_0[i], 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
+			param_bounds = ([1, L_0[i]/2, 0, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 			# fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
 			r_p0 = residual(p0)
@@ -405,6 +422,7 @@ for d in dir_names:
 			# p, p_cov = curve_fit(trail_model, coords, flattened_img, p0=[3, trail_length, 0, np.mean(sky_row_avg)])
 			
 		stars 		 = np.array(stars)
+		residuals    = np.array(residuals)
 		trail_starts = np.array(trail_starts)
 		trail_ends   = np.array(trail_ends)
 		print('initially, ', stars.shape[0])
@@ -436,36 +454,11 @@ for d in dir_names:
 		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
 		ax[0].legend()
 
-		# yet another filtering step
-		star_trails_filter = []
-		for i in range(len(stars)):
-		# for i in range(1):
-			img_star_rotated = rotate(img_rotated, a_0[i])
-			
-			trail_end     = np.array(point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated))
-			trail_start   = np.array(point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated))
-			# print(trail_start, trail_end
-			
-			fwhm = stars[i,0] * 2.355
-			L = int(stars[i,1]*.2+.5)
-
-			if trail_start[1]>=L:
-				if i not in star_trails_filter: star_trails_filter.append(i)
-			if trail_end[1]<= img_star_rotated.shape[1]-L:
-				if i not in star_trails_filter: star_trails_filter.append(i)
-			# print(trail_start, trail_end)
-
-		stars        = stars       [star_trails_filter]
-		trail_starts = trail_starts[star_trails_filter]
-		trail_ends   = trail_ends  [star_trails_filter]
-		a_0          = a_0         [star_trails_filter]
-		star_x       = star_x      [star_trails_filter]
-		star_y       = star_y      [star_trails_filter]
-		a_0          = a_0 + 90 - stars[:,2]
-		print('after filtering trails: ',len(stars))
 
 		row_sums = []
 		row_sums_smooth = []
+
+		residuals = []
 
 		# lightcurves of stars
 		for i in range(len(stars)):
@@ -477,11 +470,11 @@ for d in dir_names:
 			# print(trail_start, trail_end
 
 			fwhm = stars[i,0] * 2.355
-			L_= int(stars[i,1]+.5)
 			L = int(stars[i,1]*.2+.5)
 
-			# trail_start[1] -= L
-			# trail_end  [1] += L
+			# this is stupid but manually making trail like 4 px shorted on ends to prevent tail or smth
+			trail_start[1] -= L
+			trail_end  [1] += L
 
 			str_width = int(1*fwhm)
 			sky_width = int(2*fwhm)
@@ -502,62 +495,136 @@ for d in dir_names:
 			sigma_row = str_minus_sky + (len(str_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(str_row_sums))**2 * sky_row_avg**.5 # from magnier
 			sigma_row = sigma_row ** .5
 			
-			x = np.arange(0, len(str_row_sums))
 
-			# n_bins   = int((L_)/trail_length + 0.5) # smooths over this many bins
-			# smoothed = np.array([np.sum(str_minus_sky[j:j+n_bins])/n_bins for j in range(0, len(str_minus_sky)-n_bins, n_bins)])
-			# x_smooth = np.arange(0, len(smoothed))
-			# smooth_norm_ = np.max(smoothed)
-			# smoothed/=smooth_norm_
+			# discrete binning attempt --> beating effect
+			# bins = np.linspace(0, len(x), trail_length)
+			# d = np.digitize(x, bins)
+			# smoothed = []
+			# for j in range(trail_length):
+			# 	ind_to_sum = np.where(j==d)param_box
+			# 	bin_sum = np.sum(str_minus_sky[ind_to_sum])
+			# 	bin_sum = np.median(str_minus_sky[ind_to_sum])
+			# 	smoothed.append(bin_sum)
 
-			bins = np.linspace(0, len(x), trail_length)
-			d = np.digitize(x, bins)
+			# fitting needs to go before binning to get actual endpoints
+			x = np.arange(0, len(str_minus_sky))
+			param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[45, 270, 550])
+			box_model_output = box_model(x, *param_box)
+			start, end = int(param_box[0]), int(param_box[1])
+			star_trail_length = end-start
+			star_portion = str_minus_sky[start:end] # to get the fitted values of start and end
+
+			# can sort by residuals
+			residuals.append(np.sum((box_model_output-str_minus_sky)**2)**.5)
+
+			# another binning attempt - based on average of N rows around some row t
+			star_to_asteroid = star_trail_length/trail_length
+			N = int( star_to_asteroid * 3 + 0.5)
 			smoothed = []
-			for i in range(trail_length):
-				ind_to_sum = np.where(i==d)
-				bin_sum = np.sum(str_minus_sky[ind_to_sum])
-				smoothed.append(bin_sum/len(ind_to_sum))
+			for j in range(trail_length):
+				t = int(j*star_to_asteroid + .5)
+				start_ind, end_ind = 0,0
+				if t<N: 				# too close to start of trail
+					start_ind, end_ind = 0, t+N+1
+				elif t>=star_trail_length-N: # too close to end of trail
+					start_ind, end_ind = t-N-1, star_trail_length-1
+				else: 					# juuuust right
+					start_ind, end_ind = t-N, t+N
+				smoothed.append(np.mean(star_portion[start_ind:end_ind]))
 
-			smooth_norm = np.max(smoothed)
-			smoothed /= smooth_norm
 
-			param_star, param_covs_star = curve_fit(box_model, x, str_minus_sky, p0=[49, 268, 1500, 0])
-			# param_smooth, param_covs_smooth = curve_fit(box_model_sine, np.arange(trail_length), smoothed, p0=[25, 125, .2, 2*np.pi/7, 0, .8, 0])
+			# smooth_norm = np.max(smoothed)
+			smoothed = np.array(smoothed)
+			# smoothed /= smooth_norm
 
-			fourier_terms = 5
-			param_smooth_box, param_smooth_box_cov = curve_fit(box_model, np.arange(trail_length), smoothed, p0=[25, 125, .8, 0])
-			start, end = int(param_smooth_box[0]), int(param_smooth_box[1])
+			# param_star, param_covs_star = curve_fit(box_model, x, str_minus_sky, p0=[49, 268, 1500, 0])
+			# # param_smooth, param_covs_smooth = curve_fit(box_model_sine, np.arange(trail_length), smoothed, p0=[25, 125, .2, 2*np.pi/7, 0, .8, 0])
 
-			normalize = param_star[2]
-			str_minus_sky /= normalize
 
-			smooth_norm = param_smooth_box[2]
-			smoothed /= smooth_norm
+			# normalize = param_star[2]
+			# str_minus_sky /= normalize
 
-			param_smooth, param_covs_smooth = curve_fit(fourier, np.arange(trail_length)[start:end], smoothed[start:end], p0=[.2, 2*np.pi/7, .8]*fourier_terms)
+			# smooth_norm = param_smooth_box[2]
+			# smoothed /= smooth_norm
 
-			row_sums.append(str_minus_sky)
+			# param_smooth, param_covs_smooth = curve_fit(fourier, np.arange(trail_length)[start:end], smoothed[start:end], p0=[.2, 2*np.pi/7, .8]*fourier_terms)
+
+			# row_sums.append(str_minus_sky)
 			row_sums_smooth.append(smoothed)
 
-			if i<10 and i<stars.shape[0] : 
+			if i<15 and i<stars.shape[0] : 
 				ax_stars[int(i/5), i%5].set_title(str([star_x[i], star_y[i]]))
 
 				ax_stars[int(i/5), i%5].plot(x, str_minus_sky)
-				ax_stars[int(i/5), i%5].plot(np.arange(len(smoothed)), smoothed, label='binned to asteroid length')
+				ax_stars[int(i/5), i%5].plot(x, box_model(x, *param_box))
+
+				ax_stars_sm[int(i/5), i%5].plot(np.arange(len(smoothed)), smoothed, label='binned to asteroid length')
+
+				# ax_stars[int(i/5), i%5].plot(np.arange(len(smoothed))[start:end], smoothed[start:end], label='fourier model')
 				
-				ax_stars[int(i/5), i%5].legend()
+				# ax_stars[int(i/5), i%5].legend()
+
+		residuals = np.array(residuals)
+		r_sort    = np.argsort(residuals)
+
+		print(r_sort)
+
 
 		# row_sums = np.array(row_sums, dtype=object)
-		# row_sums_smooth = np.array(row_sums_smooth, dtype=object)
+		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
+		row_sums_smooth = row_sums_smooth[r_sort][:10]
 
 		# row_medians = np.median(row_sums, axis=0)
-		# row_medians_smooth = np.median(row_sums_smooth, axis=0)
+		row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
+		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
-		# obj_minus_sky /= row_medians_smooth
+		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[0,100,150])
+		norm = param_star[2]
+		row_avgs_smooth/=norm
+
+		ast_row_start = height_correction
+		ast_row_end   = len(obj_minus_sky)-height_correction
+
+		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
+		ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
+		ax[1].legend()
+
+		fig_star_avg, ax_star_avg = plt.subplots()
+		ax_star_avg.set_title('average star lightcurve')
+		ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
+
+		param_ast_box, param_ast_box_cov = curve_fit(box_model_, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[20,120,2500,0])
+		ast_norm = param_ast_box[2]
+		ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
+		norm_ast_lightcurve = obj_minus_sky/ast_norm
+		norm_ast_lightcurve = norm_ast_lightcurve[ast_start:ast_end]
+
+
+		# light_curve = lightcurves[i]
+		x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(norm_ast_lightcurve))
+		ax_ast.plot(x, norm_ast_lightcurve)
+
+		lightcurves.append(norm_ast_lightcurve)
+		start_times.append(x)
+
+		print()
 
 		# ax[0].legend()
-	
+
+
+	lightcurves = np.hstack(np.array(lightcurves, dtype=object))
+	start_times = np.hstack(np.array(start_times, dtype=object))
+	# f_err       = np.random.random(size=lightcurves.shape)
+
+	frequency, power = LombScargle(start_times, lightcurves).autopower()
+
+	peak_frequency = frequency[np.argmax(power)]
+	peak_period    = 1/peak_frequency * 24 * 3600
+	print('peak period: ', peak_period )
+
+
+
 	plt.show()
 # output.close()
