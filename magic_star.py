@@ -1,10 +1,8 @@
-import warnings, subprocess, sep
+import warnings, subprocess
 import numpy as np
 import astropy as ap
-import lightkurve as lk
 import matplotlib.pyplot as plt
 from astropy.timeseries import LombScargle
-from scipy.fft import fft, fftfreq
 from matplotlib import colors
 from astropy.io import fits
 from scipy.ndimage import rotate
