@@ -622,6 +622,10 @@ for d in dir_names:
 	peak_period    = 1/peak_frequency * 24 * 3600
 	print('peak period: ', peak_period )
 
+	directory_name = d.split('/')[1]
+
+	np.savetxt(f'./output/{directory_name}.txt', [start_times, lightcurves])
+
 
 
 	plt.show()
