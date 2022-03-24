@@ -1,9 +1,9 @@
 import warnings, subprocess
 import numpy as np
 import astropy as ap
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from astropy.timeseries import LombScargle
-from matplotlib import colors
+# from matplotlib import colors
 from astropy.io import fits
 from scipy.ndimage import rotate
 from scipy.special import erf
@@ -14,7 +14,7 @@ from astropy import units as u
 
 from astropy.utils.exceptions import AstropyWarning
 
-plt.rcParams.update({'figure.max_open_warning': 0})
+# plt.rcParams.update({'figure.max_open_warning': 0})
 warnings.simplefilter('ignore', AstropyWarning)
 
 # initializing all directories
@@ -169,7 +169,7 @@ for d in dir_names:
 	start_times = []
 	lightcurves = []
 
-	fig_ast, ax_ast = plt.subplots()
+	# fig_ast, ax_ast = plt.subplots()
 	ax_ast.set_xlabel('Julian date')
 
 	for f in file_names:
@@ -197,8 +197,8 @@ for d in dir_names:
 
 
 		# plt.figure()
-		fig, ax = plt.subplots(1,3)
-		ax[0].set_title(f)
+		# fig, ax = plt.subplots(1,3)
+		# ax[0].set_title(f)
 		# ax[0].imshow(img, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
 
 		obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
@@ -213,7 +213,7 @@ for d in dir_names:
 			# trail_end = np.array([1303, 4175])
 		except Exception as e:
 			print(f,obj[-4:-2],obj[-2:])
-			plt.close()
+			# plt.close()
 			continue
 
 		
@@ -242,9 +242,9 @@ for d in dir_names:
 		print(param_vals)
 		# print(np.diag(param_covs))
 
-		ax[2].scatter(rect_width, col_sums, label='column sums')
-		ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
-		ax[2].legend()
+		# ax[2].scatter(rect_width, col_sums, label='column sums')
+		# ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
+		# ax[2].legend()
 
 
 		centroid_deviation = -obj_width + param_vals[1] # if negative, trail is to the left, if positive, trail to right
@@ -260,7 +260,7 @@ for d in dir_names:
 
 		print('trail length: ', trail_length)
 		# asteroid trail length in 70o13 is 101 tall
-		ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
+		# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
 
 		obj_width = 1*fwhm
@@ -278,7 +278,7 @@ for d in dir_names:
 
 		obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
-		ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=np.median(sky_row_avg))) #  setting min value to sky background median 
+		# ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=np.median(sky_row_avg))) #  setting min value to sky background median 
 
 		sigma_row = obj_minus_sky + (len(obj_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**.5 # from magnier
 		sigma_row = sigma_row ** .5
@@ -288,7 +288,7 @@ for d in dir_names:
 		# ax[1].plot(x, obj_minus_sky)
 
 		# UNCOMMENT LATER, maybe
-		ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1, alpha=.6)
+		# ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1, alpha=.6)
 
 		# WCS stuff
 		w = WCS(hdr)
@@ -345,8 +345,8 @@ for d in dir_names:
 		# to rotate image -- negative angle from vertical
 		a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
 		
-		f_stars, ax_stars = plt.subplots(3, 5)
-		f_stars_sm, ax_stars_sm = plt.subplots(3, 5)
+		# f_stars, ax_stars = plt.subplots(3, 5)
+		# f_stars_sm, ax_stars_sm = plt.subplots(3, 5)
 		
 		stars        = []
 		trail_starts = []
@@ -456,12 +456,12 @@ for d in dir_names:
 		star_y       = star_y      [star_filter]
 		print('filtering: ', stars.shape[0])
 
-		ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
+		# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
 
-		ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
+		# ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
 		# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
 		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
-		ax[0].legend()
+		# ax[0].legend()
 
 
 		row_sums = []
@@ -561,13 +561,13 @@ for d in dir_names:
 			# row_sums.append(str_minus_sky)
 			row_sums_smooth.append(smoothed)
 
-			if i<15 and i<stars.shape[0] : 
-				ax_stars[int(i/5), i%5].set_title(str([star_x[i], star_y[i]]))
+			# if i<15 and i<stars.shape[0] : 
+			# 	ax_stars[int(i/5), i%5].set_title(str([star_x[i], star_y[i]]))
 
-				ax_stars[int(i/5), i%5].plot(x, str_minus_sky)
-				ax_stars[int(i/5), i%5].plot(x, box_model(x, *param_box))
+			# 	ax_stars[int(i/5), i%5].plot(x, str_minus_sky)
+			# 	ax_stars[int(i/5), i%5].plot(x, box_model(x, *param_box))
 
-				ax_stars_sm[int(i/5), i%5].plot(np.arange(len(smoothed)), smoothed, label='binned to asteroid length')
+			# 	ax_stars_sm[int(i/5), i%5].plot(np.arange(len(smoothed)), smoothed, label='binned to asteroid length')
 
 				# ax_stars[int(i/5), i%5].plot(np.arange(len(smoothed))[start:end], smoothed[start:end], label='fourier model')
 				
@@ -597,12 +597,12 @@ for d in dir_names:
 		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
-		ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
-		ax[1].legend()
+		# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
+		# ax[1].legend()
 
-		fig_star_avg, ax_star_avg = plt.subplots()
-		ax_star_avg.set_title('average star lightcurve')
-		ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
+		# fig_star_avg, ax_star_avg = plt.subplots()
+		# ax_star_avg.set_title('average star lightcurve')
+		# ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
 
 		param_ast_box, param_ast_box_cov = curve_fit(box_model_, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[20,120,2500,0])
 		ast_norm = param_ast_box[2]
@@ -613,7 +613,7 @@ for d in dir_names:
 
 		# light_curve = lightcurves[i]
 		x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(norm_ast_lightcurve))
-		ax_ast.plot(x, norm_ast_lightcurve)
+		# ax_ast.plot(x, norm_ast_lightcurve)
 
 		lightcurves.append(norm_ast_lightcurve)
 		start_times.append(x)
