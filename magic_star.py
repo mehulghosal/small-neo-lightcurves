@@ -164,7 +164,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if '2016_GE1' not in d: continue
+	# if '2016_GE1' not in d: continue
 
 	start_times = []
 	lightcurves = []
@@ -353,9 +353,12 @@ for d in dir_names:
 		trail_ends   = []
 		residuals    = []
 
-
-		for i in range(len(star_x)):
+		i = 0
+		while True:
+		# for i in range(len(star_x)):
 		# for i in range(1):
+			if i >= len(star_x): break
+
 			centroid = star_x[i], star_y[i]
 			# img_rot = img_rotated
 			# x_correction = (star_x_min[i] - star_x_max[i])*.10
@@ -370,7 +373,7 @@ for d in dir_names:
 
 			# if 686 in centroid: continue # bad double star
 
-			centroid = point_rotation(centroid[0], centroid[1], a_0[i], img_rotated, img_star_rotated)
+			centroid   = point_rotation(centroid[0], centroid[1], a_0[i], img_rotated, img_star_rotated)
 			upper_left = point_rotation(star_x_min[i] , star_y_min[i] , a_0[i], img_rotated, img_star_rotated)
 			lower_rite = point_rotation(star_x_max[i] , star_y_max[i] , a_0[i], img_rotated, img_star_rotated)
 
@@ -382,19 +385,26 @@ for d in dir_names:
 
 			param_bounds = ([1, L_0[i]/2, 0, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
-			# fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
-			r_p0 = residual(p0)
-			# residuals.append([r_p0, residual(fit.x)])
-			residuals.append([r_p0, r_p0])
+			try:
+				fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
+			except Exception as e:
+				print(f, i, e)
+				i+=1
+				# if i >= len(star_x): break
+				continue
+			r_p0  = residual(p0)
+			r_fit = residual(fit.x)
+			residuals.append([r_p0, r_fit])
+			# residuals.append([r_p0, r_p0])
 
 			# print('p0:', p0)
-			print('residual(p0) : ' , residuals[i][0])
-			print('residual(fit): ', residuals[i][1])
+			print('residual(p0) : ' , r_p0)
+			print('residual(fit): ' , r_fit)
 
-			param = p0
-			# param = fit.x
-			# s, L, a, b, x_0, y_0 = fit.x[0], fit.x[1], fit.x[2], fit.x[3], fit.x[4], fit.x[5]
-			s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
+			# param = p0
+			param = fit.x
+			s, L, a, b, x_0, y_0 = fit.x[0], fit.x[1], fit.x[2], fit.x[3], fit.x[4], fit.x[5]
+			# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 
 			# print('fit', fit.x)
 			# print('fit success', fit.success)
@@ -416,6 +426,7 @@ for d in dir_names:
 			stars       .append(param)
 			
 			print(' ')
+			i+=1
 	
 			# p, p_cov = curve_fit(trail_model, coords, flattened_img, p0=[3, trail_length, 0, np.mean(sky_row_avg)])
 			
@@ -628,5 +639,5 @@ for d in dir_names:
 
 
 
-	plt.show()
+	# plt.show()
 # output.close()
