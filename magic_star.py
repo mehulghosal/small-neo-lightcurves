@@ -25,6 +25,9 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 
 input_file = np.loadtxt('input.csv', dtype=object, skiprows=1, usecols=(i for i in range(25)), delimiter=',')
 
+se_dir   = './SEoutput/'
+se_files = [se_dir+f for f in os.listdir(se_dir) if isfile(join(se_dir,f))]
+
 mins = {'g':100, 'r': 150, 'i': 250}
 
 from scipy.optimize import curve_fit
@@ -164,13 +167,13 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	# if '2016_GE1' not in d: continue
+	# if '2016_LT1' not in d: continue
 
 	start_times = []
 	lightcurves = []
 
 	# fig_ast, ax_ast = plt.subplots()
-	ax_ast.set_xlabel('Julian date')
+	# ax_ast.set_xlabel('Julian date')
 
 	for f in file_names:
 		try:
@@ -296,8 +299,11 @@ for d in dir_names:
 		target_x, target_y = np.round(utils.skycoord_to_pixel(c, w))
 		
 		# source extractor !!
-		sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-		sex_output = np.loadtxt('test.cat', skiprows=9)
+		# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+		se_index = [x for x in se_files if (f.split('/')[1] in x and f.split("/")[2].split(".")[0] in x)][0]
+
+		sex_output = np.loadtxt(se_files[se_index], skiprows=9)
 		print('SExtractor found stars: ',sex_output.shape[0])
 		star_x = sex_output[:,5]
 		star_y = sex_output[:,6]
@@ -357,7 +363,7 @@ for d in dir_names:
 		while True:
 		# for i in range(len(star_x)):
 		# for i in range(1):
-			if i >= len(star_x): break
+			if i >= len(star_x) or i == 49: break
 
 			centroid = star_x[i], star_y[i]
 			# img_rot = img_rotated
@@ -627,11 +633,11 @@ for d in dir_names:
 	start_times = np.hstack(np.array(start_times, dtype=object))
 	# f_err       = np.random.random(size=lightcurves.shape)
 
-	frequency, power = LombScargle(start_times, lightcurves).autopower()
+	# frequency, power = LombScargle(start_times, lightcurves).autopower()
 
-	peak_frequency = frequency[np.argmax(power)]
-	peak_period    = 1/peak_frequency * 24 * 3600
-	print('peak period: ', peak_period )
+	# peak_frequency = frequency[np.argmax(power)]
+	# peak_period    = 1/peak_frequency * 24 * 3600
+	# print('peak period: ', peak_period )
 
 	directory_name = d.split('/')[1]
 
@@ -641,3 +647,4 @@ for d in dir_names:
 
 	# plt.show()
 # output.close()
+
