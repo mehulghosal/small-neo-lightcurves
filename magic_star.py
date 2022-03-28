@@ -167,7 +167,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	# if '2016_LT1' not in d: continue
+	if not ('2015_XN55' in d or '2016_EL157' in d or '2015_XY261' in d): continue
 
 	start_times = []
 	lightcurves = []
@@ -300,10 +300,14 @@ for d in dir_names:
 		
 		# source extractor !!
 		# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		try:
+			se_index = [x for x in se_files if (f.split('/')[1] in x and f.split("/")[2].split(".")[0] in x)][0]
+		except Exception as e:
+			print(e)
+			continue
 
-		se_index = [x for x in se_files if (f.split('/')[1] in x and f.split("/")[2].split(".")[0] in x)][0]
 
-		sex_output = np.loadtxt(se_files[se_index], skiprows=9)
+		sex_output = np.loadtxt(se_index, skiprows=9)
 		print('SExtractor found stars: ',sex_output.shape[0])
 		star_x = sex_output[:,5]
 		star_y = sex_output[:,6]
@@ -350,6 +354,18 @@ for d in dir_names:
 		L_0 = ((star_x_max-star_x_min)**2 + ((star_y_max-star_y_min)))**.5
 		# to rotate image -- negative angle from vertical
 		a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
+		
+		if 'TG24' in obj_id: 
+			l = 366
+			a = -72.6
+		elif 'VH1' in obj_id:
+			l = 139
+			a = 46.5
+		elif 'NM15' in obj_id:
+			l = 148
+			a = -5.02
+		L_0 = np.ones(L_0.shape) * l
+		a_0 = np.ones(L_0.shape) * a
 		
 		# f_stars, ax_stars = plt.subplots(3, 5)
 		# f_stars_sm, ax_stars_sm = plt.subplots(3, 5)
