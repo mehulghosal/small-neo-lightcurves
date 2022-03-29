@@ -167,7 +167,8 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('2015_XN55' in d or '2016_EL157' in d or '2015_XY261' in d): continue
+	if not ('VR64' in d): continue
+	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
 	lightcurves = []
@@ -355,15 +356,14 @@ for d in dir_names:
 		# to rotate image -- negative angle from vertical
 		a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
 		
-		if 'TG24' in obj_id: 
-			l = 366
-			a = -72.6
-		elif 'VH1' in obj_id:
-			l = 139
-			a = 46.5
-		elif 'NM15' in obj_id:
-			l = 148
-			a = -5.02
+		# if 'EL157' in obj_id: 
+		#	l = 103
+		#	a = 35.5
+		l = 365
+		a = -89.4
+		#elif 'NM15' in obj_id:
+		#	l = 148
+		#	a = -5.02
 		L_0 = np.ones(L_0.shape) * l
 		a_0 = np.ones(L_0.shape) * a
 		
@@ -539,7 +539,11 @@ for d in dir_names:
 
 			# fitting needs to go before binning to get actual endpoints
 			x = np.arange(0, len(str_minus_sky))
-			param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[45, 270, 550])
+			try:
+				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[45, 270, 550])
+			except Exception as e:
+				print(e)
+				continue
 			box_model_output = box_model(x, *param_box)
 			start, end = int(param_box[0]), int(param_box[1])
 			star_trail_length = end-start
