@@ -633,6 +633,8 @@ for d in dir_names:
 		lightcurves.append(norm_ast_lightcurve)
 		start_times.append(x)
 
+		np.savetxt(f'{f[:-4]}_lightcurve.txt', [x, norm_ast_lightcurve], fmt='%s')
+
 		print()
 
 		# ax[0].legend()
@@ -650,7 +652,7 @@ for d in dir_names:
 
 	directory_name = d.split('/')[1]
 
-	np.savetxt(f'./output/{directory_name}.txt', [start_times, lightcurves], fmt='%s')
+	
 
 
 
