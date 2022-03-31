@@ -167,7 +167,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('VH1' in d): continue
+	if not ('GE1' in d): continue
 	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
@@ -359,8 +359,8 @@ for d in dir_names:
 		# if 'EL157' in obj_id: 
 		#	l = 103
 		#	a = 35.5
-		l = 139
-		a = 46.5
+		l = 225
+		a = -28.4
 		#elif 'NM15' in obj_id:
 		#	l = 148
 		#	a = -5.02
@@ -402,10 +402,10 @@ for d in dir_names:
 			star_x_ext = upper_left[0], lower_rite[0]
 			star_y_ext = upper_left[1], lower_rite[1]
 
-			p0 = np.array([3, 225, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
+			p0 = np.array([3, L_0[i], 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 			# p0 = np.array([2, L_0[i], 180-a_0[i]*180/np.pi, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
-			param_bounds = ([1, L_0[i]/2, 0, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
+			param_bounds = ([1, 1, -180, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 			try:
 				fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
@@ -567,24 +567,8 @@ for d in dir_names:
 					start_ind, end_ind = t-N, t+N
 				smoothed.append(np.mean(star_portion[start_ind:end_ind]))
 
-
-			# smooth_norm = np.max(smoothed)
 			smoothed = np.array(smoothed)
-			# smoothed /= smooth_norm
-
-			# param_star, param_covs_star = curve_fit(box_model, x, str_minus_sky, p0=[49, 268, 1500, 0])
-			# # param_smooth, param_covs_smooth = curve_fit(box_model_sine, np.arange(trail_length), smoothed, p0=[25, 125, .2, 2*np.pi/7, 0, .8, 0])
-
-
-			# normalize = param_star[2]
-			# str_minus_sky /= normalize
-
-			# smooth_norm = param_smooth_box[2]
-			# smoothed /= smooth_norm
-
-			# param_smooth, param_covs_smooth = curve_fit(fourier, np.arange(trail_length)[start:end], smoothed[start:end], p0=[.2, 2*np.pi/7, .8]*fourier_terms)
-
-			# row_sums.append(str_minus_sky)
+			
 			row_sums_smooth.append(smoothed)
 
 			# if i<15 and i<stars.shape[0] : 
@@ -609,6 +593,8 @@ for d in dir_names:
 		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
 		row_sums_smooth = row_sums_smooth[r_sort][:10]
 
+		np.savetxt(f'{f[:-4]}.txt', [row_sums_smooth ,stars])
+
 		# row_medians = np.median(row_sums, axis=0)
 		row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
@@ -620,7 +606,7 @@ for d in dir_names:
 		ast_row_start = height_correction
 		ast_row_end   = len(obj_minus_sky)-height_correction
 
-		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth
+		obj_minus_sky /= row_avgs_smooth
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 		# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
@@ -648,8 +634,8 @@ for d in dir_names:
 		# ax[0].legend()
 
 
-	lightcurves = np.hstack(np.array(lightcurves, dtype=object))
-	start_times = np.hstack(np.array(start_times, dtype=object))
+	lightcurves = np.array(lightcurves, dtype=object)
+	start_times = np.array(start_times, dtype=object)
 	# f_err       = np.random.random(size=lightcurves.shape)
 
 	# frequency, power = LombScargle(start_times, lightcurves).autopower()
