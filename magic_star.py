@@ -167,7 +167,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('VR64' in d): continue
+	if not ('VH1' in d): continue
 	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
@@ -359,8 +359,8 @@ for d in dir_names:
 		# if 'EL157' in obj_id: 
 		#	l = 103
 		#	a = 35.5
-		l = 365
-		a = -89.4
+		l = 139
+		a = 46.5
 		#elif 'NM15' in obj_id:
 		#	l = 148
 		#	a = -5.02
@@ -631,10 +631,9 @@ for d in dir_names:
 		# ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
 
 		param_ast_box, param_ast_box_cov = curve_fit(box_model_, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[20,120,2500,0])
-		ast_norm = param_ast_box[2]
 		ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
-		norm_ast_lightcurve = obj_minus_sky/ast_norm
-		norm_ast_lightcurve = norm_ast_lightcurve[ast_start:ast_end]
+		ast_norm            = np.median(obj_minus_sky[ast_start:ast_end])
+		norm_ast_lightcurve = obj_minus_sky[ast_start:ast_end]
 
 
 		# light_curve = lightcurves[i]
