@@ -167,7 +167,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('GE1' in d): continue
+	if not ('VH1' in d): continue
 	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
@@ -359,8 +359,8 @@ for d in dir_names:
 		# if 'EL157' in obj_id: 
 		#	l = 103
 		#	a = 35.5
-		l = 225
-		a = -28.4
+		l = 139
+		a = 46.5
 		#elif 'NM15' in obj_id:
 		#	l = 148
 		#	a = -5.02
@@ -593,11 +593,15 @@ for d in dir_names:
 		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
 		row_sums_smooth = row_sums_smooth[r_sort][:10]
 
-		np.savetxt(f'{f[:-4]}.txt', [row_sums_smooth ,stars])
+		np.savetxt(f'{f[:-4]}.txt', row_sums_smooth)
+		np.savetxt(f'{f[:-4]}_params.txt', stars)
 
+		print(row_sums_smooth.shape)
 		# row_medians = np.median(row_sums, axis=0)
 		row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
+		
+		# print(row_sums_smooth.shape, row_avgs_smooth.shape)
 
 		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[0,100,150])
 		norm = param_star[2]
@@ -606,7 +610,7 @@ for d in dir_names:
 		ast_row_start = height_correction
 		ast_row_end   = len(obj_minus_sky)-height_correction
 
-		obj_minus_sky /= row_avgs_smooth
+		obj_minus_sky[ast_row_start: ast_row_end] /= row_avgs_smooth
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 		# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
@@ -646,7 +650,7 @@ for d in dir_names:
 
 	directory_name = d.split('/')[1]
 
-	np.savetxt(f'./output/{directory_name}.txt', [start_times, lightcurves])
+	np.savetxt(f'./output/{directory_name}.txt', [start_times, lightcurves], fmt='%s')
 
 
 
