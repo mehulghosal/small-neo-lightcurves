@@ -25,7 +25,6 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'LT1' in d: continue
 
 	for f in file_names:
 		try:
@@ -42,7 +41,7 @@ for d in dir_names:
 		# object id from directory name --> string splicing
 		obj_id = f.split('_')
 		obj_id = obj_id[0][2:] + ' ' + obj_id[1]
-		# if '2015 XN55' not in obj_id: continue
+		if '2016 LT1' not in obj_id: continue
 		# if '2015 VH65' not in obj_id: continue
 		# if not ('2016 GE1' in obj_id and '70o13' in f): continue
 
@@ -63,7 +62,7 @@ for d in dir_names:
 
 		plt.plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 		
-		if True: break
+
 		# obj = Horizons(id=obj_id, location='sun', epochs=str(hdr["MJD-OBS"]+2400000.5)) # adding 2.4 million to convert from MJD to JD
 		# ob1 = Horizons(id=obj_id, location='568@399', epochs=str(hdr["MJD-OBS"]+2400000.5)) # for RA and DEC rates
 		# ele = obj.elements()
