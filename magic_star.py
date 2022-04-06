@@ -167,7 +167,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('GE1' in d): continue
+	if not ('XY261' in d): continue
 	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
@@ -359,8 +359,8 @@ for d in dir_names:
 		# if 'EL157' in obj_id: 
 		#	l = 103
 		#	a = 35.5
-		l = 225
-		a = -28.4
+		l = 147
+		a = -5.48
 		#elif 'NM15' in obj_id:
 		#	l = 148
 		#	a = -5.02
@@ -379,7 +379,7 @@ for d in dir_names:
 		while True:
 		# for i in range(len(star_x)):
 		# for i in range(1):
-			if i >= len(star_x) or i == 49: break
+			if i >= len(star_x) or i == 25: break
 
 			centroid = star_x[i], star_y[i]
 			# img_rot = img_rotated
@@ -501,7 +501,8 @@ for d in dir_names:
 			# print(trail_start, trail_end
 
 			fwhm = stars[i,0] * 2.355
-			L = int(stars[i,1]*.2+.5)
+			# L = int(stars[i,1]*.2+.5)
+			L = 0
 
 			# this is stupid but manually making trail like 4 px shorted on ends to prevent tail or smth
 			trail_start[1] -= L
@@ -548,28 +549,36 @@ for d in dir_names:
 			start, end = int(param_box[0]), int(param_box[1])
 			star_trail_length = end-start
 			star_portion = str_minus_sky[start:end] # to get the fitted values of start and end
-
+			# print(star_trail_length, star_portion.shape)
+			
 			# can sort by residuals
 			residuals.append(np.sum((box_model_output-str_minus_sky)**2)**.5)
-
+			
+			'''
+			# print(star_portion)
 			# another binning attempt - based on average of N rows around some row t
 			star_to_asteroid = star_trail_length/trail_length
-			N = int( star_to_asteroid * 3 + 0.5)
+			N = star_to_asteroid * 2 
 			smoothed = []
 			for j in range(trail_length):
-				t = int(j*star_to_asteroid + .5)
+				t = j*star_to_asteroid
 				start_ind, end_ind = 0,0
-				if t<N: 				# too close to start of trail
-					start_ind, end_ind = 0, t+N+1
-				elif t>=star_trail_length-N: # too close to end of trail
-					start_ind, end_ind = t-N-1, star_trail_length
-				else: 					# juuuust right
+				if t<N: 							# too close to start of trail
+					start_ind, end_ind = 0, t+N + (N-t)
+				elif t>=star_trail_length-N: 					# too close to end of trail
+					start_ind, end_ind = t-N - (star_trail_length-t), star_trail_length-1
+				else: 								# juuuust right
 					start_ind, end_ind = t-N, t+N
-				smoothed.append(np.mean(star_portion[start_ind:end_ind]))
+				smoothed.append(np.mean(star_portion[int(start_ind+.5):int(end_ind+.5)]))
+			'''
 
+			# yet another binning attempt --> linear interpolation
+			smooth_x = np.linspace(0, star_trail_length, trail_length)
+			# print(smooth_x.shape)
+			smoothed = np.interp(smooth_x, np.arange(0, len(star_portion), 1), star_portion)
 
 			# smooth_norm = np.max(smoothed)
-			smoothed = np.array(smoothed)
+			# smoothed = np.array(smoothed)
 			
 			row_sums_smooth.append(smoothed)
 
@@ -595,9 +604,12 @@ for d in dir_names:
 		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
 		row_sums_smooth = row_sums_smooth[r_sort][:10]
 
+		for k in row_sums_smooth: print(k)
+		print(row_sums_smooth.shape)
+
 		# row_medians = np.median(row_sums, axis=0)
-		# row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
-		row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
+		row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
+		# row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
 		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[0,100,150])
@@ -649,7 +661,8 @@ for d in dir_names:
 
 	directory_name = d.split('/')[1]
 
-	np.savetxt(f'./output/{directory_name}.txt', np.array([start_times, lightcurves, indices]).T)
+	np.savetxt(f'./output/{directory_name}.txt', np.array([start_times, lightcurves]).T)
+	np.savetxt(f'./output/{directory_name}_indices.txt', indices)
 
 
 
