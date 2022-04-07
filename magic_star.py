@@ -167,7 +167,7 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('XY261' in d): continue
+	if not ('BA15' in d): continue
 	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
@@ -359,8 +359,8 @@ for d in dir_names:
 		# if 'EL157' in obj_id: 
 		#	l = 103
 		#	a = 35.5
-		l = 147
-		a = -5.48
+		l = 646
+		a = .887 
 		#elif 'NM15' in obj_id:
 		#	l = 148
 		#	a = -5.02
