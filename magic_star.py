@@ -635,9 +635,12 @@ for d in dir_names:
 		norm = param_star[2]
 		row_avgs_smooth/=norm
 
-		ast_row_start = height_correction
-		ast_row_end   = len(obj_minus_sky)-height_correction
-		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth
+		param_ast_box, param_ast_box_cov = curve_fit(box_model_, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[height_correction,len(obj_minus_sky)-height_correction,2500,0])
+		ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
+
+		# ast_row_start = height_correction
+		# ast_row_end   = len(obj_minus_sky)-height_correction
+		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth # this is the actual sky correction 
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 		# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
@@ -647,11 +650,11 @@ for d in dir_names:
 		# ax_star_avg.set_title('average star lightcurve')
 		# ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
 
-		param_ast_box, param_ast_box_cov = curve_fit(box_model_, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[20,120,2500,0])
 		ast_norm = param_ast_box[2]
-		ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
-		norm_ast_lightcurve = obj_minus_sky/ast_norm
-		norm_ast_lightcurve = norm_ast_lightcurve[ast_start:ast_end]
+		
+		# norm_ast_lightcurve = obj_minus_sky/ast_norm 
+		# norm_ast_lightcurve = norm_ast_lightcurve[ast_start:ast_end]
+		norm_ast_lightcurve = obj_minus_sky[ast_start:ast_end]
 
 
 		# light_curve = lightcurves[i]
@@ -666,7 +669,7 @@ for d in dir_names:
 		# ax[0].legend()
 
 
-	indices = np.array([len(i) for i in lightcurves])
+	indices     = np.array ([len(i) for i in lightcurves])
 	lightcurves = np.hstack(np.array(lightcurves, dtype=object))
 	start_times = np.hstack(np.array(start_times, dtype=object))
 	# f_err       = np.random.random(size=lightcurves.shape)
