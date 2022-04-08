@@ -13,5 +13,7 @@ a = np.array(f[:,2], dtype=float)
 print(len(f))
 
 
-index = sys.argv[1]
-subprocess.run(['python3', 'magic_star.py', f[index, 0].split(' ')[1], L[index], a[index]])
+# index = sys.argv[1]
+for index in range(len(f)-1, -1, -1):
+	print(index)
+	subprocess.run(['python3', 'magic_star.py', f[index, 0].split(' ')[1], str(L[index]), str(a[index])], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
