@@ -1,4 +1,4 @@
-import warnings, subprocess
+import warnings, subprocess, sys
 import numpy as np
 import astropy as ap
 # import matplotlib.pyplot as plt
@@ -13,6 +13,13 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 from astropy.utils.exceptions import AstropyWarning
+
+try:
+	f_name = sys.argv[1]
+	l_from_input = sys.argv[2]
+	a_from_input = sys.argv[3]
+except Exception as e:
+	print(e)
 
 # plt.rcParams.update({'figure.max_open_warning': 0})
 warnings.simplefilter('ignore', AstropyWarning)
@@ -167,7 +174,8 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	yea = False
 
-	if not ('XD169' in d): continue
+	# if not ('XD169' in d): continue
+	if not f_name in d: continue
 	#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 	start_times = []
@@ -359,8 +367,8 @@ for d in dir_names:
 		# if 'EL157' in obj_id: 
 		#	l = 103
 		#	a = 35.5
-		l = 73.6
-		a = 43.9
+		l = float(l_from_input)
+		a = float(a_from_input)
 		#elif 'NM15' in obj_id:
 		#	l = 148
 		#	a = -5.02
@@ -379,7 +387,7 @@ for d in dir_names:
 		while True:
 		# for i in range(len(star_x)):
 		# for i in range(1):
-			if i >= len(star_x) or i == 25: break
+			if i >= len(star_x) or i == 35: break
 
 			centroid = star_x[i], star_y[i]
 			# img_rot = img_rotated
@@ -478,6 +486,16 @@ for d in dir_names:
 		star_y       = star_y      [star_filter]
 		print('filtering: ', stars.shape[0])
 
+		# sorting by residuals from biiiig fit
+		star_filter  = np.argsort(residuals[:,1])
+		residuals    = residuals   [star_filter]
+		stars        = stars       [star_filter]
+		trail_starts = trail_starts[star_filter]
+		trail_ends   = trail_ends  [star_filter]
+		a_0 		 = a_0         [star_filter]
+		star_x       = star_x      [star_filter]
+		star_y       = star_y      [star_filter]
+
 		# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
 
 		# ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
@@ -501,8 +519,9 @@ for d in dir_names:
 			# print(trail_start, trail_end
 
 			fwhm = stars[i,0] * 2.355
-			# L = int(stars[i,1]*.2+.5)
-			L = 0
+			L = int(stars[i,1]*.2+.5)
+			# L = 0
+
 
 			# this is stupid but manually making trail like 4 px shorted on ends to prevent tail or smth
 			trail_start[1] -= L
@@ -541,7 +560,7 @@ for d in dir_names:
 			# fitting needs to go before binning to get actual endpoints
 			x = np.arange(0, len(str_minus_sky))
 			try:
-				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[45, 270, 550])
+				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, 550])
 			except Exception as e:
 				print(e)
 				continue
@@ -601,24 +620,23 @@ for d in dir_names:
 		np.savetxt(f'{f[:-4]}_params.txt', stars[r_sort])
 
 		# row_sums = np.array(row_sums, dtype=object)
-		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
-		row_sums_smooth = row_sums_smooth[r_sort][:10]
+		row_sums_smooth = np.array(row_sums_smooth, dtype=object)[r_sort] # type object for ragged nested sequences
+		row_sums_smooth = row_sums_smooth[:10]
 
-		for k in row_sums_smooth: print(k)
-		print(row_sums_smooth.shape)
+		# for k in row_sums_smooth: print(k)
+		# print(row_sums_smooth.shape)
 
 		# row_medians = np.median(row_sums, axis=0)
-		row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
+		row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		# row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
-		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[0,100,150])
+		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[height_correction,trail_length-height_correction,150])
 		norm = param_star[2]
 		row_avgs_smooth/=norm
 
 		ast_row_start = height_correction
 		ast_row_end   = len(obj_minus_sky)-height_correction
-
 		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
