@@ -47,7 +47,7 @@ def point_rotation(x,y,a,img,img_rot):
 	x_0_, y_0_ = img.shape[0]*np.abs(np.sin(a)), img.shape[1]*np.abs(np.sin(a))
 	x_, y_ = np.array((x-x_0)*np.cos(a) - (y-y_0)*np.sin(a), dtype=int), np.array((x-x_0)*np.sin(a) + (y-y_0)*np.cos(a), dtype=int)
 	# to account for direction of rotation
-	if a>0: x_+= int(x_0_)
+	if   a>0: x_+= int(x_0_)
 	elif a<0: y_+= int(y_0_)
 
 	if x_<0: x_=0
@@ -337,23 +337,23 @@ for d in dir_names:
 			# print(star_x[i], star_y[i])
 
 		# filtering based on distance to asteroid
-		num = len(dist_to_asteroid)
 		dist_to_asteroid = np.array(dist_to_asteroid)
 		dist_sorted = np.argsort(dist_to_asteroid)
-		star_x = star_x[dist_sorted][:num]
-		star_y = star_y[dist_sorted][:num]
-		star_x_min = star_x_min[dist_sorted][:num]
-		star_y_min = star_y_min[dist_sorted][:num]
-		star_x_max = star_x_max[dist_sorted][:num]
-		star_y_max = star_y_max[dist_sorted][:num]
+
+		star_x     = star_x[dist_sorted]
+		star_y     = star_y[dist_sorted]
+		star_x_min = star_x_min[dist_sorted]
+		star_y_min = star_y_min[dist_sorted]
+		star_x_max = star_x_max[dist_sorted]
+		star_y_max = star_y_max[dist_sorted]
 
 		# filtering bad stars from sextractor
 		bad_stars = np.where((star_x<trail_length) | (star_x>img_rotated.shape[1]-trail_length) | (star_y<trail_length) | (star_y>img_rotated.shape[0]-trail_length)) # too close to edge
 		bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too
 		# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
 		print('filter on sextractor', len(bad_stars))
-		star_x = np.delete(star_x, bad_stars, 0)
-		star_y = np.delete(star_y, bad_stars, 0)
+		star_x     = np.delete(star_x, bad_stars, 0)
+		star_y     = np.delete(star_y, bad_stars, 0)
 		star_x_min = np.delete(star_x_min, bad_stars, 0)
 		star_y_min = np.delete(star_y_min, bad_stars, 0)
 		star_x_max = np.delete(star_x_max, bad_stars, 0)
@@ -363,15 +363,10 @@ for d in dir_names:
 		L_0 = ((star_x_max-star_x_min)**2 + ((star_y_max-star_y_min)))**.5
 		# to rotate image -- negative angle from vertical
 		a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
-		
-		# if 'EL157' in obj_id: 
-		#	l = 103
-		#	a = 35.5
+
 		l = float(l_from_input)
 		a = float(a_from_input)
-		#elif 'NM15' in obj_id:
-		#	l = 148
-		#	a = -5.02
+		
 		L_0 = np.ones(L_0.shape) * l
 		a_0 = np.ones(L_0.shape) * a
 		
@@ -387,7 +382,7 @@ for d in dir_names:
 		while True:
 		# for i in range(len(star_x)):
 		# for i in range(1):
-			if i >= len(star_x) or i == 35: break
+			if i >= len(star_x) or i == 40: break
 
 			centroid = star_x[i], star_y[i]
 			# img_rot = img_rotated
@@ -416,7 +411,7 @@ for d in dir_names:
 			param_bounds = ([1, L_0[i]/2, -180, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 			try:
-				fit = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
+				fit = least_squares(residual, p0, loss='linear', ftol=0.005, xtol=0.005, gtol=0.005, bounds=param_bounds)
 			except Exception as e:
 				print(f, i, e)
 				i+=1
@@ -435,13 +430,10 @@ for d in dir_names:
 			param = fit.x
 			s, L, a, b, x_0, y_0 = fit.x[0], fit.x[1], fit.x[2], fit.x[3], fit.x[4], fit.x[5]
 			# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
-
-			# print('fit', fit.x)
-			# print('fit success', fit.success)
-			# star_model = draw_model(*fit.x)
 			
 			# now rotating back to the asteroids reference
-			centroid = star_x[i], star_y[i]
+			# centroid = star_x[i], star_y[i]
+			centroid = x_0, y_0
 			a -= a_0[i]
 
 			star_trail_start = np.array([centroid[0] - L/2 * np.cos(a*np.pi/180), centroid[1] + L/2 * np.sin(a*np.pi/180)])
@@ -545,22 +537,12 @@ for d in dir_names:
 
 			sigma_row = str_minus_sky + (len(str_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(str_row_sums))**2 * sky_row_avg**.5 # from magnier
 			sigma_row = sigma_row ** .5
-			
-
-			# discrete binning attempt --> beating effect
-			# bins = np.linspace(0, len(x), trail_length)
-			# d = np.digitize(x, bins)
-			# smoothed = []
-			# for j in range(trail_length):
-			# 	ind_to_sum = np.where(j==d)param_box
-			# 	bin_sum = np.sum(str_minus_sky[ind_to_sum])
-			# 	bin_sum = np.median(str_minus_sky[ind_to_sum])
-			# 	smoothed.append(bin_sum)
+		
 
 			# fitting needs to go before binning to get actual endpoints
 			x = np.arange(0, len(str_minus_sky))
 			try:
-				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, 550])
+				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median(str_minus_sky[L:int(len(str_minus_sky)-L)])])
 			except Exception as e:
 				print(e)
 				continue
@@ -572,24 +554,6 @@ for d in dir_names:
 			
 			# can sort by residuals
 			residuals.append(np.sum((box_model_output-str_minus_sky)**2)**.5)
-			
-			'''
-			# print(star_portion)
-			# another binning attempt - based on average of N rows around some row t
-			star_to_asteroid = star_trail_length/trail_length
-			N = star_to_asteroid * 2 
-			smoothed = []
-			for j in range(trail_length):
-				t = j*star_to_asteroid
-				start_ind, end_ind = 0,0
-				if t<N: 							# too close to start of trail
-					start_ind, end_ind = 0, t+N + (N-t)
-				elif t>=star_trail_length-N: 					# too close to end of trail
-					start_ind, end_ind = t-N - (star_trail_length-t), star_trail_length-1
-				else: 								# juuuust right
-					start_ind, end_ind = t-N, t+N
-				smoothed.append(np.mean(star_portion[int(start_ind+.5):int(end_ind+.5)]))
-			'''
 
 			# yet another binning attempt --> linear interpolation
 			smooth_x = np.linspace(0, star_trail_length, trail_length)
@@ -620,7 +584,8 @@ for d in dir_names:
 		np.savetxt(f'{f[:-4]}_params.txt', stars[r_sort])
 
 		# row_sums = np.array(row_sums, dtype=object)
-		row_sums_smooth = np.array(row_sums_smooth, dtype=object)[r_sort] # type object for ragged nested sequences
+		# row_sums_smooth = np.array(row_sums_smooth, dtype=object)[r_sort] # type object for ragged nested sequences
+		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
 		row_sums_smooth = row_sums_smooth[:10]
 
 		# for k in row_sums_smooth: print(k)
@@ -631,11 +596,14 @@ for d in dir_names:
 		# row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
-		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[height_correction,trail_length-height_correction,150])
+		star_height_correction = int(np.median(stars[:,1])*.2+.5)
+		intensity_guess = np.median(row_avgs_smooth[star_height_correction:int(trail_length-star_height_correction)])
+		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[star_height_correction,int(trail_length-star_height_correction),intensity_guess])
 		norm = param_star[2]
 		row_avgs_smooth/=norm
 
-		param_ast_box, param_ast_box_cov = curve_fit(box_model_, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[height_correction,len(obj_minus_sky)-height_correction,2500,0])
+		intensity_guess = np.median(row_avgs_smooth[height_correction:trail_length-height_correction])
+		param_ast_box, param_ast_box_cov = curve_fit(box_model, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[height_correction, len(obj_minus_sky)-height_correction,2500])
 		ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
 
 		# ast_row_start = height_correction
