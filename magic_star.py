@@ -433,14 +433,18 @@ for d in dir_names:
 			
 			# now rotating back to the asteroids reference
 			# centroid = star_x[i], star_y[i]
-			centroid = x_0, y_0
-			a -= a_0[i]
+			# centroid = x_0, y_0
+			# a -= a_0[i]
 
-			star_trail_start = np.array([centroid[0] - L/2 * np.cos(a*np.pi/180), centroid[1] + L/2 * np.sin(a*np.pi/180)])
-			star_trail_end   = np.array([centroid[0] + L/2 * np.cos(a*np.pi/180), centroid[1] - L/2 * np.sin(a*np.pi/180)])
+			# star_trail_start = np.array([centroid[0] - L/2 * np.cos(a*np.pi/180), centroid[1] + L/2 * np.sin(a*np.pi/180)])
+			# star_trail_end   = np.array([centroid[0] + L/2 * np.cos(a*np.pi/180), centroid[1] - L/2 * np.sin(a*np.pi/180)])
 
 			# star_trail_start = np.array([x_0 - L/2 * np.cos(a*np.pi/180), y_0 + L/2 * np.sin(a*np.pi/180)])
 			# star_trail_end   = np.array([x_0 + L/2 * np.cos(a*np.pi/180), y_0 - L/2 * np.sin(a*np.pi/180)])
+
+			# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
+			star_trail_start = np.array([x_0, y_0 - L/2])
+			star_trail_end   = np.array([x_0, y_0 + L/2])
 
 			trail_starts.append(star_trail_start)
 			trail_ends  .append(star_trail_end  )
@@ -506,9 +510,11 @@ for d in dir_names:
 
 			img_star_rotated = rotate(img_rotated, a_0[i])
 			
-			trail_end     = np.array(point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated))
-			trail_start   = np.array(point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated))
-			# print(trail_start, trail_end
+			# trail_end     = np.array(point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated))
+			# trail_start   = np.array(point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated))
+			trail_end   = trail_ends  [i]
+			trail_start = trail_starts[i]
+			# print(trail_start, trail_end)
 
 			fwhm = stars[i,0] * 2.355
 			L = int(stars[i,1]*.2+.5)
@@ -633,6 +639,7 @@ for d in dir_names:
 		start_times.append(x)
 
 		print()
+		file.close()
 
 		# ax[0].legend()
 
