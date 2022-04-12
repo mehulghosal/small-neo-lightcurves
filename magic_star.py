@@ -372,6 +372,14 @@ for d in dir_names:
 		
 		# f_stars, ax_stars = plt.subplots(3, 5)
 		# f_stars_sm, ax_stars_sm = plt.subplots(3, 5)
+		cheats_on = False
+
+		try:
+			# star parametsrs
+			cheat_codes = np.loadtxt(f'{f[:-4]}_params.txt')
+			cheats_on   = True
+		except Exception as e:
+			print('Invalid cheat code: ', e, cheats_on)
 		
 		stars        = []
 		trail_starts = []
@@ -411,24 +419,30 @@ for d in dir_names:
 			param_bounds = ([1, L_0[i]/2, -180, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 			try:
-				fit = least_squares(residual, p0, loss='linear', ftol=0.005, xtol=0.005, gtol=0.005, bounds=param_bounds)
+				if cheats_on and False:
+					param = cheat_codes[i]
+					r_fit = residual(param)
+					print('hell ofa cheat code')
+				else: 
+					fit = least_squares(residual, p0, loss='linear', ftol=0.005, xtol=0.005, gtol=0.005, bounds=param_bounds)
+					r_fit = residual(fit.x)
+					param = fit.x
 			except Exception as e:
 				print(f, i, e)
 				i+=1
 				# if i >= len(star_x): break
 				continue
-			r_p0  = residual(p0)
-			r_fit = residual(fit.x)
-			residuals.append([r_p0, r_fit])
+			
 			# residuals.append([r_p0, r_p0])
-
+			r_p0  = residual(p0)
+			residuals.append([r_p0, r_fit])
 			# print('p0:', p0)
 			print('residual(p0) : ' , r_p0)
 			print('residual(fit): ' , r_fit)
 
 			# param = p0
-			param = fit.x
-			s, L, a, b, x_0, y_0 = fit.x[0], fit.x[1], fit.x[2], fit.x[3], fit.x[4], fit.x[5]
+			
+			s, L, a, b, x_0, y_0 = param[0], param[1], param[2], param[3], param[4], param[5]
 			# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 			
 			# now rotating back to the asteroids reference
@@ -470,6 +484,16 @@ for d in dir_names:
 		length_mean  = np.mean(stars[:,1])
 		angle_mean   = np.mean(stars[:,2])
 
+		# sorting by residuals from biiiig fit
+		star_filter  = np.argsort(residuals[:,1])
+		residuals    = residuals   [star_filter]
+		stars        = stars       [star_filter]
+		trail_starts = trail_starts[star_filter]
+		trail_ends   = trail_ends  [star_filter]
+		a_0 		 = a_0         [star_filter]
+		star_x       = star_x      [star_filter]
+		star_y       = star_y      [star_filter]
+
 		# throwing away outliers
 		threshold = 1 # sigmas
 
@@ -482,15 +506,7 @@ for d in dir_names:
 		star_y       = star_y      [star_filter]
 		print('filtering: ', stars.shape[0])
 
-		# sorting by residuals from biiiig fit
-		star_filter  = np.argsort(residuals[:,1])
-		residuals    = residuals   [star_filter]
-		stars        = stars       [star_filter]
-		trail_starts = trail_starts[star_filter]
-		trail_ends   = trail_ends  [star_filter]
-		a_0 		 = a_0         [star_filter]
-		star_x       = star_x      [star_filter]
-		star_y       = star_y      [star_filter]
+		
 
 		# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
 
@@ -527,19 +543,20 @@ for d in dir_names:
 
 			str_width = int(1*fwhm)
 			sky_width = int(2*fwhm)
-			str_rect = img_star_rotated[trail_start[1]:trail_end[1], trail_start[0]-str_width:trail_start[0]+str_width]
+			str_rect = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-str_width + .5):int(trail_start[0]+str_width + .5)]
 
 			str_row_sums = np.array([np.sum(j) for j in str_rect])
 			# print(str_row_sums.shape, str_rect.shape)
 
-			sky_left  = img_star_rotated[trail_start[1]:trail_end[1], trail_start[0]-str_width-sky_width:trail_start[0]-str_width]
-			sky_right = img_star_rotated[trail_start[1]:trail_end[1], trail_start[0]+str_width:trail_start[0]+str_width+sky_width]
+			sky_left  = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-str_width-sky_width+.5):int(trail_start[0]-str_width+.5)]
+			sky_right = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+str_width+.5):int(trail_start[0]+str_width+sky_width+.5)]
 
 			sky_left_row_sum  = np.array([np.sum(j) for j in sky_left ])
 			sky_right_row_sum = np.array([np.sum(j) for j in sky_right])
 			sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
 
-			str_minus_sky = str_row_sums - sky_row_avg * str_rect.shape[1]
+			# str_minus_sky = str_row_sums - sky_row_avg * str_rect.shape[1]
+			str_minus_sky = str_row_sums
 
 			sigma_row = str_minus_sky + (len(str_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(str_row_sums))**2 * sky_row_avg**.5 # from magnier
 			sigma_row = sigma_row ** .5
@@ -548,7 +565,7 @@ for d in dir_names:
 			# fitting needs to go before binning to get actual endpoints
 			x = np.arange(0, len(str_minus_sky))
 			try:
-				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median(str_minus_sky[L:int(len(str_minus_sky)-L)])])
+				param_box, param_box_cov = curve_fit(box_model_, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median(str_minus_sky[L:int(len(str_minus_sky)-L)]), sky_row_avg * str_rect.shape[1]])
 			except Exception as e:
 				print(e)
 				continue
@@ -594,11 +611,11 @@ for d in dir_names:
 		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
 		row_sums_smooth = row_sums_smooth[:10]
 
-		# for k in row_sums_smooth: print(k)
-		# print(row_sums_smooth.shape)
+		for k in row_sums_smooth: print(k)
+		print(row_sums_smooth.shape)
 
 		# row_medians = np.median(row_sums, axis=0)
-		row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
+		row_avgs_smooth = np.median(row_sums_smooth, axis=0)
 		# row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
@@ -614,7 +631,7 @@ for d in dir_names:
 
 		# ast_row_start = height_correction
 		# ast_row_end   = len(obj_minus_sky)-height_correction
-		obj_minus_sky[ast_row_start:ast_row_end] /= row_avgs_smooth # this is the actual sky correction 
+		obj_minus_sky[ast_start:ast_end] /= row_avgs_smooth # this is the actual sky correction 
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 		# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
