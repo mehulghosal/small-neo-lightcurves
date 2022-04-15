@@ -390,7 +390,7 @@ for d in dir_names:
 		while True:
 		# for i in range(len(star_x)):
 		# for i in range(1):
-			if i >= len(star_x) or i == 40: break
+			if i >= len(star_x) or i == 30: break
 
 			centroid = star_x[i], star_y[i]
 			# img_rot = img_rotated
@@ -424,7 +424,7 @@ for d in dir_names:
 					r_fit = residual(param)
 					print('hell ofa cheat code')
 				else: 
-					fit = least_squares(residual, p0, loss='linear', ftol=0.005, xtol=0.005, gtol=0.005, bounds=param_bounds)
+					fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
 					r_fit = residual(fit.x)
 					param = fit.x
 			except Exception as e:
@@ -437,8 +437,8 @@ for d in dir_names:
 			r_p0  = residual(p0)
 			residuals.append([r_p0, r_fit])
 			# print('p0:', p0)
-			print('residual(p0) : ' , r_p0)
-			print('residual(fit): ' , r_fit)
+			print('residual(p0) : ' , r_p0, p0)
+			print('residual(fit): ' , r_fit, param)
 
 			# param = p0
 			
@@ -523,17 +523,18 @@ for d in dir_names:
 
 		# lightcurves of stars
 		for i in range(len(stars)):
-
+		#for i in range(1):
 			img_star_rotated = rotate(img_rotated, a_0[i])
 			
 			# trail_end     = np.array(point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated))
 			# trail_start   = np.array(point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated))
 			trail_end   = trail_ends  [i]
 			trail_start = trail_starts[i]
-			# print(trail_start, trail_end)
+			#print(trail_start, trail_end)
 
 			fwhm = stars[i,0] * 2.355
 			L = int(stars[i,1]*.2+.5)
+			print(trail_end-trail_start, L)
 			# L = 0
 
 
@@ -541,12 +542,15 @@ for d in dir_names:
 			trail_start[1] -= L
 			trail_end  [1] += L
 
+			print(trail_start, trail_end)
+
 			str_width = int(1*fwhm)
 			sky_width = int(2*fwhm)
 			str_rect = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-str_width + .5):int(trail_start[0]+str_width + .5)]
 
 			str_row_sums = np.array([np.sum(j) for j in str_rect])
-			# print(str_row_sums.shape, str_rect.shape)
+			print('str_row_sums shape',str_row_sums.shape)
+			print('str_rect shape', str_rect.shape)
 
 			sky_left  = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-str_width-sky_width+.5):int(trail_start[0]-str_width+.5)]
 			sky_right = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+str_width+.5):int(trail_start[0]+str_width+sky_width+.5)]
@@ -554,9 +558,11 @@ for d in dir_names:
 			sky_left_row_sum  = np.array([np.sum(j) for j in sky_left ])
 			sky_right_row_sum = np.array([np.sum(j) for j in sky_right])
 			sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
+			
+			print('sky_row_avg_shape',sky_row_avg.shape)
 
-			# str_minus_sky = str_row_sums - sky_row_avg * str_rect.shape[1]
-			str_minus_sky = str_row_sums
+			str_minus_sky = str_row_sums - sky_row_avg * str_rect.shape[1]
+			#str_minus_sky = str_row_sums
 
 			sigma_row = str_minus_sky + (len(str_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(str_row_sums))**2 * sky_row_avg**.5 # from magnier
 			sigma_row = sigma_row ** .5
@@ -564,8 +570,11 @@ for d in dir_names:
 
 			# fitting needs to go before binning to get actual endpoints
 			x = np.arange(0, len(str_minus_sky))
+			
 			try:
-				param_box, param_box_cov = curve_fit(box_model_, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median(str_minus_sky[L:int(len(str_minus_sky)-L)]), sky_row_avg * str_rect.shape[1]])
+				param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median( str_minus_sky[ L:int(len(str_minus_sky)-L)]) ])
+				#param_box, param_box_cov = curve_fit(box_model_, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median(str_minus_sky[L:int(len(str_minus_sky)-L)]), sky_row_avg * str_rect.shape[1]])
+				print('success')
 			except Exception as e:
 				print(e)
 				continue
@@ -573,16 +582,17 @@ for d in dir_names:
 			start, end = int(param_box[0]), int(param_box[1])
 			star_trail_length = end-start
 			star_portion = str_minus_sky[start:end] # to get the fitted values of start and end
-			# print(star_trail_length, star_portion.shape)
+			print(star_trail_length, star_portion.shape)
 			
 			# can sort by residuals
-			residuals.append(np.sum((box_model_output-str_minus_sky)**2)**.5)
+			#residuals.append(np.sum((box_model_output-str_minus_sky)**2)**.5)
 
 			# yet another binning attempt --> linear interpolation
 			smooth_x = np.linspace(0, star_trail_length, trail_length)
 			# print(smooth_x.shape)
 			smoothed = np.interp(smooth_x, np.arange(0, len(star_portion), 1), star_portion)
 
+			print('smooth shape: ', smoothed.shape)
 			# smooth_norm = np.max(smoothed)
 			# smoothed = np.array(smoothed)
 			
@@ -600,23 +610,26 @@ for d in dir_names:
 				
 				# ax_stars[int(i/5), i%5].legend()
 
-		residuals = np.array(residuals)
-		r_sort    = np.argsort(residuals)
+		#residuals = np.array(residuals)
+		#r_sort    = np.argsort(residuals)
 
-		print(r_sort)
-		np.savetxt(f'{f[:-4]}_params.txt', stars[r_sort])
+		#print('residuals argsort', r_sort)
+		np.savetxt(f'{f[:-4]}_params.txt', stars)
 
 		# row_sums = np.array(row_sums, dtype=object)
 		# row_sums_smooth = np.array(row_sums_smooth, dtype=object)[r_sort] # type object for ragged nested sequences
-		row_sums_smooth = np.array(row_sums_smooth, dtype=object)
+		
+		row_sums_smooth = np.array(row_sums_smooth)
+		print(row_sums_smooth.shape)
+		print(row_sums_smooth.dtype)
 		row_sums_smooth = row_sums_smooth[:10]
 
-		for k in row_sums_smooth: print(k)
-		print(row_sums_smooth.shape)
+		#for k in row_sums_smooth: print(k)
+		print('row_sums_smooth shape: ', row_sums_smooth.shape)
 
 		# row_medians = np.median(row_sums, axis=0)
-		row_avgs_smooth = np.median(row_sums_smooth, axis=0)
-		# row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
+		#row_avgs_smooth = np.median(row_sums_smooth, axis=0)
+		row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
 		star_height_correction = int(np.median(stars[:,1])*.2+.5)
