@@ -82,7 +82,7 @@ for d in dir_names:
 		a = utils.pixel_to_skycoord(trail_middle[0], trail_middle[1], w)
 		print(a)
 
-		stars = subprocess.run(['/refcat', ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		stars = subprocess.run(['./refcat', ], capture_output = True)
 
 
 

@@ -41,6 +41,7 @@ from scipy.optimize import curve_fit
 from scipy.optimize import least_squares
 
 # rotate points by angle a [degrees]
+# pyplot rotation: origin (0,0) is to pleft of image. +x to the right, +y down
 def point_rotation(x,y,a,img,img_rot):
 	a = -a * np.pi/180
 	x_0, y_0 = 0, 0
@@ -52,10 +53,63 @@ def point_rotation(x,y,a,img,img_rot):
 
 	if x_<0: x_=0
 	if y_<0: y_=0
-	# if x_>img_rot.shape[0]: x_=img_rot.shape[0]
-	# if y_>img_rot.shape[1]: y_=img_rot.shape[1]
 
 	return x_, y_
+
+# b if given is the mean background per pixel
+def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=None, display=False, err=False):
+	obj_width = fwhm
+	sky_width = 2*fwhm
+
+	if height_correction is not None:
+		trail_start[1] -= height_correction
+		trail_end[1]   += height_correction
+
+	obj_rect = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width:trail_start[0]+obj_width]
+
+	sky_left  = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width-sky_width:trail_start[0]-obj_width]
+	sky_right = img_rotated[trail_start[1]:trail_end[1], trail_start[0]+obj_width:trail_start[0]+obj_width+sky_width]
+
+	obj_row_sums = np.array([np.sum(i) for i in obj_rect])
+	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
+	sky_right_row_sum = np.array([np.sum(i) for i in sky_right])
+	sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
+
+	if b is not None:
+		sky_row_avg = b
+
+	obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
+
+	sigma_row = obj_minus_sky + (len(obj_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**.5 # from magnier
+	sigma_row = sigma_row ** .5
+
+	if display:
+		plt.figure()
+		t = np.arange(len(obj_minus_sky))
+		plt.scatter(t, obj_minus_sky)
+
+	r = [obj_minus_sky]
+	if err: r.append(sigma_row)
+
+	return r
+
+#assuming vertical streaks for drawing rectangles and moving down 
+def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = False):
+		
+	obj_rect = img[trail_start[1]:trail_end[1], trail_start[0]-obj_width:trail_start[0]+obj_width]
+
+	col_sums = np.sum(obj_rect, axis=0)
+		
+		# col_sums /= np.max(col_sums)
+	rect_width = np.arange(0, 2*obj_width, 1)
+	param_vals, param_covs = curve_fit(model, rect_width, col_sums, p0=[3, obj_width, .03, 60000, 20000, -3])
+
+		
+
+	# ax[2].scatter(rect_width, col_sums, label='column sums')
+	# ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
+	# ax[2].legend()
+	return param_vals, param_covs
 
 def model(x, s, m, a, c, b, d):
 	return c*np.exp(-.5* ((x-m)/s)**2) + a*x + b + d*x**2
@@ -237,36 +291,17 @@ for d in dir_names:
 		trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
 		trail_length = trail_end[1] - trail_start[1]
 
-		# assuming vertical streaks for drawing rectangles and moving down 
-		obj_width = 25
 		
-		obj_rect = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width:trail_start[0]+obj_width]
-		# ax[0].imshow(obj_rect, cmap='gray', norm=colors.LogNorm(vmin=300))
+		trail_spread, trail_spread_covs = trail_spread_function(img_rotated, trail_start, trail_end, display=False)
+		fwhm = int(trail_spread[0] * 2.355)
 
-		col_sums = np.sum(obj_rect, axis=0)
-		
-		# col_sums /= np.max(col_sums)
-		rect_width = np.arange(0, 2*obj_width, 1)
-		param_vals, param_covs = curve_fit(model, rect_width, col_sums, p0=[3, obj_width, .03, 60000, 20000, -3])
-
-		fwhm = int(param_vals[0] * 2.355)
-		# fwhm = 6
-		print(param_vals)
-		# print(np.diag(param_covs))
-
-		# ax[2].scatter(rect_width, col_sums, label='column sums')
-		# ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
-		# ax[2].legend()
-
-
-		centroid_deviation = -obj_width + param_vals[1] # if negative, trail is to the left, if positive, trail to right
+		centroid_deviation = -obj_width + trail_spread[1] # if negative, trail is to the left, if positive, trail to right
 		height_correction = int((trail_end[1] - trail_start[1]) * .2 + .5) # 20% more rows above and below to get some sky 
 
 		# correcting trail start/end
 		trail_start[0] += int(centroid_deviation+.5)
 		trail_end[0]   += int(centroid_deviation+.5)
-		trail_start[1] -= height_correction
-		trail_end[1]   += height_correction
+		
 
 		trail_centroid = np.array([trail_start[0], np.mean([trail_start[1], trail_end[1]])])
 
@@ -274,26 +309,7 @@ for d in dir_names:
 		# asteroid trail length in 70o13 is 101 tall
 		# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
-
-		obj_width = 1*fwhm
-		sky_width = 2*fwhm
-		obj_rect = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width:trail_start[0]+obj_width]
-
-
-		sky_left  = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width-sky_width:trail_start[0]-obj_width]
-		sky_right = img_rotated[trail_start[1]:trail_end[1], trail_start[0]+obj_width:trail_start[0]+obj_width+sky_width]
-
-		obj_row_sums = np.array([np.sum(i) for i in obj_rect])
-		sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
-		sky_right_row_sum = np.array([np.sum(i) for i in sky_right])
-		sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
-
-		obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
-
-		# ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=np.median(sky_row_avg))) #  setting min value to sky background median 
-
-		sigma_row = obj_minus_sky + (len(obj_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**.5 # from magnier
-		sigma_row = sigma_row ** .5
+		obj_minus_sky, sigma_row = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=height_correction, display=False, err=True)
 
 		# x = np.arange(0, 101, 101/len(obj_row_sums))
 		x = np.arange(0, len(obj_row_sums), 1)
@@ -506,8 +522,6 @@ for d in dir_names:
 		star_y       = star_y      [star_filter]
 		print('filtering: ', stars.shape[0])
 
-		
-
 		# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
 
 		# ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
@@ -515,11 +529,10 @@ for d in dir_names:
 		# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
 		# ax[0].legend()
 
-
 		row_sums = []
 		row_sums_smooth = []
 
-		residuals = []
+		# residuals = []
 
 		# lightcurves of stars
 		for i in range(len(stars)):
@@ -533,39 +546,11 @@ for d in dir_names:
 			#print(trail_start, trail_end)
 
 			fwhm = stars[i,0] * 2.355
-			L = int(stars[i,1]*.2+.5)
-			print(trail_end-trail_start, L)
+			star_height_correction = int(stars[i,1]*.2+.5)
+			# print(trail_end-trail_start, L)
 			# L = 0
 
-
-			# this is stupid but manually making trail like 4 px shorted on ends to prevent tail or smth
-			trail_start[1] -= L
-			trail_end  [1] += L
-
-			print(trail_start, trail_end)
-
-			str_width = int(1*fwhm)
-			sky_width = int(2*fwhm)
-			str_rect = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-str_width + .5):int(trail_start[0]+str_width + .5)]
-
-			str_row_sums = np.array([np.sum(j) for j in str_rect])
-			print('str_row_sums shape',str_row_sums.shape)
-			print('str_rect shape', str_rect.shape)
-
-			sky_left  = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-str_width-sky_width+.5):int(trail_start[0]-str_width+.5)]
-			sky_right = img_star_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+str_width+.5):int(trail_start[0]+str_width+sky_width+.5)]
-
-			sky_left_row_sum  = np.array([np.sum(j) for j in sky_left ])
-			sky_right_row_sum = np.array([np.sum(j) for j in sky_right])
-			sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
-			
-			print('sky_row_avg_shape',sky_row_avg.shape)
-
-			str_minus_sky = str_row_sums - sky_row_avg * str_rect.shape[1]
-			#str_minus_sky = str_row_sums
-
-			sigma_row = str_minus_sky + (len(str_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(str_row_sums))**2 * sky_row_avg**.5 # from magnier
-			sigma_row = sigma_row ** .5
+			str_minus_sky, sigma_row = take_lightcurve(img_star_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=star_height_correction, display=False, err=True)
 		
 
 			# fitting needs to go before binning to get actual endpoints
@@ -579,8 +564,14 @@ for d in dir_names:
 				print(e)
 				continue
 			box_model_output = box_model(x, *param_box)
-			start, end = int(param_box[0]), int(param_box[1])
-			star_trail_length = end-start
+			start_, end_ = int(param_box[0]), int(param_box[1])
+			star_trail_length_ = end_-start_
+			
+			# just trying something stupid: 
+			start += star_trail_length_**.5
+			end   -= star_trail_length_**.5
+
+
 			star_portion = str_minus_sky[start:end] # to get the fitted values of start and end
 			print(star_trail_length, star_portion.shape)
 			
@@ -632,19 +623,23 @@ for d in dir_names:
 		row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
-		star_height_correction = int(np.median(stars[:,1])*.2+.5)
-		intensity_guess = np.median(row_avgs_smooth[star_height_correction:int(trail_length-star_height_correction)])
-		param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[star_height_correction,int(trail_length-star_height_correction),intensity_guess])
-		norm = param_star[2]
+		# star_height_correction = int(np.median(stars[:,1])*.2+.5)
+		# intensity_guess = np.median(row_avgs_smooth[star_height_correction:int(trail_length-star_height_correction)])
+		# param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[star_height_correction,int(trail_length-star_height_correction),intensity_guess])
+		# norm = param_star[2]
+
+		norm = np.median(row_avgs_smooth)
 		row_avgs_smooth/=norm
 
+		# o get appropriate part of asteroid trail to divide out
 		intensity_guess = np.median(row_avgs_smooth[height_correction:trail_length-height_correction])
 		param_ast_box, param_ast_box_cov = curve_fit(box_model, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[height_correction, len(obj_minus_sky)-height_correction,2500])
 		ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
 
 		# ast_row_start = height_correction
 		# ast_row_end   = len(obj_minus_sky)-height_correction
-		obj_minus_sky[ast_start:ast_end] /= row_avgs_smooth # this is the actual sky correction 
+		# obj_minus_sky[ast_start:ast_end] /= row_avgs_smooth # this is the actual sky correction 
+		sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth
 
 		# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 		# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
