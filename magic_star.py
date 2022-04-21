@@ -65,10 +65,10 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		trail_start[1] -= height_correction
 		trail_end[1]   += height_correction
 
-	obj_rect  = img_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width):int(trail_start[0]+obj_width)]
+	obj_rect  = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width):int(trail_start[0]+obj_width)]
 
-	sky_left  = img_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width-sky_width):int(trail_start[0]-obj_width)]
-	sky_right = img_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+obj_width):int(trail_start[0]+obj_width+sky_width)]
+	sky_left  = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width-sky_width):int(trail_start[0]-obj_width)]
+	sky_right = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+obj_width):int(trail_start[0]+obj_width+sky_width)]
 
 	obj_row_sums = np.array([np.sum(i) for i in obj_rect])
 	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
@@ -158,8 +158,8 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
 	global img_rot, star_x_ext, star_y_ext, centroid
 	
-	L_but_longer = L*1.4
-	s_but_wider  = s*1.8
+	L_but_longer = L*1
+	s_but_wider  = s*1
 
 	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
 	trail = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
@@ -201,7 +201,7 @@ def residual(par):
 	# L_but_longer = L*1.2
 	s_but_wider  = s
 
-	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.4
+	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.2
 
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
 	observed = img_rot[int(centroid[1] - box_y_width/2):int(centroid[1] + box_y_width/2) , int(centroid[0] - s_but_wider*2*2.355):int(centroid[0] + s_but_wider*2*2.355)]
@@ -289,20 +289,42 @@ if __name__ == '__main__':
 			fwhm = int(trail_spread[0] * 2.355)
 
 			centroid_deviation = -fwhm + trail_spread[1] # if negative, trail is to the left, if positive, trail to right
-			height_correction = int((trail_end[1] - trail_start[1]) * .2 + .5) # 20% more rows above and below to get some sky 
+			
 
 			# correcting trail start/end
 			trail_start[0] += int(centroid_deviation+.5)
 			trail_end[0]   += int(centroid_deviation+.5)
-			
 
 			trail_centroid = np.array([trail_start[0], np.mean([trail_start[1], trail_end[1]])])
 
 			print('trail length: ', trail_length)
+
+
+			# ASTEROID TRAIL FITTING
+			img_rot = img_rotated
+			centroid = trail_centroid
+
+
+			p0 = np.array([4, trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
+			param_bounds = ([1, trail_length/2, -180, 0, 0, 0], [15, trail_length*5, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
+
+			fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
+			print('asteroid initial residual: ', residual(p0))
+			print('asteroid fit residual: ' , residual(fit.x))
+
+			fwhm = fit.x[0] * 2.355
+			trail_length = fit.x[1]
+			height_correction = int((trail_end[1] - trail_start[1]) * .2 + .5) # 20% more rows above and below to get some sky 
+			trail_centroid = np.array([fit.x[4], fit.x[5]])
+
+			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
+			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
+
+
 			# asteroid trail length in 70o13 is 101 tall
 			# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
-			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=height_correction, display=False, err=True)
+			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=height_correction, display=False, err=True)
 
 			# x = np.arange(0, 101, 101/len(obj_row_sums))
 			x = np.arange(0, len(obj_minus_sky), 1)
@@ -395,6 +417,9 @@ if __name__ == '__main__':
 			trail_ends   = []
 			residuals    = []
 
+			row_sums = []
+			row_sums_smooth = []
+
 			i = 0
 			while True:
 			# for i in range(len(star_x)):
@@ -446,7 +471,6 @@ if __name__ == '__main__':
 				print('residual(p0) : ' , r_p0, p0)
 				print('residual(fit): ' , r_fit, param)
 
-				# param = p0
 				
 				s, L, a, b, x_0, y_0 = param[0], param[1], param[2], param[3], param[4], param[5]
 				# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
@@ -455,108 +479,8 @@ if __name__ == '__main__':
 				star_trail_start = np.array([x_0, y_0 - L/2])
 				star_trail_end   = np.array([x_0, y_0 + L/2])
 
-				trail_starts.append(star_trail_start)
-				trail_ends  .append(star_trail_end  )
-				# img_stars   .append(img_star_rotated)
-				stars       .append(param)
-				
-				print(' ')
-				i+=1
-		
-				
-			stars 		 = np.array(stars)
-			residuals    = np.array(residuals)
-			trail_starts = np.array(trail_starts)
-			trail_ends   = np.array(trail_ends)
-			print('initially, ', stars.shape[0])
-
-			s_std        = np.std(stars[:,0])
-			length_std   = np.std(stars[:,1])
-			angle_std    = np.std(stars[:,2])
-
-			s_mean  	 = np.mean(stars[:,0])
-			length_mean  = np.mean(stars[:,1])
-			angle_mean   = np.mean(stars[:,2])
-
-			# sorting by residuals from biiiig fit
-			star_filter  = np.argsort(residuals[:,1])
-			residuals    = residuals   [star_filter]
-			stars        = stars       [star_filter]
-			trail_starts = trail_starts[star_filter]
-			trail_ends   = trail_ends  [star_filter]
-			a_0 		 = a_0         [star_filter]
-			star_x       = star_x      [star_filter]
-			star_y       = star_y      [star_filter]
-
-			# throwing away outliers, ig. 
-			# TODO: fit more stars and increase threshold? 
-			threshold = 2 # sigmas
-
-			star_filter  = np.where( (stars[:,0]<=s_mean+threshold*s_std) & (stars[:,0]>=s_mean-threshold*s_std) & (stars[:,1]<=length_mean+threshold*length_std) & (stars[:,1]>=length_mean-threshold*length_std) & (stars[:,2]<=angle_mean+threshold*angle_std) & (stars[:,2]>=angle_mean-threshold*angle_std) )
-			stars        = stars       [star_filter]
-			trail_starts = trail_starts[star_filter]
-			trail_ends   = trail_ends  [star_filter]
-			a_0 		 = a_0         [star_filter]
-			star_x       = star_x      [star_filter]
-			star_y       = star_y      [star_filter]
-			print('filtering: ', stars.shape[0])
-
-			# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
-
-			# ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
-			# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
-			# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
-			# ax[0].legend()
-
-			row_sums = []
-			row_sums_smooth = []
-
-			# residuals = []
-
-			# lightcurves of stars
-			for i in range(len(stars)):
-			#for i in range(1):
-				img_star_rotated = rotate(img_rotated, a_0[i])
-				
-				# trail_end     = np.array(point_rotation(trail_starts[i,0], trail_starts[i,1], a_0[i], img_rotated, img_star_rotated))
-				# trail_start   = np.array(point_rotation(trail_ends  [i,0], trail_ends  [i,1], a_0[i], img_rotated, img_star_rotated))
-				trail_end   = trail_ends  [i]
-				trail_start = trail_starts[i]
-				#print(trail_start, trail_end)
-
-				fwhm = stars[i,0] * 2.355
-				star_height_correction = int(stars[i,1]*.2+.5)
-				# print(trail_end-trail_start, L)
-				# L = 0
-
-				str_minus_sky, sigma_row, str_sky_avg = take_lightcurve(img_star_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=star_height_correction, display=False, err=True)
-			
-
-				# fitting needs to go before binning to get actual endpoints
-				x = np.arange(0, len(str_minus_sky))
-				
-				try:
-					param_box, param_box_cov = curve_fit(box_model, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median( str_minus_sky[ L:int(len(str_minus_sky)-L)]) ])
-					#param_box, param_box_cov = curve_fit(box_model_, x, str_minus_sky, p0=[L, len(str_minus_sky)-L, np.median(str_minus_sky[L:int(len(str_minus_sky)-L)]), sky_row_avg * str_rect.shape[1]])
-					print('success')
-				except Exception as e:
-					print(e)
-					continue
-				box_model_output = box_model(x, *param_box)
-				start_, end_ = int(param_box[0]), int(param_box[1])
-				star_trail_length_ = end_-start_
-				
-				# just trying something stupid: 
-				start += star_trail_length_**.5
-				end   -= star_trail_length_**.5
-
-
-				star_portion = str_minus_sky[start:end] # to get the fitted values of start and end
-				print(star_trail_length, star_portion.shape)
-				
-				# can sort by residuals. NOT THESE THOUGH! 
-				#residuals.append(np.sum((box_model_output-str_minus_sky)**2)**.5)
-
+				fwhm = s * 2.355
+				str_minus_sky, sigma_row, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
 				# yet another binning attempt --> linear interpolation
 				smooth_x = np.linspace(0, star_trail_length, trail_length)
 				# print(smooth_x.shape)
@@ -567,31 +491,69 @@ if __name__ == '__main__':
 				# smoothed = np.array(smoothed)
 				
 				row_sums_smooth.append(smoothed)
+				trail_starts.append(star_trail_start)
+				trail_ends  .append(star_trail_end  )
+				# img_stars   .append(img_star_rotated)
+				stars       .append(param)
+				
+				print(' ')
+				i+=1
+		
+				
+			row_sums_smooth = np.array(row_sums_smooth)
 
-				# if i<15 and i<stars.shape[0] : 
-				# 	ax_stars[int(i/5), i%5].set_title(str([star_x[i], star_y[i]]))
+			stars 		 = np.array(stars)
+			residuals    = np.array(residuals)
+			trail_starts = np.array(trail_starts)
+			trail_ends   = np.array(trail_ends)
 
-				# 	ax_stars[int(i/5), i%5].plot(x, str_minus_sky)
-				# 	ax_stars[int(i/5), i%5].plot(x, box_model(x, *param_box))
+			print('initially, ', stars.shape[0])
 
-				# 	ax_stars_sm[int(i/5), i%5].plot(np.arange(len(smoothed)), smoothed, label='binned to asteroid length')
+			s_std        = np.std(stars[:,0])
+			length_std   = np.std(stars[:,1])
+			angle_std    = np.std(stars[:,2])
 
-				# 	ax_stars[int(i/5), i%5].plot(np.arange(len(smoothed))[start:end], smoothed[start:end], label='fourier model')
-					
-				# 	ax_stars[int(i/5), i%5].legend()
+			s_mean  	 = np.mean(stars[:,0])
+			length_mean  = np.mean(stars[:,1])
+			angle_mean   = np.mean(stars[:,2])
 
-			#residuals = np.array(residuals)
-			#r_sort    = np.argsort(residuals)
+			# throwing away outliers, ig. 
+			# TODO: fit more stars and increase threshold? 
+			threshold = 2 # sigmas
+
+			star_filter  = np.where( (stars[:,0]<=s_mean+threshold*s_std) & (stars[:,0]>=s_mean-threshold*s_std) & (stars[:,1]<=length_mean+threshold*length_std) & (stars[:,1]>=length_mean-threshold*length_std) & (stars[:,2]<=angle_mean+threshold*angle_std) & (stars[:,2]>=angle_mean-threshold*angle_std) )
+			stars        = stars       [star_filter]
+			trail_starts = trail_starts[star_filter]
+			trail_ends   = trail_ends  [star_filter]
+			residuals    = residuals   [star_filter]
+
+			row_sums_smooth = row_sums_smooth[star_filter]
+			print('filtering: ', stars.shape[0])
+
+			# sorting by residuals from biiiig fit
+			res_filter   = np.argsort(residuals[:,1])
+			residuals    = residuals   [res_filter]
+			stars        = stars       [res_filter]
+			trail_starts = trail_starts[res_filter]
+			trail_ends   = trail_ends  [res_filter]
+
+			row_sums_smooth = row_sums_smooth[res_filter]
+
+			
+			# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
+
+			# ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
+			# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
+			# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
+			# ax[0].legend()
+
+			# residuals = []
 
 			#print('residuals argsort', r_sort)
 			np.savetxt(f'{f[:-4]}_params.txt', stars)
 
 			# row_sums = np.array(row_sums, dtype=object)
 			# row_sums_smooth = np.array(row_sums_smooth, dtype=object)[r_sort] # type object for ragged nested sequences
-			
-			row_sums_smooth = np.array(row_sums_smooth)
-			print(row_sums_smooth.shape)
-			print(row_sums_smooth.dtype)
 			row_sums_smooth = row_sums_smooth[:10]
 
 			#for k in row_sums_smooth: print(k)
@@ -600,25 +562,21 @@ if __name__ == '__main__':
 			# row_medians = np.median(row_sums, axis=0)
 			#row_avgs_smooth = np.median(row_sums_smooth, axis=0)
 			row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
-			row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
+			# row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
 
 			# star_height_correction = int(np.median(stars[:,1])*.2+.5)
 			# intensity_guess = np.median(row_avgs_smooth[star_height_correction:int(trail_length-star_height_correction)])
 			# param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[star_height_correction,int(trail_length-star_height_correction),intensity_guess])
 			# norm = param_star[2]
 
-			norm = np.median(row_avgs_smooth)
+			norm = np.nanmedian(row_avgs_smooth)
 			row_avgs_smooth/=norm
 
-			# o get appropriate part of asteroid trail to divide out
-			intensity_guess = np.median(row_avgs_smooth[height_correction:trail_length-height_correction])
-			param_ast_box, param_ast_box_cov = curve_fit(box_model, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[height_correction, len(obj_minus_sky)-height_correction,2500])
-			ast_start, ast_end  = int(param_ast_box[0]), int(param_ast_box[1])
+			# lightcurve of asteroid -- no height correction 
+			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, display=False, err=True)
 
-			# ast_row_start = height_correction
-			# ast_row_end   = len(obj_minus_sky)-height_correction
 			# obj_minus_sky[ast_start:ast_end] /= row_avgs_smooth # this is the actual sky correction 
-			sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth
+			sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
 
 			# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 			# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
@@ -628,18 +586,16 @@ if __name__ == '__main__':
 			# ax_star_avg.set_title('average star lightcurve')
 			# ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
 
-			ast_norm = param_ast_box[2]
 			
 			# norm_ast_lightcurve = obj_minus_sky/ast_norm 
 			# norm_ast_lightcurve = norm_ast_lightcurve[ast_start:ast_end]
-			norm_ast_lightcurve = obj_minus_sky[ast_start:ast_end]
 
 
 			# light_curve = lightcurves[i]
-			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(norm_ast_lightcurve))
+			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
 			# ax_ast.plot(x, norm_ast_lightcurve)
 
-			lightcurves.append(norm_ast_lightcurve)
+			lightcurves.append(sky_corrected_lightcurve)
 			start_times.append(x)
 
 			print()
