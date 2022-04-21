@@ -65,10 +65,10 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		trail_start[1] -= height_correction
 		trail_end[1]   += height_correction
 
-	obj_rect = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width:trail_start[0]+obj_width]
+	obj_rect  = img_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width):int(trail_start[0]+obj_width)]
 
-	sky_left  = img_rotated[trail_start[1]:trail_end[1], trail_start[0]-obj_width-sky_width:trail_start[0]-obj_width]
-	sky_right = img_rotated[trail_start[1]:trail_end[1], trail_start[0]+obj_width:trail_start[0]+obj_width+sky_width]
+	sky_left  = img_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width-sky_width):int(trail_start[0]-obj_width)]
+	sky_right = img_rotated[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+obj_width):int(trail_start[0]+obj_width+sky_width)]
 
 	obj_row_sums = np.array([np.sum(i) for i in obj_rect])
 	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
@@ -89,14 +89,15 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		plt.scatter(t, obj_minus_sky)
 
 	r = [obj_minus_sky]
-	if err: r.append(sigma_row)
-
+	if err: 
+		r.append(sigma_row)
+		r.append(sky_row_avg)
 	return r
 
 #assuming vertical streaks for drawing rectangles and moving down 
 def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = False):
 		
-	obj_rect = img[trail_start[1]:trail_end[1], trail_start[0]-obj_width:trail_start[0]+obj_width]
+	obj_rect = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width):int(trail_start[0]+obj_width)]
 
 	col_sums = np.sum(obj_rect, axis=0)
 		
@@ -301,10 +302,10 @@ if __name__ == '__main__':
 			# asteroid trail length in 70o13 is 101 tall
 			# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
-			obj_minus_sky, sigma_row = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=height_correction, display=False, err=True)
+			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=height_correction, display=False, err=True)
 
 			# x = np.arange(0, 101, 101/len(obj_row_sums))
-			x = np.arange(0, len(obj_row_sums), 1)
+			x = np.arange(0, len(obj_minus_sky), 1)
 			# ax[1].plot(x, obj_minus_sky)
 
 			# UNCOMMENT LATER, maybe
@@ -528,7 +529,7 @@ if __name__ == '__main__':
 				# print(trail_end-trail_start, L)
 				# L = 0
 
-				str_minus_sky, sigma_row = take_lightcurve(img_star_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=star_height_correction, display=False, err=True)
+				str_minus_sky, sigma_row, str_sky_avg = take_lightcurve(img_star_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=star_height_correction, display=False, err=True)
 			
 
 				# fitting needs to go before binning to get actual endpoints
