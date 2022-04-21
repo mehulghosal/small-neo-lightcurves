@@ -315,7 +315,8 @@ if __name__ == '__main__':
 
 			fwhm = fit.x[0] * 2.355
 			trail_length = fit.x[1]
-			height_correction = int((trail_end[1] - trail_start[1]) * .2 + .5) # 20% more rows above and below to get some sky 
+			height_correction = int(trail_length * .2 + .5) # 20% more rows above and below to get some sky 
+			height_correction = 0
 			trail_centroid = np.array([fit.x[4], fit.x[5]])
 
 			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
@@ -482,6 +483,7 @@ if __name__ == '__main__':
 
 				fwhm = s * 2.355
 				str_minus_sky, sigma_row, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
+				
 				# yet another binning attempt --> linear interpolation
 				smooth_x = np.linspace(0, star_trail_length, trail_length)
 				# print(smooth_x.shape)
@@ -574,10 +576,13 @@ if __name__ == '__main__':
 			row_avgs_smooth/=norm
 
 			# lightcurve of asteroid -- no height correction 
-			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, display=False, err=True)
+			# obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, display=False, err=True)
 
-			# obj_minus_sky[ast_start:ast_end] /= row_avgs_smooth # this is the actual sky correction 
-			sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
+			ast_start = int(height_correction+.5)
+			ast_end   = int(len(obj_minus_sky) - height_correction+.5)
+
+			sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
+			# sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
 
 			# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 			# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
