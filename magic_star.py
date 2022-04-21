@@ -303,7 +303,8 @@ if __name__ == '__main__':
 			# ASTEROID TRAIL FITTING
 			img_rot = img_rotated
 			centroid = trail_centroid
-
+			star_x_ext = [trail_centroid[0] - fwhm, trail_centroid[0] + fwhm]
+			star_y_ext = [trail_start[1], trail_end[1]]
 
 			p0 = np.array([4, trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, trail_length/2, -180, 0, 0, 0], [15, trail_length*5, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
