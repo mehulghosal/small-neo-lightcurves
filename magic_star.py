@@ -483,9 +483,9 @@ if __name__ == '__main__':
 				fwhm = s * 2.355
 				str_minus_sky, sigma_row, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
 				# yet another binning attempt --> linear interpolation
-				smooth_x = np.linspace(0, star_trail_length, trail_length)
+				smooth_x = np.linspace(0, int(L), int(trail_length))
 				# print(smooth_x.shape)
-				smoothed = np.interp(smooth_x, np.arange(0, len(star_portion), 1), star_portion)
+				smoothed = np.interp(smooth_x, np.arange(0, len(str_minus_sky), 1), str_minus_sky)
 
 				print('smooth shape: ', smoothed.shape)
 				# smooth_norm = np.max(smoothed)
