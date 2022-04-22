@@ -487,7 +487,21 @@ if __name__ == '__main__':
 				# yet another binning attempt --> linear interpolation
 				smooth_x = np.linspace(0, int(L), int(trail_length))
 				# print(smooth_x.shape)
-				smoothed = np.interp(smooth_x, np.arange(0, len(str_minus_sky), 1), str_minus_sky)
+				# smoothed = np.interp(smooth_x, np.arange(0, len(str_minus_sky), 1), str_minus_sky)
+				# smoothed = np.median([np.roll(A,-2),np.roll(A,-1),np.roll(A,1),np.roll(A,2)],axis=0)
+				star_to_asteroid = L/trail_length
+				N = int( star_to_asteroid * 4 + 0.5)
+				smoothed = []
+				for j in range(trail_length):
+					t = int(j*star_to_asteroid + .5)
+					start_ind, end_ind = 0,0
+					if t<N: 				# too close to start of trail
+						start_ind, end_ind = 0, t+N+1
+					elif t>=L-N: # too close to end of trail
+						start_ind, end_ind = t-N-1, L-1
+					else: 					# juuuust right
+						start_ind, end_ind = t-N, t+N
+					smoothed.append(np.median(str_minus_sky[start_ind:end_ind]))
 
 				print('smooth shape: ', smoothed.shape)
 				# smooth_norm = np.max(smoothed)
