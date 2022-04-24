@@ -56,6 +56,7 @@ def point_rotation(x,y,a,img,img_rot):
 
 	return x_, y_
 
+gain=1.6
 # b if given is the mean background per pixel
 def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=None, display=False, err=False):
 	obj_width = fwhm
@@ -65,10 +66,10 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		trail_start[1] -= height_correction
 		trail_end[1]   += height_correction
 
-	obj_rect  = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width):int(trail_start[0]+obj_width)]
+	obj_rect  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
 
-	sky_left  = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width-sky_width):int(trail_start[0]-obj_width)]
-	sky_right = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]+obj_width):int(trail_start[0]+obj_width+sky_width)]
+	sky_left  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width-sky_width + .5):int(trail_start[0]-obj_width + .5)]
+	sky_right = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]+obj_width + .5):int(trail_start[0]+obj_width+sky_width + .5)]
 
 	obj_row_sums = np.array([np.sum(i) for i in obj_rect])
 	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
@@ -80,9 +81,9 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 
 	obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
-	gain = 1.6116
+	global gain
 	
-	sigma_row = obj_minus_sky + (len(obj_row_sums)) * (sky_row_avg + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**2 # from magnier
+	sigma_row = obj_minus_sky/gain + (len(obj_row_sums)) * (sky_row_avg/gain + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**2 # from magnier
 	sigma_row = sigma_row ** .5
 
 	if display:
@@ -99,7 +100,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 #assuming vertical streaks for drawing rectangles and moving down 
 def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = False):
 		
-	obj_rect = img[int(trail_start[1]):int(trail_end[1]), int(trail_start[0]-obj_width):int(trail_start[0]+obj_width)]
+	obj_rect = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
 
 	col_sums = np.sum(obj_rect, axis=0)
 		
@@ -164,7 +165,7 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 	s_but_wider  = s*1
 
 	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
-	trail = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
+	trail = img_rot[int(y_0 - L_but_longer/2+.5):int(y_0 + L_but_longer/2+.5) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
 	# print( 'trail shape', trail.shape)
 
 	flux   = np.sum(trail)
@@ -206,12 +207,12 @@ def residual(par):
 	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.2
 
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
-	observed = img_rot[int(centroid[1] - box_y_width/2):int(centroid[1] + box_y_width/2) , int(centroid[0] - s_but_wider*2*2.355):int(centroid[0] + s_but_wider*2*2.355)]
+	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
 	# observed_row_sums = np.array([np.sum(i) for i in observed])
 	# observed_col_sums = np.sum(observed, axis=0)
 
 	# model_slice = model[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
-	model_slice = model[int(centroid[1] - box_y_width/2):int(centroid[1] + box_y_width/2) , int(centroid[0] - s_but_wider*2*2.355):int(centroid[0] + s_but_wider*2*2.355)]
+	model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
 	# model_row_sums = np.array([np.sum(i) for i in model_slice])
 	# model_col_sums = np.sum(model_slice, axis=0)
 
@@ -238,6 +239,7 @@ if __name__ == '__main__':
 
 		start_times = []
 		lightcurves = []
+		errors      = []
 
 		# fig_ast, ax_ast = plt.subplots()
 		# ax_ast.set_xlabel('Julian date')
@@ -253,6 +255,7 @@ if __name__ == '__main__':
 			img = file[0].data
 
 			exp_time = float(hdr['EXPMEAS'])
+			gain     = float(hdr['GAIN'])
 
 
 			# object id from directory name --> string splicing
@@ -288,7 +291,7 @@ if __name__ == '__main__':
 
 			
 			trail_spread, trail_spread_covs = trail_spread_function(img_rotated, trail_start, trail_end, display=False)
-			fwhm = int(trail_spread[0] * 2.355)
+			fwhm = int(trail_spread[0] * 2.355 + .5)
 
 			centroid_deviation = -fwhm + trail_spread[1] # if negative, trail is to the left, if positive, trail to right
 			
@@ -434,8 +437,8 @@ if __name__ == '__main__':
 				# x_correction = (star_x_min[i] - star_x_max[i])*.10
 				# y_correction = (star_y_min[i] - star_y_max[i])*.10
 				x_correction, y_correction = 0,0
-				star_x_ext = int(star_x_min[i]-x_correction), int(star_x_max[i]+x_correction)
-				star_y_ext = int(star_y_min[i]-y_correction), int(star_y_max[i]+y_correction)
+				star_x_ext = int(star_x_min[i]-x_correction+.5), int(star_x_max[i]+x_correction+.5)
+				star_y_ext = int(star_y_min[i]-y_correction+.5), int(star_y_max[i]+y_correction+.5)
 				# print(centroid, star_x_ext, star_y_ext)
 
 				img_star_rotated = rotate(img_rotated, a_0[i])
@@ -484,10 +487,10 @@ if __name__ == '__main__':
 				star_trail_end   = np.array([x_0, y_0 + L/2])
 
 				fwhm = s * 2.355
-				str_minus_sky, sigma_row, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
+				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
 				
 				# yet another binning attempt --> linear interpolation
-				smooth_x = np.linspace(0, int(L), int(trail_length))
+				smooth_x = np.linspace(0, int(L+.5), int(trail_length+.5))
 				# print(smooth_x.shape)
 				# smoothed = np.interp(smooth_x, np.arange(0, len(str_minus_sky), 1), str_minus_sky)
 				# smoothed = np.median([np.roll(A,-2),np.roll(A,-1),np.roll(A,1),np.roll(A,2)],axis=0)
@@ -619,6 +622,7 @@ if __name__ == '__main__':
 			# ax_ast.plot(x, norm_ast_lightcurve)
 
 			lightcurves.append(sky_corrected_lightcurve)
+			erorrs.append(sigma_row[ast_start:ast_end])
 			start_times.append(x)
 
 			print()
@@ -630,6 +634,7 @@ if __name__ == '__main__':
 		indices     = np.array ([len(i) for i in lightcurves])
 		lightcurves = np.hstack(np.array(lightcurves, dtype=object))
 		start_times = np.hstack(np.array(start_times, dtype=object))
+		errors      = np.hstack(np.array(erorrs     , dtype=object))
 		# f_err       = np.random.random(size=lightcurves.shape)
 
 		# frequency, power = LombScargle(start_times, lightcurves).autopower()
@@ -640,7 +645,7 @@ if __name__ == '__main__':
 
 		directory_name = d.split('/')[1]
 
-		np.savetxt(f'./output/{directory_name}.txt', np.array([start_times, lightcurves]).T)
+		np.savetxt(f'./output/{directory_name}.txt', np.array([start_times, lightcurves, errors]).T)
 		np.savetxt(f'./output/{directory_name}_indices.txt', indices)
 
 
