@@ -464,7 +464,7 @@ if __name__ == '__main__':
 					else: 
 						fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
 						r_fit = residual(fit.x)
-						param = fit.x
+						param = np.array(fit.x)
 				except Exception as e:
 					print(f, i, e)
 					i+=1
@@ -517,7 +517,8 @@ if __name__ == '__main__':
 				trail_starts.append(star_trail_start)
 				trail_ends  .append(star_trail_end  )
 				# img_stars   .append(img_star_rotated)
-				stars       .append(param)
+
+				stars       .append(np.append(param, a_0[i]))
 				
 				print(' ')
 				i+=1
@@ -598,8 +599,8 @@ if __name__ == '__main__':
 			# lightcurve of asteroid -- no height correction 
 			# obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, display=False, err=True)
 
-			ast_start = int(height_correction+.5)
-			ast_end   = int(len(obj_minus_sky) - height_correction+.5)
+			ast_start = int(height_correction)
+			ast_end   = int(len(obj_minus_sky) - height_correction)
 
 			sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
 			# sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
