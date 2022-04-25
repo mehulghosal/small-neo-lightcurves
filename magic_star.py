@@ -201,10 +201,10 @@ def residual(par):
 	
 	model = draw_model(s, L, a, b_1, x_0, y_0)
 
-	# L_but_longer = L*1.2
+	# L_but_longer = L
 	s_but_wider  = s
 
-	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.2
+	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1
 
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
 	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
@@ -311,7 +311,7 @@ if __name__ == '__main__':
 			star_x_ext = [trail_centroid[0] - fwhm, trail_centroid[0] + fwhm]
 			star_y_ext = [trail_start[1], trail_end[1]]
 
-			p0 = np.array([4, trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
+			p0 = np.array([trail_spread[0], trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, trail_length/2, -180, 0, 0, 0], [15, trail_length*5, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
 
 			fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
@@ -320,7 +320,7 @@ if __name__ == '__main__':
 
 			fwhm = fit.x[0] * 2.355
 			trail_length = fit.x[1]
-			height_correction = int(trail_length * .2 + .5) # 20% more rows above and below to get some sky 
+			#height_correction = int(trail_length * .2 + .5) # 20% more rows above and below to get some sky 
 			height_correction = 0
 			trail_centroid = np.array([fit.x[4], fit.x[5]])
 
@@ -497,7 +497,7 @@ if __name__ == '__main__':
 				star_to_asteroid = L/trail_length
 				N = int( star_to_asteroid * 2 + 0.5)
 				smoothed = []
-				for j in range(int(trail_length+.5)):
+				for j in range(int(trail_length)):
 					t = int(j*star_to_asteroid + .5)
 					start_ind, end_ind = 0,0
 					if t<N: 				# too close to start of trail
@@ -622,7 +622,7 @@ if __name__ == '__main__':
 			# ax_ast.plot(x, norm_ast_lightcurve)
 
 			lightcurves.append(sky_corrected_lightcurve)
-			erorrs.append(sigma_row[ast_start:ast_end])
+			errors.append(sigma_row[ast_start:ast_end])
 			start_times.append(x)
 
 			print()
@@ -634,7 +634,7 @@ if __name__ == '__main__':
 		indices     = np.array ([len(i) for i in lightcurves])
 		lightcurves = np.hstack(np.array(lightcurves, dtype=object))
 		start_times = np.hstack(np.array(start_times, dtype=object))
-		errors      = np.hstack(np.array(erorrs     , dtype=object))
+		errors      = np.hstack(np.array(errors     , dtype=object))
 		# f_err       = np.random.random(size=lightcurves.shape)
 
 		# frequency, power = LombScargle(start_times, lightcurves).autopower()
