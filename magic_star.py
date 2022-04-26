@@ -305,7 +305,7 @@ if __name__ == '__main__':
 
 			trail_centroid = np.array([trail_start[0], np.mean([trail_start[1], trail_end[1]])])
 
-			print('trail length: ', trail_length)
+			#print('trail length: ', trail_length)
 
 
 			# ASTEROID TRAIL FITTING
@@ -322,7 +322,7 @@ if __name__ == '__main__':
 			print('asteroid fit residual: ' , residual(fit.x))
 
 			fwhm = fit.x[0] * 2.355
-			trail_length = fit.x[1]
+			trail_length = int(fit.x[1]+.5)
 			#height_correction = int(trail_length * .2 + .5) # 20% more rows above and below to get some sky 
 			height_correction = 0
 			trail_centroid = np.array([fit.x[4], fit.x[5]])
@@ -330,7 +330,7 @@ if __name__ == '__main__':
 			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
 			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
 
-
+			print('asteroid trail length: ', trail_length)
 			# asteroid trail length in 70o13 is 101 tall
 			# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
@@ -481,7 +481,7 @@ if __name__ == '__main__':
 				print('residual(fit): ' , r_fit, param)
 
 				
-				s, L, a, b, x_0, y_0 = param[0], param[1], param[2], param[3], param[4], param[5]
+				s, L, a, b, x_0, y_0 = param[0], int(param[1]+.5), param[2], param[3], param[4], param[5]
 				# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 				
 				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
@@ -492,14 +492,14 @@ if __name__ == '__main__':
 				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
 				
 				# yet another binning attempt --> linear interpolation
-				smooth_x = np.linspace(0, int(L+.5), int(trail_length+.5))
+				smooth_x = np.linspace(0, L, int(trail_length+.5))
 				# print(smooth_x.shape)
 				# smoothed = np.interp(smooth_x, np.arange(0, len(str_minus_sky), 1), str_minus_sky)
 				# smoothed = np.median([np.roll(A,-2),np.roll(A,-1),np.roll(A,1),np.roll(A,2)],axis=0)
 				star_to_asteroid = L/trail_length
 				N = int( star_to_asteroid * 2 + 0.5)
 				smoothed = []
-				for j in range(int(trail_length)):
+				for j in range(trail_length):
 					t = int(j*star_to_asteroid + .5)
 					start_ind, end_ind = 0,0
 					if t<N: 				# too close to start of trail
@@ -588,8 +588,7 @@ if __name__ == '__main__':
 			# row_medians = np.median(row_sums, axis=0)
 			#row_avgs_smooth = np.median(row_sums_smooth, axis=0)
 			row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
-			# row_avgs_smooth = np.array(row_avgs_smooth, dtype=float)
-
+			
 			# star_height_correction = int(np.median(stars[:,1])*.2+.5)
 			# intensity_guess = np.median(row_avgs_smooth[star_height_correction:int(trail_length-star_height_correction)])
 			# param_star, param_covs_star = curve_fit(box_model, np.arange(len(row_avgs_smooth)), row_avgs_smooth, p0=[star_height_correction,int(trail_length-star_height_correction),intensity_guess])
@@ -604,8 +603,8 @@ if __name__ == '__main__':
 			ast_start = int(height_correction)
 			ast_end   = int(len(obj_minus_sky) - height_correction)
 
-			sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
-			# sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
+			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
+			sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
 
 			# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
 			# ax[1].plot(np.arange(len(obj_minus_sky)), obj_minus_sky, 'b', label='transparency corrected', linewidth=3)
