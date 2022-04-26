@@ -201,15 +201,14 @@ def residual(par):
 	
 	model = draw_model(s, L, a, b_1, x_0, y_0)
 
-	# L_but_longer = L
-	# s_but_wider  = s
+	L_but_longer = L
+	s_but_wider  = s*1.3
 
+	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.3
+	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1.3
 
-	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1
-	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1
-
-	x_extension = box_x_width * .1
-	y_extension = box_y_width * .2
+	# x_extension = box_x_width * .3
+	# y_extension = box_y_width * .3
 	# 4/25/2022 --> box has to be bigger to account to account for whole trail
 
 
@@ -334,8 +333,8 @@ if __name__ == '__main__':
 			height_correction = 0
 			trail_centroid = np.array([fit.x[4], fit.x[5]])
 
-			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
-			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
+			# trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
+			# trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
 
 			print('asteroid trail length: ', trail_length)
 			# asteroid trail length in 70o13 is 101 tall
@@ -476,6 +475,8 @@ if __name__ == '__main__':
 						fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
 						r_fit = residual(fit.x)
 						param = np.array(fit.x)
+						# param = p0
+						r_fit = residual(param)
 				except Exception as e:
 					print(f, i, e)
 					i+=1
@@ -499,6 +500,8 @@ if __name__ == '__main__':
 
 				fwhm = s * 2.355
 				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True)
+
+				# str_minus_sky /= np.nanmedian(str_minus_sky)
 				
 				# yet another binning attempt --> linear interpolation
 				smooth_x = np.linspace(0, L, int(trail_length+.5))
