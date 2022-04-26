@@ -206,16 +206,23 @@ def residual(par):
 
 
 	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1
+	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1
+
+	x_extension = box_x_width * .1
+	y_extension = box_y_width * .2
 	# 4/25/2022 --> box has to be bigger to account to account for whole trail
 
 
+
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
-	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
+	# observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
+	observed = img_rot[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
 	# observed_row_sums = np.array([np.sum(i) for i in observed])
 	# observed_col_sums = np.sum(observed, axis=0)
 
 	# model_slice = model[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
-	model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
+	# model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
+	model_slice = model[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
 	# model_row_sums = np.array([np.sum(i) for i in model_slice])
 	# model_col_sums = np.sum(model_slice, axis=0)
 
@@ -439,6 +446,8 @@ if __name__ == '__main__':
 				centroid = star_x[i], star_y[i]
 				# x_correction = (star_x_min[i] - star_x_max[i])*.10
 				# y_correction = (star_y_min[i] - star_y_max[i])*.10
+				x_correction = 0
+				y_correction = 0
 				star_x_ext = int(star_x_min[i]-x_correction+.5), int(star_x_max[i]+x_correction+.5)
 				star_y_ext = int(star_y_min[i]-y_correction+.5), int(star_y_max[i]+y_correction+.5)
 				# print(centroid, star_x_ext, star_y_ext)
