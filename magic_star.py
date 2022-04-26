@@ -156,7 +156,7 @@ count = 0
 
 # Veres 2012 eq 3
 # r = [x,y], s = sigma, L is length, a is angle, b is background noise (holding constant for now)
-# img_rot and centroid are not fitting variables - want to pass these in as constants; centroid = [x,y]
+# img_rotis not fitting variables - want to pass these in as constants;
 def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
 	global img_rot, star_x_ext, star_y_ext, centroid
@@ -202,9 +202,12 @@ def residual(par):
 	model = draw_model(s, L, a, b_1, x_0, y_0)
 
 	# L_but_longer = L
-	s_but_wider  = s
+	# s_but_wider  = s
+
 
 	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1
+	# 4/25/2022 --> box has to be bigger to account to account for whole trail
+
 
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
 	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
@@ -436,7 +439,6 @@ if __name__ == '__main__':
 				centroid = star_x[i], star_y[i]
 				# x_correction = (star_x_min[i] - star_x_max[i])*.10
 				# y_correction = (star_y_min[i] - star_y_max[i])*.10
-				x_correction, y_correction = 0,0
 				star_x_ext = int(star_x_min[i]-x_correction+.5), int(star_x_max[i]+x_correction+.5)
 				star_y_ext = int(star_y_min[i]-y_correction+.5), int(star_y_max[i]+y_correction+.5)
 				# print(centroid, star_x_ext, star_y_ext)
