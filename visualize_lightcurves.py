@@ -25,13 +25,14 @@ for i in range(len(indices)):
 	f = np.loadtxt(lc)
 	time = f[:,0]
 	intensity = f[:,1]
+	# intensity_err = f[:,2]
 
 	index_array = np.loadtxt(indices[i])
 
 	rolling_ind = 0
 	p = []
 	# if True:
-	if 'CK31' in lc:
+	if 'GE1' in lc:
 		for index in index_array:
 			start = int(rolling_ind)
 			end   = int(start + index - 1)
@@ -41,9 +42,9 @@ for i in range(len(indices)):
 			peak_period      = 1/peak_frequency * 24 * 3600
 			print(f'peak period{rolling_ind} : ', peak_period )
 			p.append(peak_period)
-			# plt.figure()
-			# plt.scatter(time[start:end], intensity[start:end])
-			# plt.title(lc)
+			plt.figure()
+			plt.plot(time[start:end], intensity[start:end])
+			plt.title(lc)
 		print('median and mean of individual periods: ')
 		print(np.median(p), np.mean(p))
 		frequency, period = LombScargle(time, intensity).autopower()

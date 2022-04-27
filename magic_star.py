@@ -113,7 +113,7 @@ def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = F
 	# ax[2].scatter(rect_width, col_sums, label='column sums')
 	# ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
 	# ax[2].legend()
-	return param_vals, param_covs
+	return param_vals, param_covs, obj_width
 
 def model(x, s, m, a, c, b, d):
 	return c*np.exp(-.5* ((x-m)/s)**2) + a*x + b + d*x**2
@@ -207,20 +207,20 @@ def residual(par):
 	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.3
 	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1.3
 
-	# x_extension = box_x_width * .3
-	# y_extension = box_y_width * .3
+	y_extension = box_y_width * .3
+	x_extension = box_x_width * .3
 	# 4/25/2022 --> box has to be bigger to account to account for whole trail
 
 
 
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
-	# observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
+	# observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
 	observed = img_rot[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
 	# observed_row_sums = np.array([np.sum(i) for i in observed])
 	# observed_col_sums = np.sum(observed, axis=0)
 
 	# model_slice = model[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
-	# model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - s_but_wider*2*2.355 + .5):int(centroid[0] + s_but_wider*2*2.355 + .5)]
+	# model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
 	model_slice = model[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
 	# model_row_sums = np.array([np.sum(i) for i in model_slice])
 	# model_col_sums = np.sum(model_slice, axis=0)
@@ -299,10 +299,10 @@ if __name__ == '__main__':
 			trail_length = trail_end[1] - trail_start[1]
 
 			
-			trail_spread, trail_spread_covs = trail_spread_function(img_rotated, trail_start, trail_end, display=False)
+			trail_spread, trail_spread_covs, trail_width = trail_spread_function(img_rotated, trail_start, trail_end, display=False)
 			fwhm = int(trail_spread[0] * 2.355 + .5)
 
-			centroid_deviation = -fwhm + trail_spread[1] # if negative, trail is to the left, if positive, trail to right
+			centroid_deviation = trail_spread[1] - trail_width # if negative, trail is to the left, if positive, trail to right
 			
 
 			# correcting trail start/end
@@ -333,15 +333,16 @@ if __name__ == '__main__':
 			height_correction = 0
 			trail_centroid = np.array([fit.x[4], fit.x[5]])
 
-			# trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
-			# trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
+			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
+			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
 
 			print('asteroid trail length: ', trail_length)
+
+			# if True: break
 			# asteroid trail length in 70o13 is 101 tall
 			# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
 			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=height_correction, display=False, err=True)
-
 			# x = np.arange(0, 101, 101/len(obj_row_sums))
 			x = np.arange(0, len(obj_minus_sky), 1)
 			# ax[1].plot(x, obj_minus_sky)
@@ -644,7 +645,7 @@ if __name__ == '__main__':
 
 			# ax[0].legend()
 
-
+		# if True: break
 		indices     = np.array ([len(i) for i in lightcurves])
 		lightcurves = np.hstack(np.array(lightcurves, dtype=object))
 		start_times = np.hstack(np.array(start_times, dtype=object))

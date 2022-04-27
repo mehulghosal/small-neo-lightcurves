@@ -29,7 +29,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	# stars      = file_names[]
-	if 'VH1' not in d: continue
+	if 'GE1' not in d: continue
 
 	for f in file_names:
 		try:
@@ -106,8 +106,8 @@ for d in dir_names:
 		print(d_ra, d_dec)
 
 		args = ['./refcat', f'{f_center.ra.deg}', f'{f_center.dec.deg}', '-rect', f'{d_ra},{d_dec}', '-dir 00_m_16/']
-		# args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rect {d_ra},{d_dec} -dir 00_m_16/'
-		args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rad 1.0 -dir 00_m_16/'
+		args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rect {d_ra},{d_dec} -dir 00_m_16/'
+		# args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rad 1.0 -dir 00_m_16/'
 
 		print(args_str)
 
