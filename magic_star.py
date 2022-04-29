@@ -447,8 +447,8 @@ if __name__ == '__main__':
 			while True:
 			# for i in range(len(star_x)):
 			# for i in range(1):
-				# if i >= len(star_x) or i == 50: break
-				if i==3: break
+				if i >= len(star_x) or i == 50: break
+				#if i==3: break
 
 				centroid = star_x[i], star_y[i]
 				# x_correction = (star_x_min[i] - star_x_max[i])*.10
@@ -637,8 +637,8 @@ if __name__ == '__main__':
 			# lightcurve of asteroid -- no height correction 
 			# obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img, trail_start, trail_end, fwhm=fwhm, display=False, err=True)
 
-			ast_start = int(ast_height_correction)
-			ast_end   = int(len(obj_minus_sky) - ast_height_correction)
+			#ast_start = int(ast_height_correction)
+			#ast_end   = int(len(obj_minus_sky) - ast_height_correction)
 
 			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
 			sky_corrected_lightcurve = trimmed_obj_minus_sky / row_avgs_smooth
@@ -664,7 +664,7 @@ if __name__ == '__main__':
 
 			# ax[0].legend()
 
-		if True: break
+		# if True: break
 		indices     = np.array ([len(i) for i in lightcurves])
 		lightcurves = np.hstack(np.array(lightcurves, dtype=object))
 		start_times = np.hstack(np.array(start_times, dtype=object))
