@@ -518,7 +518,7 @@ if __name__ == '__main__':
 				param_bounds = ([1, L_0[i]/2, -180, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 				try:
-					if cheats_on and True:
+					if cheats_on and False:
 						param = cheat_codes[i]
 						r_fit = residual(param)
 						print('hell ofa cheat code')
