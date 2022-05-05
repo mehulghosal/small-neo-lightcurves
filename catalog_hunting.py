@@ -7,7 +7,17 @@ from astropy.coordinates import SkyCoord
 from astropy.wcs import WCS
 from astropy.wcs import utils
 from astropy import units as u
+from scipy.ndimage import rotate
+from magic_star import point_rotation
 
+star_params = np.loadtxt('star_parameters.csv', delimiter=',', dtype=object, skiprows=1)
+
+L = np.array(star_params[:,1], dtype=float)
+a = np.array(star_params[:,2], dtype=float)
+
+star_params = star_params[np.where(L>0)]
+L = np.array(star_params[:,1], dtype=float)
+a = np.array(star_params[:,2], dtype=float)
 
 # to get absolute mag and orbital information
 from astroquery.jplhorizons import Horizons
@@ -30,6 +40,11 @@ for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	# stars      = file_names[]
 	if 'GE1' not in d: continue
+	star_index = -1
+	for i in range(len(star_params)):
+		# pass
+		if d.split('_')[1] in star_params[i,0]:
+			a = float(star_params[i,2])
 
 	for f in file_names:
 		try:
@@ -39,6 +54,8 @@ for d in dir_names:
 			continue
 		hdr = file[0].header
 		img = file[0].data
+
+		img_star_rotated = rotate(img, a)
 
 
 		# object id from fits file - inconsistent naming --> frustrating
@@ -65,29 +82,23 @@ for d in dir_names:
 			plt.close()
 			continue
 
-		plt.plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
+		# trail_start = point_rotation(trail_start[0], trail_start[1], a, img, img_star_rotated)
+		# trail_end   = point_rotation(trail_end  [0], trail_end  [1], a, img, img_star_rotated)
+		# plt.plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
 		# WCS stuff
 		w = WCS(hdr)
 		c = SkyCoord(f'{hdr["CRVAL1"]} {hdr["CRVAL2"]}', unit=(u.deg, u.deg))
-		# c = SkyCoord(f'{obj[7]} {obj[8]}', unit=(u.deg, u.deg))
-		target_x, target_y = np.round(utils.skycoord_to_pixel(c, w))
 
-		print(target_x, target_y, f'{obj[7]} {obj[8]}')
-		
+		target_x, target_y = np.round(utils.skycoord_to_pixel(c, w))
 
 		trail_centroid = [trail_start[0], int((trail_start[1]+trail_end[1])/2 + .5)]
 
-		# add offset from skycoord_to_pixel
-		x_offset = (-target_x+trail_centroid[0])
+		# # add offset from skycoord_to_pixel
+		x_offset = (-target_x + trail_centroid[0])
 		y_offset = (-target_y + trail_centroid[1]) 
 
-		# plt.plot(target_x + x_offset, target_y + y_offset, 'r+')
 		plt.plot(target_x + x_offset, target_y + y_offset, 'r+')
-
-		# ast_sky_x, ast_sky_y = np.round(utils.pixel_to_skycoord(trail_middle[0], trail_middle[1], w))
-
-		a = utils.pixel_to_skycoord(trail_centroid[0], trail_centroid[1], w)
 
 
 		frame_center = np.array(img.shape)/2
@@ -99,15 +110,12 @@ for d in dir_names:
 		frame_left = [img.shape[0]/2, 0]
 		f_left     = utils.pixel_to_skycoord(frame_left[0], frame_left[1], w)
 
-		d_dec = f_center.separation(f_top).deg * 4
-		d_ra  = f_center.separation(f_left).deg * 4
+		d_dec = f_center.separation(f_top).deg * 2
+		d_ra  = f_center.separation(f_left).deg * 2
 
-		print(f_center.ra.deg, f_center.dec.deg)
-		print(d_ra, d_dec)
-
-		args = ['./refcat', f'{f_center.ra.deg}', f'{f_center.dec.deg}', '-rect', f'{d_ra},{d_dec}', '-dir 00_m_16/']
-		args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rect {d_ra},{d_dec} -dir 00_m_16/'
-		# args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rad 1.0 -dir 00_m_16/'
+		# args = ['./refcat', f'{f_center.ra.deg}', f'{f_center.dec.deg}', '-rect', f'{d_ra},{d_dec}', '-dir 00_m_16/']
+		# args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rect {d_ra},{d_dec} -dir 00_m_16/'
+		args_str = f'./refcat {f_center.ra.deg} {f_center.dec.deg} -rad 1.0 -dir 00_m_16/'
 
 		print(args_str)
 
@@ -121,7 +129,6 @@ for d in dir_names:
 		for i in stars:
 			refcat.append(np.array(i.split(), dtype=float))
 		refcat = np.array(refcat)
-		print(refcat.shape)
 
 
 		try:
@@ -130,51 +137,71 @@ for d in dir_names:
 			print(e, f)
 			continue
 
-		ast_fit = fitted_stars[0]
-		str_fit = fitted_stars[1:]
+		# ast_fit = fitted_stars[0]
+		str_fit = fitted_stars[:]
 
-		our_catalog = utils.pixel_to_skycoord(fitted_stars[:,-2], fitted_stars[:,-1], w)
-		print(our_catalog)
-		# for i in our_catalog: print(i)
+		star_x = fitted_stars[:,4]
+		star_y = fitted_stars[:,5]
 
+		# print(star_params[:,0,5:/])
+		# print(np.where(d.split('_')[1] == star_params[:,0][5:]))
 
+		# # rotating back to (master?) frame
+		
+		our_catalog = utils.pixel_to_skycoord(star_x, star_y, w)
 		refcat_ra_dec = SkyCoord(ra=refcat[:,0]*u.degree, dec=refcat[:,1]*u.degree, frame='fk5')
-		print(refcat_ra_dec)
 		refcat_x, refcat_y = np.round(utils.skycoord_to_pixel(refcat_ra_dec, w))
 
-		idx, d2d, d3d = our_catalog.match_to_catalog_sky(refcat_ra_dec)
+		rotated_x = []
+		rotated_y = []
+		for i in range(len(refcat_x)):
+			rot_x, rot_y = point_rotation(refcat_x[i], refcat_y[i], a, img, img_star_rotated)
 
-		print(idx)
-		print(len(refcat_ra_dec))
-
-
-
-		# inv_filter = np.where()
-
+		# print(our_catalog)
+		# print(refcat_ra_dec)
 
 
-		plt.scatter(refcat_x, refcat_y, color='red', label='all refcat stars')
-		plt.scatter(refcat_x[idx] , refcat_y[idx], color='blue', label='matched refcat')
+		idx, d2d, d3d = our_catalog.match_to_catalog_sky(refcat_ra_dec, nthneighbor=1)
+		idX, d2D, d3D = refcat_ra_dec.match_to_catalog_sky(our_catalog, nthneighbor=1)
 
-		plt.scatter(fitted_stars[:,-2], fitted_stars[:,-1], color='green', label='fitted stars')
-		print(np.max(d2d.deg))
+		max_sep = 100.0 * u.arcsec
+		sep_constraint = d2D < max_sep
+		# refcat_matches = 
 
-		# obj = Horizons(id=obj_id, location='sun', epochs=str(hdr["MJD-OBS"]+2400000.5)) # adding 2.4 million to convert from MJD to JD
-		# ob1 = Horizons(id=obj_id, location='568@399', epochs=str(hdr["MJD-OBS"]+2400000.5)) # for RA and DEC rates
-		# ele = obj.elements()
-		# eph = ob1.ephemerides()
+		# print(idX)
+		# print(len(refcat_ra_dec))
+		# print((d2D.deg)*3600)
 
-		# print(f'{f} mjd: {hdr["MJD-OBS"]}. filter: {hdr["FILTER"]}')
-		# print(f"{ele['H'][0]}  {ele['e'][0]}  {ele['a'][0]}.")
+		plt.scatter(refcat_x[idx] , refcat_y[idx] + y_offset, label='refcat stars')
+		# plt.scatter(refcat_x[sep_constraint], refcat_y[sep_constraint], label='refcat stars')
 
+		# print(a)
 
+		if a<0: 
+			a *= -np.pi/180
+			m = img.shape[0] * np.abs(np.sin(a))
+			star_x_rot =  (star_x -m) * np.cos(a) + star_y * np.sin(a) 
+			star_y_rot = -(star_x -m) * np.sin(a) + star_y * np.cos(a)
 
-		# to_write = f"{f.split('/')[-1]}, {obj_id}, {ele['H'][0]}, {ele['a'][0]}, {ele['e'][0]}, {ele['incl'][0]}, {hdr['MJD-OBS']+2400000.5}, {hdr['RA_DEG']}, {hdr['DEC_DEG']}, {hdr['FILTER']}, {eph['RA_rate'][0]/60}, {eph['DEC_rate'][0]/60} \n"
-		# to_write = f"{eph['DEC_rate'][0]/60} \n"
+		elif a>0:
+			a *= -np.pi/180
+			m = img.shape[1] * np.abs(np.sin(a))
+			star_x_rot =  (star_x) * np.cos(a) + (star_y -m) * np.sin(a)
+			star_y_rot = -(star_x) * np.sin(a) + (star_y -m) * np.cos(a)
 
-		# output.writelines(to_write)
+		# for i in range(len(star_x_rot)):
+		# 	print((star_x[i], star_y[i]), point_rotation(star_x_rot[i], star_y_rot[i], a, img, img_star_rotated))
+
+		# plt.scatter(star_x_rot + x_offset, star_y_rot + y_offset, label='rotated fitted stars')
+		plt.scatter(star_x_rot[idX], star_y_rot[idX], label='rotated fitted stars')
+
+		# plt.scatter(star_x, star_y, label='unrotated')
 		plt.legend()
-		if True: break
+		plt.xlim((0, img.shape[1]))
+		plt.ylim((img.shape[0], 0))
+
+
+		# if True: break
 
 	# if True: break
 

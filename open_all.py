@@ -22,10 +22,10 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 input_file = np.loadtxt('input.csv', dtype=object, skiprows=1, usecols=(i for i in range(25)), delimiter=',')
 
 mins = {'g':100, 'r': 150, 'i': 250}
-
+start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'XD169' in d: continue
+	if not 'VH1' in d: continue
 
 	for f in file_names:
 		try:
@@ -36,6 +36,8 @@ for d in dir_names:
 		hdr = file[0].header
 		img = file[0].data
 
+		# for experimenting, lol
+		start_times.append(float(hdr['MJDATE']))
 
 		# object id from fits file - inconsistent naming --> frustrating
 		obj_id = hdr["OBJECT"][:-2].replace('_', ' ')
@@ -57,7 +59,7 @@ for d in dir_names:
 			trail_start = np.array(obj[-4:-2], dtype=int)
 			trail_end	= np.array(obj[-2:], dtype=int)
 		except Exception as e:
-			print(f,obj[-4:-2],obj[-2:])
+			# print(f,obj[-4:-2],obj[-2:])
 			plt.close()
 			continue
 
@@ -81,5 +83,7 @@ for d in dir_names:
 
 	# if True: break
 
+	plt.figure()
+	plt.plot(np.sort(start_times))
 	plt.show()
 # output.close()
