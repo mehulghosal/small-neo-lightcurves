@@ -1,8 +1,12 @@
 import warnings, subprocess, sys
 import numpy as np
 import astropy as ap
+
 # import matplotlib.pyplot as plt
+from astropy.time import Time
+from astropy.table import Table
 from astropy.timeseries import LombScargle
+from astropy.timeseries import TimeSeries
 # from matplotlib import colors
 from astropy.io import fits
 from scipy.ndimage import rotate
@@ -116,7 +120,7 @@ def bin_lightcurve(lightcurve, trail_length, method):
 		start_ind, end_ind = 0,0
 		if t<N: 				# too close to start of trail
 			start_ind, end_ind = 0, t+2*N+1
-		elif t>=L-N: # too close to end of trail
+		elif t>=L-N: 			# too close to end of trail
 			start_ind, end_ind = t-2*N-1, L-1
 		else: 					# juuuust right
 			start_ind, end_ind = t-N, t+N
@@ -125,8 +129,69 @@ def bin_lightcurve(lightcurve, trail_length, method):
 	smoothed = np.array(smoothed)
 	return smoothed
 
-def fold_lightcurve(lightcurve, period):
-	pass
+# period < exp_time
+def fold_lightcurve_(lightcurve, period, exp_time=60):
+	# exp_time = 60
+
+	phase = np.arange(0, period, .05)
+	phase_residuals = []
+	best_phase = 0
+	best_fold  = 0
+	for t_0 in phase:
+		# i think its ok to round down here with int(), come back here if break
+		n_periods = int((exp_time-t_0)/period)
+		# print('n_periods: ', n_periods)
+		phased_lightcurves = []
+		for i in range(n_periods):
+			# print(int(t_0 + i*period + .5) - int(t_0 + (i+1)*period + .5) )
+			phased_lightcurves.append( np.array(lightcurve[ int(t_0 + i*period + .5) : int(t_0 + (i+1)*period + .5) ]) )
+		# print('phased_lightcurves', np.array(phased_lightcurves, dtype=object))
+		residuals = []
+		# ok so first attempt at residuals is adjacent differences --> median/mean
+		for i in range(len(phased_lightcurves)-1):
+			if phased_lightcurves[i].shape == phased_lightcurves[i+1].shape:
+				residuals.append(np.median( phased_lightcurves[i] - phased_lightcurves[i+1] ))
+			else:
+				next_lc = bin_lightcurve(phased_lightcurves[i+1], len(phased_lightcurves[i]), np.median)
+				residuals.append(np.median( phased_lightcurves[i] - next_lc ))
+
+		phase_residuals.append(np.median(residuals))
+		if np.array(phase_residuals).min() >= np.median(residuals): 
+			# print('true: ', np.median(residuals))
+			best_fold = phased_lightcurves
+			best_phase=t_0
+	return best_fold, best_phase
+
+
+def fold_lightcurve(lightcurve, time, period, exp_time=60, phase=0):
+	lightcurve_table = Table([Time(time, format='mjd'), lightcurve], names=('time', 'data'))
+	# ts = TimeSeries(data=list(lightcurve), time=Time(time, format='mjd'))
+	ts = TimeSeries(data=lightcurve_table)
+	folded_lc = ts.fold( period=period*u.second, normalize_phase=False)
+	# print(ts)
+	return folded_lc
+
+	# exp_time = 60
+	# n_periods = int(exp_time/period + .5)
+	# folded_lightcurves = []
+	# for i in range(n_periods):
+	# 	folded_lightcurves.append( lightcurve[ phase + i * period ] :  )
+
+
+# returns periods, power, and peak power
+def periodogram(time, lightcurve, num_maxes=1, err=None):
+	if err is None:
+		frequency, power = LombScargle(time, lightcurve).autopower()
+	else:
+		frequency, power = LombScargle(time, lightcurve, err).autopower()
+	period = 1/frequency * 24*3600
+	# period = 1/frequency
+
+	# peak_frequency = frequency[np.argmax(power)]
+	peak_period    = period[(-power).argsort()[:num_maxes]]
+	# print('peak period: ', peak_period )
+
+	return period, power, (peak_period)
 
 
 #assuming vertical streaks for drawing rectangles and moving down 
@@ -139,8 +204,6 @@ def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = F
 	# col_sums /= np.max(col_sums)
 	rect_width = np.arange(0, 2*obj_width, 1)
 	param_vals, param_covs = curve_fit(model, rect_width, col_sums, p0=[3, obj_width, .03, 60000, 20000, -3])
-
-		
 
 	# ax[2].scatter(rect_width, col_sums, label='column sums')
 	# ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
@@ -185,7 +248,7 @@ count = 0
 # img_rotis not fitting variables - want to pass these in as constants;
 def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
-	global img_rot, star_x_ext, star_y_ext, centroid
+	global img_rot, star_x_ext, star_y_ext, centroid, flux
 	
 	L_but_longer = L*1
 	s_but_wider  = s*1
@@ -236,8 +299,6 @@ def residual(par):
 	x_extension = box_x_width * .2
 	# 4/25/2022 --> box has to be bigger to account to account for whole trail
 
-
-
 	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
 	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
 	# observed = img_rot[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
@@ -275,9 +336,6 @@ if __name__ == '__main__':
 		lightcurves = []
 		errors      = []
 
-		# fig_ast, ax_ast = plt.subplots()
-		# ax_ast.set_xlabel('Julian date')
-
 		for f in file_names:
 			try:
 				file = fits.open(f)
@@ -296,13 +354,7 @@ if __name__ == '__main__':
 			obj_id = f.split('_')
 			obj_id = obj_id[0][2:] + ' ' + obj_id[1]
 
-			# plt.figure()
-			# fig, ax = plt.subplots(1,3)
-			# ax[0].set_title(f)
-			# ax[0].imshow(img, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
-
 			obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
-			
 			
 			try:
 				obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
@@ -314,6 +366,8 @@ if __name__ == '__main__':
 				# plt.close()
 				continue
 
+			# global variable flux to capture the total flux of the trail
+			flux = 0
 			
 			angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
 			img_rotated = rotate(img, angle)
@@ -336,27 +390,28 @@ if __name__ == '__main__':
 
 			trail_centroid = np.array([trail_start[0], np.mean([trail_start[1], trail_end[1]])])
 
-			#print('trail length: ', trail_length)
-
 
 			# ASTEROID TRAIL FITTING
-			img_rot = img_rotated
-			centroid = trail_centroid
+			img_rot    = img_rotated
+			centroid   = trail_centroid
 			star_x_ext = [trail_centroid[0] - fwhm, trail_centroid[0] + fwhm]
 			star_y_ext = [trail_start[1], trail_end[1]]
 
-			p0 = np.array([trail_spread[0], trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
+			p0           = np.array([trail_spread[0], trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, trail_length/2, -180, 0, 0, 0], [15, trail_length*5, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
 
-			fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
-			print('asteroid initial residual: ', residual(p0))
-			print('asteroid fit residual: ' , residual(fit.x))
+			fit          = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
 
-			fwhm = fit.x[0] * 2.355
-			trail_length = int(fit.x[1]+.5)
-			#height_correction = int(trail_length * .2 + .5) # 20% more rows above and below to get some sky 
+			ast_flux     = flux
+			
+			print('asteroid initial residual: ', residual(p0))
+			print('asteroid fit residual: '    , residual(fit.x))
+
+			fwhm 				  = fit.x[0] * 2.355
+			trail_length 		  = int(fit.x[1]+.5)
 			ast_height_correction = trail_length * .2
-			trail_centroid = np.array([fit.x[4], fit.x[5]])
+			
+			trail_centroid 		  = np.array([fit.x[4], fit.x[5]])
 
 			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
 			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
@@ -372,7 +427,7 @@ if __name__ == '__main__':
 			
 
 			normed_ast = obj_minus_sky / np.nanmedian(obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)- ast_height_correction + .5) ])
-			param_ast_norm_box, covs_ast_norm_box = curve_fit(normal_box, np.arange(len(obj_minus_sky)), obj_minus_sky, p0=[ast_height_correction, len(obj_minus_sky)-ast_height_correction ])
+			param_ast_norm_box, covs_ast_norm_box = curve_fit(normal_box, np.arange(len(normed_ast)), normed_ast, p0=[ast_height_correction, len(obj_minus_sky)-ast_height_correction ])
 			ast_start, ast_end = int(param_ast_norm_box[0] + .5), int(param_ast_norm_box[1] + .5)
 
 			trimmed_obj_minus_sky = obj_minus_sky[ast_start:ast_end]
@@ -380,12 +435,7 @@ if __name__ == '__main__':
 
 			trail_length = ast_end - ast_start
 
-			# x = np.arange(0, 101, 101/len(obj_row_sums))
 			x = np.arange(0, len(obj_minus_sky), 1)
-			# ax[1].plot(x, obj_minus_sky)
-
-			# UNCOMMENT LATER, maybe
-			# ax[1].errorbar(x, obj_minus_sky, yerr = sigma_row, fmt='r', capsize=3, linewidth=2, elinewidth=1, alpha=.6)
 
 			# WCS stuff
 			w = WCS(hdr)
@@ -417,13 +467,10 @@ if __name__ == '__main__':
 			for i in range(len(star_x)):
 				star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
 				dist_to_asteroid.append((star_x[i] - trail_centroid[0])**2 + (star_y[i] - trail_centroid[1])**2)
-				# star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i], star_y_min[i], angle, img, img_rotated)
-				# star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i], star_y_max[i], angle, img, img_rotated)
-				# print(star_x[i], star_y[i])
-
+				
 			# filtering based on distance to asteroid
 			dist_to_asteroid = np.array(dist_to_asteroid)
-			dist_sorted = np.argsort(dist_to_asteroid)
+			dist_sorted      = np.argsort(dist_to_asteroid)
 
 			star_x     = star_x[dist_sorted]
 			star_y     = star_y[dist_sorted]
@@ -471,8 +518,10 @@ if __name__ == '__main__':
 			trail_ends   = []
 			residuals    = []
 
-			row_sums = []
+			row_sums 		= []
 			row_sums_smooth = []
+
+			total_flux      = []
 
 			i = 0
 			while True:
@@ -527,7 +576,8 @@ if __name__ == '__main__':
 						r_fit = residual(fit.x)
 						param = np.array(fit.x)
 						# param = p0
-						r_fit = residual(param)
+						# r_fit = residual(param)
+					total_flux.append(flux)
 				except Exception as e:
 					print(f, i, e)
 					i+=1
@@ -569,9 +619,7 @@ if __name__ == '__main__':
 				row_sums_smooth.append(smoothed)
 				trail_starts.append(star_trail_start)
 				trail_ends  .append(star_trail_end  )
-				# img_stars   .append(img_star_rotated)
-
-				stars       .append(np.append(param, a_0[i]))
+				stars       .append(np.hstack((param, a_0[i], flux)))
 				
 				print(' ')
 				i+=1
@@ -583,6 +631,7 @@ if __name__ == '__main__':
 			residuals    = np.array(residuals)
 			trail_starts = np.array(trail_starts)
 			trail_ends   = np.array(trail_ends)
+			total_flux   = np.array(total_flux)
 
 			print('initially, ', stars.shape[0])
 
@@ -603,6 +652,7 @@ if __name__ == '__main__':
 			trail_starts = trail_starts[star_filter]
 			trail_ends   = trail_ends  [star_filter]
 			residuals    = residuals   [star_filter]
+			total_flux   = total_flux  [star_filter]
 
 			row_sums_smooth = row_sums_smooth[star_filter]
 			print('filtering: ', stars.shape[0])
@@ -613,31 +663,16 @@ if __name__ == '__main__':
 			stars        = stars       [res_filter]
 			trail_starts = trail_starts[res_filter]
 			trail_ends   = trail_ends  [res_filter]
+			total_flux   = total_flux  [res_filter]
 
 			row_sums_smooth = row_sums_smooth[res_filter]
 
-			
-			# ax[0].plot([trail_starts[:,0], trail_ends[:,0]], [trail_starts[:,1], trail_ends[:,1]], 'y*', ms=3 )
-
-			# ax[0].scatter(star_x, star_y, c='orange', s=2, label='centroid')
-			# ax[0].scatter(star_x_min, star_y_min, c='green', s=2, label='mins')
-			# ax[0].scatter(star_x_max, star_y_max, c='purple', s=2, label='maxes')
-			# ax[0].legend()
-
-			# residuals = []
-
-			#print('residuals argsort', r_sort)
 			np.savetxt(f'{f[:-4]}_params.txt', stars)
 
-			# row_sums = np.array(row_sums, dtype=object)
-			# row_sums_smooth = np.array(row_sums_smooth, dtype=object)[r_sort] # type object for ragged nested sequences
-			row_sums_smooth = row_sums_smooth[:10]
+			row_sums_smooth = row_sums_smooth[:]
 
-			#for k in row_sums_smooth: print(k)
 			print('row_sums_smooth shape: ', row_sums_smooth.shape)
 
-			# row_medians = np.median(row_sums, axis=0)
-			#row_avgs_smooth = np.median(row_sums_smooth, axis=0)
 			row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
 		
 			norm = np.nanmedian(row_avgs_smooth)

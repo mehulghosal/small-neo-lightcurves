@@ -25,7 +25,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'VH1' in d: continue
+	if not 'GE1' in d: continue
 
 	for f in file_names:
 		try:
@@ -83,7 +83,7 @@ for d in dir_names:
 
 	# if True: break
 
-	plt.figure()
-	plt.plot(np.sort(start_times))
-	plt.show()
+	# plt.figure()
+	# plt.plot(np.sort(start_times))
+	# plt.show()
 # output.close()

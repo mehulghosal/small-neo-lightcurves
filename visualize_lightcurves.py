@@ -4,81 +4,92 @@ import astropy as ap
 from astropy.timeseries import LombScargle
 from astropy.io import fits
 import os
-from os.path import isfile, join
+from os.path import isfile, join, isdir
+from magic_star import bin_lightcurve, periodogram, fold_lightcurve
 
-directory  = './output/'
-file_names = np.array([directory+f for f in os.listdir(directory) if isfile(join(directory,f))], dtype=str)
+directory = './'	
+dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(directory,f))] 
 
-lightcurves = []
-indices     = []
+# directory  = './output/'
+# file_names = np.array([directory+f for f in os.listdir(directory) if isfile(join(directory,f))], dtype=str)
+count=0
+if __name__ == '__main__':
+	
+	for d in dir_names:
+		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
+		yea = False
 
-for i in file_names:
-	if 'indices' in i:
-		indices.append(i)
-	else: lightcurves.append(i)
+		if  not ('GE1' in d): continue
+		# if not f_name in d: continue
+		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
+
+		for f in file_names:
+			if '_lightcurve' not in f:
+				continue
+			# if count==5: continue
+			# if not count==1: continue
+			count+=1
+
+			lc_file = np.loadtxt(f)
+
+			# plt.figure()
+			# plt.scatter(lc_file[:, 0], lc_file[:,1])
+
+			plt.figure()
+			time   = lc_file[:,0]
+			errs   = lc_file[:,2]
+			binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)), np.nanmedian)
+
+			binned = -2.5*np.log10(binned)
+			# binned = lc_file[:,1]
+			# plt.scatter(np.linspace(0, 60, len(binned)), binned)
+			plt.scatter(time, binned)
+			# plt.errorbar(np.linspace(0, 60, len(binned)), binned, yerr=errs)
+			# plt.scatter(lc)
+			plt.title(f)
+
+			# period, power, peak_period = periodogram(np.arange(len(binned)), binned, num_maxes = 20)
+			period, power, peak_period = periodogram(time, binned, num_maxes = 100)
+			# plt.figure ()
+			# plt.plot(period, power)
+			# plt.title(f)
+			# plt.xlim((0, 100))
+
+			print('peak_period: ', peak_period[np.where(peak_period>1)][:5])
+			actual_peak = peak_period[:] *2
+			for T in peak_period:
+				if T>14: 
+					actual_peak=T
+					break
+			print(actual_peak)
+
+			# folded_lightcurves, phase = fold_lightcurve(binned, time, actual_peak, exp_time=len(binned))
+			# print('phase', phase)
+			# plt.figure()
+			# count_lc = 0
+			# for lc in folded_lightcurves:
+			# 	plt.scatter(np.arange(len(lc)), lc, label=count_lc)
+			# 	count_lc+=1
+			# plt.title(f)
+			# plt.legend()
+
+			# WORKS!!!
+			folded_lightcurve = fold_lightcurve(binned, time, actual_peak, exp_time=time[-1]-time[0])
 
 
-# print(len(lightcurves), len(indices))
 
-for i in range(len(indices)):
-	lc = lightcurves[i]
-	f = np.loadtxt(lc)
-	time = f[:,0]
-	intensity = f[:,1]
-	# mag = -2.5*np.log(intensity)
-	if 'VH1' not in lc: continue
-	intensity_err = f[:,2]
-	mag_err = 1.086 * intensity_err / intensity 
-	# intensity = -2.5*np.log(intensity)
 
-	index_array = np.loadtxt(indices[i])
+			# print( 'time: ', folded_lightcurve.time)
+			# print(type(folded_lightcurve['data']))
+			# print(folded_lightcurve.colnames )
 
-	rolling_ind = 0
-	p = []
-	# if True:
-	# if 'FF14' in lc:
-	for index in index_array:
-		start = int(rolling_ind)
-		end   = int(start + index - 1)
-		rolling_ind += i
-		frequency, power = LombScargle(time[start:end], intensity[start:end], intensity_err[start:end]).autopower()
-		frequency /= (24 * 3600)
-		peak_frequency   = frequency[(-power).argsort()[:5]] 
-		peak_period      = 1/peak_frequency 
-		print(start, end)
-		print(f'peak period{rolling_ind} : ', peak_period )
-		p.append(peak_period)
-		plt.figure()
-		plt.scatter(time[start:end], intensity[start:end])
-		plt.title(lc)
-		print()
-	print('median and mean of individual periods: ')
-	print(np.median(p, axis=0), np.mean(p, axis=0))
-	frequency, power = LombScargle(time, intensity, mag_err).autopower()
-	frequency /= (24 * 3600)
-	peak_frequency   = frequency[(-power).argsort()[:3]]
-	peak_period      = 1/peak_frequency
-	print('peak period combined: ', peak_period )
-	plt.figure()
-	plt.scatter(time, intensity)
-	plt.title(lc)
+			phase = np.array(folded_lightcurve['time'].value)
+			data  = np.array(folded_lightcurve['data'])
+			print(phase)
+			print(data)
 
-	plt.figure()
-	plt.plot(frequency, power)
-	plt.axvline(x=peak_frequency[0], color='black', label=f'Peak freq: {peak_frequency[0]}')
-	# plt.xlim(0, 1e4)
-	# plt.yscale('log')
-	# plt.xscale('log')
-	plt.legend()
+			plt.figure()
+			# plt.scatter( np.array(folded_lightcurve['time']) , np.array(folded_lightcurve['data']) )
+			plt.scatter( phase, data )
 
-	med_intensity = np.nanmedian(intensity)
-	# print(med_intensity)
-	threshold = .1
-	# plt.ylim(-threshold*med_intensity , threshold*med_intensity )
-	# plt.ylim(-400, 400)
-
-	plt.figure()
-	plt.plot(time)
-
-	print()
-	plt.show()
+		plt.show()
