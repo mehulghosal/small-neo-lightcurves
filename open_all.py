@@ -3,9 +3,9 @@ import astropy as ap
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from astropy.io import fits
-
+from scipy.ndimage import rotate
 from astropy.wcs import WCS
-
+from magic_star import point_rotation
 # to get absolute mag and orbital information
 from astroquery.jplhorizons import Horizons
 
@@ -25,7 +25,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'GE1' in d: continue
+	if not 'LT1' in d: continue
 
 	for f in file_names:
 		try:
@@ -63,7 +63,22 @@ for d in dir_names:
 			plt.close()
 			continue
 
-		plt.plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
+		plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail')
+		plt.legend()
+
+		angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
+		img_rotated = rotate(img, angle)
+		# ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
+
+		trail_start = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
+		trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
+
+		plt.figure()
+		plt.title(f)
+		plt.imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
+		plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail rotated')
+
+		plt.legend()
 		
 
 		# obj = Horizons(id=obj_id, location='sun', epochs=str(hdr["MJD-OBS"]+2400000.5)) # adding 2.4 million to convert from MJD to JD
@@ -81,9 +96,9 @@ for d in dir_names:
 
 		# output.writelines(to_write)
 
-	# if True: break
+		if True: break
 
 	# plt.figure()
 	# plt.plot(np.sort(start_times))
-	# plt.show()
+	plt.show()
 # output.close()

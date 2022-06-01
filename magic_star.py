@@ -169,7 +169,9 @@ def fold_lightcurve(lightcurve, time, period, exp_time=60, phase=0):
 	ts = TimeSeries(data=lightcurve_table)
 	folded_lc = ts.fold( period=period*u.second, normalize_phase=False)
 	# print(ts)
-	return folded_lc
+	phase = np.array(folded_lc['time'].value)
+	data  = np.array(folded_lc['data'])
+	return phase, data
 
 	# exp_time = 60
 	# n_periods = int(exp_time/period + .5)
@@ -292,20 +294,20 @@ def residual(par):
 	L_but_longer = L
 	s_but_wider  = s*1.3
 
-	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1
-	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1
+	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.1
+	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1.1
 
 	y_extension = box_y_width * .2
 	x_extension = box_x_width * .2
 	# 4/25/2022 --> box has to be bigger to account to account for whole trail
 
-	# observed = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
+	# observed = img_rot[int(y_0 - box_y_width/2 + .5):int(y_0 + box_y_width/2 + .5) , int(x_0 - box_x_width + .5):int(x_0 + box_x_width + .5)]
 	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
 	# observed = img_rot[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
 	# observed_row_sums = np.array([np.sum(i) for i in observed])
 	# observed_col_sums = np.sum(observed, axis=0)
 
-	# model_slice = model[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2) , int(x_0 - s_but_wider*2.355):int(x_0 + s_but_wider*2.355)]
+	# model_slice = model[int(y_0 - box_y_width/2 + .5):int(y_0 + box_y_width/2 + .5) , int(x_0 - box_x_width + .5):int(x_0 + box_x_width + .5)]
 	model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
 	# model_slice = model[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
 	# model_row_sums = np.array([np.sum(i) for i in model_slice])
@@ -466,6 +468,9 @@ if __name__ == '__main__':
 			# to rotate to asteroid's reference -- SExtractor works with raw fits file data
 			for i in range(len(star_x)):
 				star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
+				star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i] , star_y_min[i] , angle, img, img_rotated)
+				star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i] , star_y_max[i] , angle, img, img_rotated)
+
 				dist_to_asteroid.append((star_x[i] - trail_centroid[0])**2 + (star_y[i] - trail_centroid[1])**2)
 				
 			# filtering based on distance to asteroid

@@ -39,7 +39,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	# stars      = file_names[]
-	if 'GE1' not in d: continue
+	if 'VH1' not in d: continue
 	star_index = -1
 	for i in range(len(star_params)):
 		# pass
@@ -117,7 +117,7 @@ for d in dir_names:
 
 		# RA, Dec, g, r, i, z, J, cyan, orange.
 		ref_stars = np.array(os.popen(args_str).read().split('\n')[:-1])
-		print()
+
 		# print(stars)
 		# print(stars.stderr)
 		# print(stars)
@@ -125,9 +125,8 @@ for d in dir_names:
 		for i in ref_stars:
 			refcat.append(np.array(i.split(), dtype=float))
 		refcat = np.array(refcat)
-		print(len(refcat))
 
-		refcat_ra_dec = SkyCoord(ra=refcat[:,0]*u.degree, dec=refcat[:,1]*u.degree, frame='fk5')
+		refcat_ra_dec      = SkyCoord(ra=refcat[:,0]*u.degree, dec=refcat[:,1]*u.degree, frame='fk5')
 		refcat_x, refcat_y = np.round(utils.skycoord_to_pixel(refcat_ra_dec, w))
 
 
@@ -144,6 +143,8 @@ for d in dir_names:
 		star_y = fitted_stars[:,5]
 
 		flux   = fitted_stars[:,-1]
+		mag    = -2.5 * np.log10(flux)
+		# print('mag', mag)
 
 		# print(star_params[:,0,5:/])
 		# print(np.where(d.split('_')[1] == star_params[:,0][5:]))
@@ -173,25 +174,26 @@ for d in dir_names:
 
 		
 		our_catalog = utils.pixel_to_skycoord(star_x_rot, star_y_rot, w)
-		print(our_catalog)
+		# our_catalog = utils.pixel_to_skycoord(star_x_rot, star_y_rot, w)
+		# print(our_catalog)
 
 
 		# plt.scatter(star_x_rot + x_offset, star_y_rot + y_offset, label='rotated fitted stars')
 		# plt.scatter(star_x_rot[idX], star_y_rot[idX], label='rotated fitted stars')
 
-		idx, d2d, d3d = our_catalog.match_to_catalog_sky(refcat_ra_dec, nthneighbor=3)
-		idX, d2D, d3D = refcat_ra_dec.match_to_catalog_sky(our_catalog, nthneighbor=3)
+		idx, d2d, d3d = our_catalog.match_to_catalog_sky(refcat_ra_dec, nthneighbor=1)
+		idX, d2D, d3D = refcat_ra_dec.match_to_catalog_sky(our_catalog, nthneighbor=1)
 
-		max_sep = 100.0 * u.arcsec
-		sep_constraint = np.where(d2D < max_sep)
+		max_sep = 10.0 * u.arcsec
+		sep_constraint = d2d < max_sep
 		# refcat_matches = 
 
 		# print(idX)
-		print(refcat_ra_dec[idx])
+		# print(refcat_ra_dec[idx[sep_constraint]])
 		# print((d2D.deg)*3600)
-		print(len(sep_constraint[0]))
+		# print(len(sep_constraint[0]))
 
-		plt.scatter(refcat_x[idx] , refcat_y[idx], label='refcat stars')
+		plt.scatter(refcat_x[idx[sep_constraint]] , refcat_y[idx[sep_constraint]], label='refcat stars')
 		# plt.scatter(refcat_x , refcat_y, label='refcat stars')
 		# plt.scatter(refcat_x[sep_constraint], refcat_y[sep_constraint], label='refcat stars')
 
