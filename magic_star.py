@@ -60,11 +60,10 @@ def point_rotation(x,y,a,img,img_rot):
 
 	return x_, y_
 
-gain=1.6
 # b if given is the mean background per pixel
-def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=None, display=False, err=False, binning=None):
-	obj_width = fwhm
-	sky_width = 2*fwhm
+def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=None, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=1, sky_width=4):
+	obj_width = obj_width*fwhm
+	sky_width = sky_width*fwhm
 
 	if height_correction is not None:
 		trail_start[1] -= height_correction
@@ -75,19 +74,21 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 	sky_left  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width-sky_width + .5):int(trail_start[0]-obj_width + .5)]
 	sky_right = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]+obj_width + .5):int(trail_start[0]+obj_width+sky_width + .5)]
 
-	obj_row_sums = np.array([np.sum(i) for i in obj_rect])
+	obj_row_sums      = np.array([np.sum(i) for i in obj_rect])
 	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
 	sky_right_row_sum = np.array([np.sum(i) for i in sky_right])
-	sky_row_avg = (sky_right_row_sum+sky_left_row_sum)/(sky_right.shape[1]+sky_left.shape[1])
+	sky_row_sum       = sky_right_row_sum+sky_left_row_sum  # total sky counts
+	sky_n_pixels      = sky_right.size+sky_left.size		# num sky pixels
+	sky_row_avg       = sky_row_sum/sky_n_pixels			# sky counts/n_px
 
 	if b is not None:
 		sky_row_avg = b
 
 	obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
-	global gain
+	# global gain
 	
-	sigma_row = obj_minus_sky/gain + (len(obj_row_sums)) * (sky_row_avg/gain + hdr['RDNOISE']**2) + (len(obj_row_sums))**2 * sky_row_avg**2 # from magnier
+	sigma_row = obj_minus_sky/gain + (len(obj_row_sums)) * (sky_row_avg/gain + rd_noise**2) + (len(obj_row_sums))**2 * (sky_row_sum**.5 * sky_n_pixels)**2 # from magnier
 	sigma_row = sigma_row ** .5
 
 
@@ -99,7 +100,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 	r = []
 
 	if binning is not None:
-		r.append(bin_lightcurve(obj_minus_sky, binning))
+		r.append(bin_lightcurve(obj_minus_sky, binning, np.median))
 	else: 
 		r.append(obj_minus_sky)
 	
@@ -129,38 +130,6 @@ def bin_lightcurve(lightcurve, trail_length, method):
 	smoothed = np.array(smoothed)
 	return smoothed
 
-# period < exp_time
-def fold_lightcurve_(lightcurve, period, exp_time=60):
-	# exp_time = 60
-
-	phase = np.arange(0, period, .05)
-	phase_residuals = []
-	best_phase = 0
-	best_fold  = 0
-	for t_0 in phase:
-		# i think its ok to round down here with int(), come back here if break
-		n_periods = int((exp_time-t_0)/period)
-		# print('n_periods: ', n_periods)
-		phased_lightcurves = []
-		for i in range(n_periods):
-			# print(int(t_0 + i*period + .5) - int(t_0 + (i+1)*period + .5) )
-			phased_lightcurves.append( np.array(lightcurve[ int(t_0 + i*period + .5) : int(t_0 + (i+1)*period + .5) ]) )
-		# print('phased_lightcurves', np.array(phased_lightcurves, dtype=object))
-		residuals = []
-		# ok so first attempt at residuals is adjacent differences --> median/mean
-		for i in range(len(phased_lightcurves)-1):
-			if phased_lightcurves[i].shape == phased_lightcurves[i+1].shape:
-				residuals.append(np.median( phased_lightcurves[i] - phased_lightcurves[i+1] ))
-			else:
-				next_lc = bin_lightcurve(phased_lightcurves[i+1], len(phased_lightcurves[i]), np.median)
-				residuals.append(np.median( phased_lightcurves[i] - next_lc ))
-
-		phase_residuals.append(np.median(residuals))
-		if np.array(phase_residuals).min() >= np.median(residuals): 
-			# print('true: ', np.median(residuals))
-			best_fold = phased_lightcurves
-			best_phase=t_0
-	return best_fold, best_phase
 
 
 def fold_lightcurve(lightcurve, time, period, exp_time=60, phase=0):
@@ -350,6 +319,7 @@ if __name__ == '__main__':
 
 			exp_time   = float(hdr['EXPMEAS'])
 			gain       = float(hdr['GAIN'])
+			rd_noise   = float(hdr['RDNOISE'])
 			# obs_filter = float(hdr['FILTE'])
 
 			# object id from directory name --> string splicing
@@ -411,7 +381,7 @@ if __name__ == '__main__':
 
 			fwhm 				  = fit.x[0] * 2.355
 			trail_length 		  = int(fit.x[1]+.5)
-			ast_height_correction = trail_length * .2
+			ast_height_correction = trail_length * 0
 			
 			trail_centroid 		  = np.array([fit.x[4], fit.x[5]])
 
@@ -425,7 +395,7 @@ if __name__ == '__main__':
 			# asteroid trail length in 70o13 is 101 tall
 			# ax[0].plot([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*')
 
-			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=ast_height_correction, display=False, err=True)
+			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, trail_start, trail_end, fwhm=fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 			
 
 			normed_ast = obj_minus_sky / np.nanmedian(obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)- ast_height_correction + .5) ])
@@ -607,7 +577,7 @@ if __name__ == '__main__':
 				fwhm = s * 2.355
 				height_correction = -L * .15
 
-				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, height_correction = height_correction, display=False, err=True)
+				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, height_correction = height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 
 				# normalized_star = str_minus_sky / np.nanmedian(str_minus_sky[int(height_correction+.5): int(len(str_minus_sky)-height_correction+.5)] )
 				# param_norm_box, covs_norm_box = curve_fit(normal_box, np.arange(len(str_minus_sky)), str_minus_sky, p0=[height_correction, len(str_minus_sky)-height_correction ])
