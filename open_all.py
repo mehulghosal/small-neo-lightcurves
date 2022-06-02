@@ -25,7 +25,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'LT1' in d: continue
+	if not 'CE3' in d: continue
 
 	for f in file_names:
 		try:
@@ -64,7 +64,7 @@ for d in dir_names:
 			continue
 
 		plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail')
-		plt.legend()
+		# plt.legend()
 
 		angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
 		img_rotated = rotate(img, angle)
@@ -73,12 +73,12 @@ for d in dir_names:
 		trail_start = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
 		trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
 
-		plt.figure()
-		plt.title(f)
-		plt.imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
-		plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail rotated')
+		# plt.figure()
+		# plt.title(f)
+		# plt.imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
+		# plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail rotated')
 
-		plt.legend()
+		# plt.legend()
 		
 
 		# obj = Horizons(id=obj_id, location='sun', epochs=str(hdr["MJD-OBS"]+2400000.5)) # adding 2.4 million to convert from MJD to JD
