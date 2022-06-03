@@ -575,7 +575,7 @@ if __name__ == '__main__':
 				star_trail_end   = np.array([x_0, y_0 + L/2])
 
 				fwhm = s * 2.355
-				height_correction = -L * .15
+				height_correction = -L * 0
 
 				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, height_correction = height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 
