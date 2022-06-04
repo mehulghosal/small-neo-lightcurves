@@ -366,8 +366,8 @@ if __name__ == '__main__':
 			# ASTEROID TRAIL FITTING
 			img_rot    = img_rotated
 			centroid   = trail_centroid
-			star_x_ext = [trail_centroid[0] - fwhm, trail_centroid[0] + fwhm]
-			star_y_ext = [trail_start[1], trail_end[1]]
+			star_x_ext = [trail_centroid[0] - 4*fwhm, trail_centroid[0] + 4*fwhm]
+			star_y_ext = [trail_start[1] - 20, trail_end[1] + 20]
 
 			p0           = np.array([trail_spread[0], trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, trail_length/2, -180, 0, 0, 0], [15, trail_length*5, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
@@ -534,8 +534,8 @@ if __name__ == '__main__':
 				# centroid[0] += star_deviation
 
 				# setting global variables to predefine how big the star fitting box is, *only lengthwise, because fitting width with fwhm
-				star_x_ext = centroid[0] - star_fwhm, centroid[0] + star_fwhm
-				star_y_ext = centroid[1] - l/2  , lower_rite[1] + l/2
+				star_x_ext = centroid[0] - 4*star_fwhm, centroid[0] + 4*star_fwhm
+				star_y_ext = centroid[1] - l/2 *1.1 , lower_rite[1] + l/2 *1.1
 
 				p0 = np.array([3, L_0[i], 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
