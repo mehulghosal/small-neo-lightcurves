@@ -39,7 +39,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 	# stars      = file_names[]
-	if 'VH1' not in d: continue
+	if 'GE1' not in d: continue
 	star_index = -1
 	for i in range(len(star_params)):
 		# pass
@@ -73,7 +73,6 @@ for d in dir_names:
 
 		plt.figure()
 		plt.title(f)
-		plt.imshow(img, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
 
 		obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
 
@@ -86,6 +85,10 @@ for d in dir_names:
 			# print(f,obj[-4:-2],obj[-2:])
 			plt.close()
 			continue
+
+		angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
+		img_rotated = rotate(img, angle)
+		plt.imshow(img, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
 
 		# trail_start = point_rotation(trail_start[0], trail_start[1], a, img, img_star_rotated)
 		# trail_end   = point_rotation(trail_end  [0], trail_end  [1], a, img, img_star_rotated)
@@ -159,6 +162,8 @@ for d in dir_names:
 		
 		# # rotating back to (master?) frame
 
+		a+=angle
+
 		if a<0: 
 			a *= -np.pi/180
 			m = img.shape[0] * np.abs(np.sin(a))
@@ -193,7 +198,7 @@ for d in dir_names:
 		# print((d2D.deg)*3600)
 		# print(len(sep_constraint[0]))
 
-		plt.scatter(refcat_x[idx[sep_constraint]] , refcat_y[idx[sep_constraint]], label='refcat stars')
+		# plt.scatter(refcat_x[idx[sep_constraint]] , refcat_y[idx[sep_constraint]], label='refcat stars')
 		# plt.scatter(refcat_x , refcat_y, label='refcat stars')
 		# plt.scatter(refcat_x[sep_constraint], refcat_y[sep_constraint], label='refcat stars')
 

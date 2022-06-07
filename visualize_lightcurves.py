@@ -19,7 +19,7 @@ if __name__ == '__main__':
 		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 		yea = False
 
-		if  not ('CD31' in d): continue
+		if  not ('GE1' in d): continue
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
@@ -28,21 +28,23 @@ if __name__ == '__main__':
 				continue
 			# if count==5: continue
 			count+=1
-			# if not count==1: continue
-
+			if not count==1: continue
 
 			lc_file = np.loadtxt(f)
 
-			time   = lc_file[:,0] 
+			time_  = lc_file[:,0] 
+
 			errs   = lc_file[:,2]
-			binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)), np.nanmedian)
+			binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)/1.25), np.nanmedian)
 
 			binned = -2.5*np.log10(binned)
+			time   = np.linspace(time_[0], time_[-1], len(binned))
 			
 			fig = plt.figure()
 			ax1 = fig.add_subplot(111)
 			ax2 = ax1.twiny()
 			ax1.scatter(time, binned)
+			# ax1.scatter(np.linspace(time[0], time[-1], len(binned)), binned)
 			ax1.set_xlabel('mjd')
 			# ax2.plot(np.linspace(0, 60, 94), binned)
 			ax2.set_xticks(np.linspace(0,60,6))
@@ -62,11 +64,11 @@ if __name__ == '__main__':
 			plt.title(f)
 			plt.xlim((0, 100))
 
-			print('peak_period: ', peak_period[np.where(peak_period>1)][:5])
+			print('peak_period: ', peak_period[np.where(peak_period>1)][:15])
 			actual_peak = peak_period[:5] * 1
 			for T in peak_period:
-				if T>28: 
-					actual_peak=T
+				if T>14 and T<50: 
+					actual_peak=T*2
 					break
 			print(actual_peak)
 			# actual_peak = [15]
