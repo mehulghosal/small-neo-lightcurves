@@ -87,8 +87,6 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 	obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
 	obj_n_px = 2*obj_width
-
-	# global gain
 	
 	sigma_row = obj_minus_sky/gain + obj_n_px * (sky_row_avg/gain + rd_noise**2) + obj_n_px**2 * (sky_row_sum**.5 / sky_n_pixels)**2 # from magnier
 	sigma_row = sigma_row ** .5
@@ -102,7 +100,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 	r = []
 
 	if binning is not None:
-		r.append(bin_lightcurve(obj_minus_sky, binning, np.median))
+		r.append(bin_lightcurve(obj_minus_sky, binning, np.sum))
 	else: 
 		r.append(obj_minus_sky)
 	
@@ -223,8 +221,9 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
 	global img_rot, star_x_ext, star_y_ext, centroid, flux
 	
-	L_but_longer = L*1
-	s_but_wider  = s*1
+	# ok i think this needs to be > 1
+	L_but_longer = L*1.1
+	s_but_wider  = s*1.1
 
 	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
 	trail = img_rot[int(y_0 - L_but_longer/2+.5):int(y_0 + L_but_longer/2+.5) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
@@ -399,7 +398,6 @@ if __name__ == '__main__':
 
 			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, trail_start, trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 			
-
 			normed_ast = obj_minus_sky / np.nanmedian(obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)- ast_height_correction + .5) ])
 			param_ast_norm_box, covs_ast_norm_box = curve_fit(normal_box, np.arange(len(normed_ast)), normed_ast, p0=[ast_height_correction, len(obj_minus_sky)-ast_height_correction ])
 			ast_start, ast_end = int(param_ast_norm_box[0] + .5), int(param_ast_norm_box[1] + .5)
@@ -592,7 +590,7 @@ if __name__ == '__main__':
 				# str_minus_sky_trimmed = str_minus_sky[star_start:star_end]
 				str_minus_sky_trimmed = str_minus_sky
 
-				smoothed = bin_lightcurve(str_minus_sky_trimmed, trail_length, np.nanmedian)
+				smoothed = bin_lightcurve(str_minus_sky_trimmed, trail_length, np.sum)
 				print('smooth shape: ', smoothed.shape)
 				# smooth_norm = np.max(smoothed)
 				# smoothed = np.array(smoothed)
