@@ -312,7 +312,7 @@ if __name__ == '__main__':
 
 		for f in file_names:
 
-			if '68o13' not in f: continue
+			# if '68o13' not in f: continue
 			try:
 				file = fits.open(f)
 				print(f)
@@ -325,6 +325,7 @@ if __name__ == '__main__':
 			exp_time   = float(hdr['EXPMEAS'])
 			gain       = float(hdr['GAIN'])
 			rd_noise   = float(hdr['RDNOISE'])
+
 			# obs_filter = float(hdr['FILTE'])
 
 			# object id from directory name --> string splicing
@@ -348,7 +349,9 @@ if __name__ == '__main__':
 			
 			angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
 			img_rotated = rotate(img, angle)
-			# ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
+			# plt.figure()
+			fig_img, ax_img = plt.subplots()
+			ax_img.imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
 
 			trail_start = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
 			trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
@@ -391,11 +394,14 @@ if __name__ == '__main__':
 			
 			trail_centroid 		  = np.array([fit.x[4], fit.x[5]])
 
-			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
-			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
+			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2 ])
+			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2 ])
 
+			ax_img.plot(*trail_start, label='trail start')
+			ax_img.plot(*trail_end,   label='trail end')
 
-			
+			trail_length = trail_end[1] - trail_start[1]
+
 
 			print('asteroid trail length: ', trail_length)
 
@@ -444,6 +450,7 @@ if __name__ == '__main__':
 			print('SExtractor found stars: ',sex_output.shape[0])
 			star_x = sex_output[:,5]
 			star_y = sex_output[:,6]
+			# plt.plot(star_x, sta)
 
 			star_x_min = sex_output[:,1]
 			star_y_min = sex_output[:,2]
@@ -459,6 +466,8 @@ if __name__ == '__main__':
 				star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i] , star_y_max[i] , angle, img, img_rotated)
 
 				dist_to_asteroid.append((star_x[i] - trail_centroid[0])**2 + (star_y[i] - trail_centroid[1])**2)
+
+			ax_img.plot(star_x, star_y, label='SExtractor')
 				
 			# filtering based on distance to asteroid
 			dist_to_asteroid = np.array(dist_to_asteroid)
@@ -516,6 +525,8 @@ if __name__ == '__main__':
 			total_flux      = []
 
 			i = 0
+
+			fig_st, ax_st = plt.subplots(2,5)
 			while True:
 			# for i in range(len(star_x)):
 			# for i in range(1):
@@ -538,9 +549,6 @@ if __name__ == '__main__':
 				upper_left = point_rotation(star_x_min[i] , star_y_min[i] , a_0[i], img_rotated, img_star_rotated)
 				lower_rite = point_rotation(star_x_max[i] , star_y_max[i] , a_0[i], img_rotated, img_star_rotated)
 
-				star_trail_start = np.array([centroid[0] , centroid[1] - l/2])
-				star_trail_end   = np.array([centroid[0] , centroid[1] + l/2])
-
 				star_fwhm = 4
 
 				# star_spread, star_spread_covs, star_width = trail_spread_function(img_rotated, star_trail_start, star_trail_end, display=False)
@@ -559,7 +567,7 @@ if __name__ == '__main__':
 				param_bounds = ([1, L_0[i]/2, -180, 0, 0, 0], [10, L_0[i]*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 				try:
-					if cheats_on and True:
+					if cheats_on and False:
 						param = cheat_codes[i]
 						r_fit = residual(param)
 						print('hell ofa cheat code')
@@ -588,11 +596,11 @@ if __name__ == '__main__':
 				# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 				
 				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
-				star_trail_start = np.array([x_0, y_0 - L/2])
-				star_trail_end   = np.array([x_0, y_0 + L/2])
+				star_trail_start = np.array([x_0, y_0 - L/2 ])
+				star_trail_end   = np.array([x_0, y_0 + L/2 ])
 
 				fwhm = s * 2.355
-				st_height_correction = -L * 0.05
+				st_height_correction = L * 0.0
 
 				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, height_correction = st_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 
@@ -603,7 +611,7 @@ if __name__ == '__main__':
 				str_minus_sky_trimmed = str_minus_sky[int(st_height_correction+.5):int(len(str_minus_sky)-st_height_correction+.5) ]
 				# str_minus_sky_trimmed = str_minus_sky
 
-				smoothed = bin_lightcurve(str_minus_sky_trimmed, trail_length, np.nanmedian)
+				smoothed = bin_lightcurve(str_minus_sky_trimmed, trail_length, np.median)
 				print('smooth shape: ', smoothed.shape)
 				# smooth_norm = np.max(smoothed)
 				# smoothed = np.array(smoothed)
@@ -612,23 +620,26 @@ if __name__ == '__main__':
 				trail_starts.append(star_trail_start)
 				trail_ends  .append(star_trail_end  )
 				stars       .append(np.hstack((param, a_0[i], flux)))
+				ax_img.plot(*trail_start, label='fitted trail start')
+				ax_img.plot(*trail_ends , label='fitted trail start')
 
-				plt.figure()
-				plt.imshow(img_star_rotated[int(y_0 - L/2 + .5):int(y_0 + L/2 + .5) , int(x_0 - s*2.355 + .5):int(x_0 + s*2.355 + .5)])
+				# plt.figure()
+				# plt.imshow(img_star_rotated[int(y_0 - L/2 + .5):int(y_0 + L/2 + .5) , int(x_0 - s*2.355 + .5):int(x_0 + s*2.355 + .5)])
 
-				plt.figure()
-				plt.scatter(np.arange(len(str_minus_sky)), str_minus_sky)
-				plt.title('star lightcurve')
+				# plt.figure()
+				# plt.scatter(np.arange(len(str_minus_sky_trimmed)), str_minus_sky_trimmed/np.median(str_minus_sky_trimmed))
+				# plt.title('star lightcurve')
 
-				plt.figure()
-				plt.scatter(np.arange(len(smoothed)), smoothed)
-				plt.title('smoothed star')
+				# plt.figure()
+				# plt.scatter(np.arange(len(smoothed)), smoothed/np.median(smoothed))
+				# plt.title('smoothed star')
 				
 				print(' ')
 				i+=1
 		
 				
 			row_sums_smooth = np.array(row_sums_smooth)
+
 
 			stars 		 = np.array(stars)
 			residuals    = np.array(residuals)
@@ -672,11 +683,18 @@ if __name__ == '__main__':
 
 			# np.savetxt(f'{f[:-4]}_params.txt', stars)
 
-			row_sums_smooth = row_sums_smooth[:]
+			for i in range(10):
+				ax_st[i%2, i%5].scatter(np.linspace(0,1,len(row_sums_smooth[i])), row_sums_smooth[i]/np.median(row_sums_smooth[i]))
+			for j in ax_st[1,:].flatten():
+				j.set_xticks([])
+			for j in ax_st[:,1:4].flatten():
+				j.set_yticks([])
+
+			row_sums_smooth = row_sums_smooth[:10]
 
 			print('row_sums_smooth shape: ', row_sums_smooth.shape)
 
-			row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
+			row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
 		
 			norm = np.nanmedian(row_avgs_smooth)
 			row_avgs_smooth/=norm
@@ -690,23 +708,39 @@ if __name__ == '__main__':
 			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
 			sky_corrected_lightcurve = trimmed_obj_minus_sky / row_avgs_smooth
 
+			# seconds
+			time = np.linspace(0, exp_time, len(sky_corrected_lightcurve))
+
 			plt.figure()
-			plt.scatter(np.arange(len(row_avgs_smooth)), row_avgs_smooth)
+			plt.scatter(time, row_avgs_smooth)
 			plt.title('norm median star')
 
 			plt.figure()
-			plt.scatter(np.arange(len(sky_corrected_lightcurve)), -2.5*np.log10(sky_corrected_lightcurve))
+			plt.scatter(time, -2.5*np.log10(sky_corrected_lightcurve))
 			plt.title('corrected asteroid lightcurve')
 
-			fig, ax = plt.subplots(3,1)
+			fig, ax   = plt.subplots(3,1)
+			obj_width = ast_fwhm
+			obj_rect  = img_rotated[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
 			ax[0].imshow(obj_rect.T)
 			ax[0].set_xticks([])
 			img_rot   = img_rotated
 			ast_model = draw_model(*fit.x)
-			ax[1].imshow(ast_model.T)
-			ast_row_sums = np.array([np.sum(i) for i in img_rotated[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)] ])
+			model_slice = ast_model[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
+			ax[1].imshow(model_slice.T)
+			ax[1].set_xticks([])
+			ast_row_sums = np.array([np.sum(i) for i in obj_rect])
 			# img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
-			ax[2].scatter(np.arange(len(ast_row_sums)), ast_row_sums)
+			ax_2 = ax[2].twiny()
+			ax[2].set_xlabel('seconds')
+			ax[2].set_xticks(np.linspace(0,60,len(ast_row_sums)))
+			ax[2].set_xticklabels(np.linspace(0,60,6))
+			ax[2].set_xbound(lower=0, upper=60)
+			ax[2].scatter(np.arange(len(ast_row_sums)), ast_row_sums/np.median(ast_row_sums[int(ast_height_correction+.5): int(0.5+len(ast_row_sums)-ast_height_correction) ]))
+			ax_2.set_xlim(-.1, len(ast_row_sums))
+			ax_2.set_xticks(np.linspace(0,len(ast_row_sums),10))
+
+			# ax[4]
 
 
 			# ax[1].errorbar(np.arange(len(obj_minus_sky)), obj_minus_sky, yerr = sigma_row, fmt='g', capsize=3, linewidth=2, elinewidth=1, alpha=.8)
@@ -718,7 +752,7 @@ if __name__ == '__main__':
 			# ax_star_avg.plot(np.arange(len(row_avgs_smooth)) , row_avgs_smooth)
 
 			# light_curve = lightcurves[i]
-			# x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
+			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
 			# ax_ast.plot(x, norm_ast_lightcurve)
 
 			# lightcurves.append(sky_corrected_lightcurve)
@@ -727,6 +761,12 @@ if __name__ == '__main__':
 			# directory_name = d.split('/')[1]
 
 			# np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([x, sky_corrected_lightcurve, sigma_row[ast_start:ast_end]]).T)
+
+			# frequency, power = LombScargle(start_times, sky_corrected_lightcurve).autopower()
+			period, power, peak_period = periodogram(x , sky_corrected_lightcurve, num_maxes = 100)
+			plt.figure()
+			plt.plot(period, power)
+			plt.xlim((0,100))
 
 			print()
 			file.close()

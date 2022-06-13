@@ -198,7 +198,7 @@ for d in dir_names:
 		# print((d2D.deg)*3600)
 		# print(len(sep_constraint[0]))
 
-		# plt.scatter(refcat_x[idx[sep_constraint]] , refcat_y[idx[sep_constraint]], label='refcat stars')
+		plt.scatter(refcat_x[idx] , refcat_y[idx], label='refcat stars')
 		# plt.scatter(refcat_x , refcat_y, label='refcat stars')
 		# plt.scatter(refcat_x[sep_constraint], refcat_y[sep_constraint], label='refcat stars')
 

@@ -386,8 +386,8 @@ if __name__ == '__main__':
 			
 			trail_centroid 		  = np.array([fit.x[4], fit.x[5]])
 
-			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2])
-			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2])
+			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2 + 2])
+			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2 - 2])
 
 
 			print('asteroid trail length: ', trail_length)
@@ -575,8 +575,8 @@ if __name__ == '__main__':
 				# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 				
 				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
-				star_trail_start = np.array([x_0, y_0 - L/2])
-				star_trail_end   = np.array([x_0, y_0 + L/2])
+				star_trail_start = np.array([x_0, y_0 - L/2 + 2])
+				star_trail_end   = np.array([x_0, y_0 + L/2 - 2])
 
 				fwhm = s * 2.355
 				height_correction = -L * 0
@@ -648,11 +648,11 @@ if __name__ == '__main__':
 
 			np.savetxt(f'{f[:-4]}_params.txt', stars)
 
-			row_sums_smooth = row_sums_smooth[:]
+			row_sums_smooth = row_sums_smooth[:10]
 
 			print('row_sums_smooth shape: ', row_sums_smooth.shape)
 
-			row_avgs_smooth = np.nanmedian(row_sums_smooth, axis=0)
+			row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
 		
 			norm = np.nanmedian(row_avgs_smooth)
 			row_avgs_smooth/=norm
