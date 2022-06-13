@@ -70,10 +70,10 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		trail_start[1] -= height_correction
 		trail_end[1]   += height_correction
 
-	obj_rect  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
+	obj_rect  = img[int(trail_start[1] ):int(trail_end[1] + 1), int(trail_start[0]-obj_width + .5):int(trail_end[0]+obj_width + .5)]
 
-	sky_left  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width-sky_width + .5):int(trail_start[0]-obj_width + .5)]
-	sky_right = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]+obj_width + .5):int(trail_start[0]+obj_width+sky_width + .5)]
+	sky_left  = img[int(trail_start[1] ):int(trail_end[1] + 1), int(trail_start[0]-obj_width-sky_width + .5):int(trail_start[0]-obj_width + .5)]
+	sky_right = img[int(trail_start[1] ):int(trail_end[1] + 1), int(trail_start[0]+obj_width + .5):int(trail_start[0]+obj_width+sky_width + .5)]
 
 	obj_row_sums      = np.array([np.sum(i) for i in obj_rect ])
 	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
@@ -226,7 +226,7 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 	s_but_wider  = s*1
 
 	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
-	trail = img_rot[int(y_0 - L_but_longer/2+.5):int(y_0 + L_but_longer/2+.5) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
+	trail = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2+1) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
 	# print( 'trail shape', trail.shape)
 
 	flux   = np.sum(trail)
@@ -397,8 +397,8 @@ if __name__ == '__main__':
 			trail_start = np.array([trail_centroid[0] , trail_centroid[1] - trail_length/2 ])
 			trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + trail_length/2 ])
 
-			ax_img.plot(*trail_start, label='trail start')
-			ax_img.plot(*trail_end,   label='trail end')
+			ax_img.scatter(*trail_start, label='trail start')
+			ax_img.scatter(*trail_end,   label='trail end')
 
 			trail_length = trail_end[1] - trail_start[1]
 
@@ -467,7 +467,7 @@ if __name__ == '__main__':
 
 				dist_to_asteroid.append((star_x[i] - trail_centroid[0])**2 + (star_y[i] - trail_centroid[1])**2)
 
-			ax_img.plot(star_x, star_y, label='SExtractor')
+			ax_img.scatter(star_x, star_y, label='SExtractor')
 				
 			# filtering based on distance to asteroid
 			dist_to_asteroid = np.array(dist_to_asteroid)
@@ -734,8 +734,8 @@ if __name__ == '__main__':
 			ax_2 = ax[2].twiny()
 			ax[2].set_xlabel('seconds')
 			ax[2].set_xticks(np.linspace(0,60,len(ast_row_sums)))
-			ax[2].set_xticklabels(np.linspace(0,60,6))
-			ax[2].set_xbound(lower=0, upper=60)
+			# ax[2].set_xticklabels(np.linspace(0,60,6))
+			# ax[2].set_xbound(lower=0, upper=60)
 			ax[2].scatter(np.arange(len(ast_row_sums)), ast_row_sums/np.median(ast_row_sums[int(ast_height_correction+.5): int(0.5+len(ast_row_sums)-ast_height_correction) ]))
 			ax_2.set_xlim(-.1, len(ast_row_sums))
 			ax_2.set_xticks(np.linspace(0,len(ast_row_sums),10))

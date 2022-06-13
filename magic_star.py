@@ -69,10 +69,10 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		trail_start[1] -= height_correction
 		trail_end[1]   += height_correction
 
-	obj_rect  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
+	obj_rect  = img[int(trail_start[1] ):int(trail_end[1] + 1), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
 
-	sky_left  = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width-sky_width + .5):int(trail_start[0]-obj_width + .5)]
-	sky_right = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]+obj_width + .5):int(trail_start[0]+obj_width+sky_width + .5)]
+	sky_left  = img[int(trail_start[1] ):int(trail_end[1] + 1), int(trail_start[0]-obj_width-sky_width + .5):int(trail_start[0]-obj_width + .5)]
+	sky_right = img[int(trail_start[1] ):int(trail_end[1] + 1), int(trail_start[0]+obj_width + .5):int(trail_start[0]+obj_width+sky_width + .5)]
 
 	obj_row_sums      = np.array([np.sum(i) for i in obj_rect])
 	sky_left_row_sum  = np.array([np.sum(i) for i in sky_left ])
@@ -226,7 +226,7 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 	s_but_wider  = s*1.1
 
 	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
-	trail = img_rot[int(y_0 - L_but_longer/2+.5):int(y_0 + L_but_longer/2+.5) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
+	trail = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2+1) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
 	# print( 'trail shape', trail.shape)
 
 	flux   = np.sum(trail)
