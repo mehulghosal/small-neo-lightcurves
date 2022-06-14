@@ -220,7 +220,7 @@ count = 0
 # img_rotis not fitting variables - want to pass these in as constants;
 def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
-	global img_rot, star_x_ext, star_y_ext, centroid, flux
+	global img_rot, flux
 	
 	L_but_longer = L*1
 	s_but_wider  = s*1
@@ -244,7 +244,7 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
 def draw_model(s, L, a, b_1, c_x, c_y):
 
-	global img_rot, star_x_ext, star_y_ext, centroid
+	global img_rot 
 
 	# dont actually know if this meshgrid business works??? come back to this first if breaks
 	# xx, yy = np.meshgrid(np.arange(0, img_rot.shape[1]), np.arange(0, img_rot.shape[0]))
@@ -295,6 +295,53 @@ def residual(par):
 	# r = np.sqrt((model_col_sums-observed_col_sums)**2)
 
 	return r
+
+
+'''
+
+scipy.optimize.curve_fit attempt: 6/13/2022
+2d trail function from Veres 2012, Gaussian convolved with a straight line
+
+returns fit parameters, and covariance matrix
+
+parameters will be an array of 6 floats
+
+covariance matrix will be 5x5 matrix of cross correlation of parameters
+	square root of diagonals gives uncertainties on fit parameters
+
+
+! obj type for now -- some typa np ndarray
+coord [obj  ]: is this just meshgrid ? 
+	what if i wrap the 
+		xx, yy = np.meshgrid( np.arange(0, img_rot.shape[1]), np.arange(0, img_rot.shape[0]) ) 
+	into [xx, yy]
+
+	ORRRRR, i just give it img_rot.shape that draw_model uses,, and it creates the xx, yy
+	maybe img_rot?
+
+
+
+s     [float]: Gaussian spread 
+L     [float]: trail length
+a     [float]: angle from positive horizontal
+b     [float]: constant estimate of background flux
+x_0   [float]: CCD pixel column number of trail centroid 
+y_0   [float]: CCD pixel row number of trail centroid
+
+'''
+
+def trail_model_2d( coord , s , L , a , b , x_0 , y_0 ):
+
+	global flux, img_rot
+
+	img_rot = coord
+
+	xx, yy = np.meshgrid( np.arange( 0 , img_rot.shape[1] ) , np.arange( 0 , img_rot.shape[0] ) )
+	model  = draw_model ( s , L , a, b , x_0 , y_0 )
+
+	return model.flatten()
+
+
 
 if __name__ == '__main__':
 	
@@ -381,12 +428,17 @@ if __name__ == '__main__':
 			p0           = np.array([trail_spread[0], trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, trail_length/2, -180, 0, 0, 0], [15, trail_length*5, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
 
-			fit          = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
+			# fit          = least_squares(residual, p0, loss='linear', ftol=0.5, xtol=0.5, gtol=0.5, bounds=param_bounds)
+
+			param, param_covs = curve_fit(trail_model_2d, img_rotated, img_rotated.flatten(), p0=p0)
 
 			ast_flux     = flux
 			
-			print('asteroid initial residual: ', residual(p0))
-			print('asteroid fit residual: '    , residual(fit.x))
+			# print('asteroid initial residual: ', residual(p0))
+			# print('asteroid fit residual: '    , residual(fit.x))
+			print('asteroid param: ', param)
+			print('asteroid errs : ', np.sqrt(np.diag(param_covs)))
+			print('asteroid flux : ', ast_flux)
 
 			ast_fwhm			  = 2 * fit.x[0] * 2.355
 			trail_length 		  = int(fit.x[1]+.5)
@@ -417,6 +469,11 @@ if __name__ == '__main__':
 			plt.figure()
 			plt.scatter(np.arange(len(obj_minus_sky)), -2.5*np.log10(obj_minus_sky))
 			plt.title('uncorrected asteroid lightcurve')
+
+
+			# breaking here to test trail fitting with curve_fit
+			plt.show()
+			if True: break
 
 			normed_ast = obj_minus_sky / np.nanmedian(obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)- ast_height_correction + .5) ])
 			param_ast_norm_box, covs_ast_norm_box = curve_fit(normal_box, np.arange(len(normed_ast)), normed_ast, p0=[ast_height_correction, len(obj_minus_sky)-ast_height_correction ])
