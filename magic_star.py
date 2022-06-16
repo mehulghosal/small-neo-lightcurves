@@ -103,8 +103,8 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 	sky_row_sum       = sky_right_row_sum+sky_left_row_sum  # total sky counts
 
 	if binning is not None:
-		obj_row_sums = bin_lightcurve(obj_row_sums, binning+1)
-		sky_row_sum  = bin_lightcurve(sky_row_sum , binning+1)
+		obj_row_sums = bin_lightcurve(obj_row_sums, binning)
+		sky_row_sum  = bin_lightcurve(sky_row_sum , binning)
 
 
 	sky_n_pixels      = sky_left_row_sum.size+sky_right_row_sum.size		# num sky pixels
