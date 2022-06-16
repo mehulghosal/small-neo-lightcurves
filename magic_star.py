@@ -142,7 +142,7 @@ def bin_lightcurve_bad(lightcurve, trail_length, method):
 	star_to_asteroid = L/trail_length
 	N = int( star_to_asteroid * 5 + 0.5)
 	smoothed = []
-	for j in range(trail_length):
+	for j in range(trail_length-1):
 		t = int(j*star_to_asteroid + .5)
 		start_ind, end_ind = 0,0
 		if t<N: 				# too close to start of trail
@@ -172,13 +172,10 @@ def bin_lightcurve(lc, trail_length):
 
 	binned = []
 	c = 0
-	for i in range(int(trail_length)):
+	for i in range(int(trail_length)-1):
 		j = (i+1) * length_ratio
-		N = j - c # fractional pixels in lc to go into one binned pixel
-		# n = N % 1 
 		s = np.sum( lc[ int(c+1) : int(j) ]) + lc[int(c)] * (1-c%1) + lc[int(j+1)] * (j%1)
 		# print(int(c+1), int(j), s, lc[int(c)] * (1-c%1), lc[int(j+1)] * (j%1))
-
 		c = j 
 		binned.append(s)
 
@@ -287,6 +284,7 @@ def fourier(x, *params):
 
 img_rot, centroid, = 0, 0
 count = 0
+
 '''
 
 scipy.optimize.curve_fit attempt: 6/13/2022
@@ -451,6 +449,7 @@ if __name__ == '__main__':
 		errors      = []
 
 		for f in file_names:
+			# if '66o13' not in f: continue
 			try:
 				file = fits.open(f)
 				print(f)
@@ -507,7 +506,7 @@ if __name__ == '__main__':
 			img_rot    = img_rotated
 			centroid   = trail_centroid
 
-			p0           = np.array([trail_spread[0], ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
+			p0           = np.array([trail_spread[0]*2, ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, ast_trail_length/4, -180, 0, 0, 0], [15, 650, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
 
 			# TRAIL FITTING ATTEMPT WITH scipy.optimize.least_squares()
