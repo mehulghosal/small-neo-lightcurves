@@ -5,7 +5,7 @@ from astropy.timeseries import LombScargle
 from astropy.io import fits
 import os
 from os.path import isfile, join, isdir
-from magic_star import bin_lightcurve, periodogram, fold_lightcurve
+from testing import bin_lightcurve, periodogram, fold_lightcurve
 
 directory = './'	
 dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(directory,f))] 
@@ -21,7 +21,7 @@ if __name__ == '__main__':
 		lightcurves = []
 		times       = []
 
-		if  not ('GG1' in d): continue
+		if  not ('GE1' in d): continue
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
@@ -39,12 +39,12 @@ if __name__ == '__main__':
 
 			errs   = lc_file[:,2]
 
-			b      = 1.5
-			binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)/b), np.median)
-			errs_b = bin_lightcurve(errs**2, int(len(lc_file)/b), np.sum) ** .5
+			b      = 1.1
+			binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)/b))
+			# errs_b = bin_lightcurve(errs**2, int(len(lc_file)/b), np.sum) ** .5
 
 			mag_b  = -2.5*np.log10(binned)
-			mag_er = errs_b * (1.08574 / binned) ** .5 
+			# mag_er = errs_b * (1.08574 / binned) ** .5 
 
 			# binned = -2.5*np.log10(binned)
 			lightcurves.append(binned)
@@ -58,8 +58,8 @@ if __name__ == '__main__':
 			# time_b = np.linspace(time[0], time[-1], len(binned))
 			# ax1.errorbar(time, binned, errs_b, fmt='b.', linewidth=0, elinewidth=2)
 			# ax1.errorbar(time, mag_b, mag_er, fmt='b.', linewidth=0, elinewidth=2)
-			# ax1.scatter   (time, binned)
-			ax1.scatter   (time, mag_b)
+			ax1.scatter   (time, binned)
+			# ax1.scatter   (time, mag_b)
 
 			ax1.set_xlabel('mjd')
 			# ax2.plot(np.linspace(0, 60, 94), binned)
@@ -74,16 +74,16 @@ if __name__ == '__main__':
 			
 
 			# period, power, peak_period = periodogram(np.arange(len(binned)), binned, num_maxes = 20)
-			# period, power, peak_period = periodogram(time, binned, num_maxes = 100)
+			period, power, peak_period = periodogram(time, binned, num_maxes = 100)
 			# period, power, peak_period = periodogram(time, binned, num_maxes = 100, err=errs)
-			period, power, peak_period = periodogram(time, mag_b, num_maxes = 100, err=errs_b)
+			# period, power, peak_period = periodogram(time, mag_b, num_maxes = 100, err=errs_b)
 			plt.figure ()
 			plt.plot(period, power)
 			plt.title('Lomb-Scargle periodogram')
 			plt.xlim((2, 50))
 
 			print('peak_period: ', peak_period[np.where(peak_period>1)][:5])
-			actual_peak = peak_period[:15] * 1
+			actual_peak = peak_period[:30] 
 			for T in peak_period:
 				if T>15 and T<17: 
 					actual_peak=T*2
@@ -109,23 +109,28 @@ if __name__ == '__main__':
 			# 	plt.title(period)
 
 
-			# phase, data = fold_lightcurve(mag_b, time, actual_peak, exp_time=time[-1]-time[0])
+			phase, data = fold_lightcurve(binned, time, actual_peak, exp_time=time[-1]-time[0])
 
+			plt.figure()
+			plt.scatter(phase*24*3600+actual_peak/2, data)
+			# plt.scatter(np.linspace(-actual_peak, actual_peak, len(data)), data)
+			plt.xlabel('seconds')
+			plt.ylabel('Mag')
+			plt.title (f'Lightcurve folded on {actual_peak:.2f} seconds')
 
-			# plt.figure()
-			# plt.scatter(phase*24*3600+actual_peak/2, data)
-			# # plt.scatter(np.linspace(-actual_peak, actual_peak, len(data)), data)
-			# plt.xlabel('seconds')
-			# plt.ylabel('Mag')
-			# plt.title (f'Lightcurve folded on {actual_peak:.2f} seconds')
+		
+		times = np.array(times, dtype=object)
+		# print(times[0])
+		start_times = []
+		for t in times: start_times.append(t[0])
+		ind = np.argsort(start_times)
+		print(ind)
+		lightcurves = np.array(lightcurves, dtype=object)
+		combined_lc = np.concatenate(lightcurves[ind])
+		combined_T  = np.concatenate(times[ind])
 
-		# print(np.array(times))
-		# ind = np.argsort(np.array(times, dtype=object)[0])
-		# print(ind)
-		# lightcurves = np.array(lightcurves)[ind]
-		# combined_lc = np.concatenate(lightcurves)
-		# combined_T  = np.concatenate(np.array(times)[ind])
-		# plt.figure()
-		# plt.scatter(combined_T, combined_lc)
+		print(combined_T.shape, combined_lc.shape)
+		plt.figure()
+		plt.scatter(combined_T, combined_lc)
 
 		plt.show()
