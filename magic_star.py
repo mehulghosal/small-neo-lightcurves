@@ -90,10 +90,11 @@ gain 					[float 			   ]: (optional) e-/ADU for CCD image
 rd_noise 				[float 			   ]: (optional) read noise in ADU of image
 obj_width 				[float or int 	   ]: (optional) width (in FWHM) either side of centroid to sum for object flux
 sky_width 				[float or int 	   ]: (optional) width (in FWHM) either side of object box to sum for sky flux
+autotrim 				[bool 			   ]: (optional) if True, will run obj_row_sums through curve_fit with another_box() to get actual 
 
 '''
 
-def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=0, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=1, sky_width=4):
+def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=0, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=1, sky_width=4, autotrim=False):
 	obj_width = obj_width*fwhm
 	sky_width = sky_width*fwhm
 
@@ -242,6 +243,14 @@ def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = F
 def model(x, s, m, a, c, b, d):
 	return c*np.exp(-.5* ((x-m)/s)**2) + a*x + b + d*x**2
 
+def another_box( x , t_1 , t_2 , s_1 , s_2 , s_3  ):
+	r = np.zeros(x.shape)
+	r[               : int(t_1 + .5) ] += s_1
+	r[ int(t_1 + .5) : int(t_2 + .5) ] += s_2
+	r[ int(t_2 + .5) :               ] += s_3
+	return r
+
+
 def fourier(x, *params):
     params = np.array(params).reshape(-1,3)
     a = params[:, 0]
@@ -315,6 +324,38 @@ def trail_model_2d_( coord , s , L , a , b , x_0 , y_0 ):
 
 	return model_slice.flatten()
 
+'''
+DEBUGGING UTILITIES -- NOT FOR USE IN __MAIN__
+
+	these are to be used in ipython test scipts with only three stars in row_sums_smooth
+
+row_sums_smooth  [list or array-like: shape=(3, length)]: every row is a lightcurve, columns are row number/time whatever
+
+returns fig, ax
+
+'''
+
+def plot_st_lcs(row_sums_smooth, display=False):
+	fig, ax = plt.subplots(3, 1)
+	for i in range(3):
+		ax[i].plot(row_sums_smooth[i])
+	if display: fig.show()
+	return fig, ax
+
+
+def plot_unbinned(img, trail_starts, trail_ends, display=False):
+	fig, ax  = plt.subplots(3, 1)
+	# unbinned = []
+	for i in range(3):
+		st_lc = take_lightcurve(img, trail_starts[i], trail_starts[i])
+		# unbinned.append(st_lc)
+		ax[i].plot(st_lc)
+	if display: fig.show()
+	return fig, ax
+
+# def 
+
+
 
 # Veres 2012 eq 3
 # r = [x,y], s = sigma, L is length, a is angle, b is background noise (holding constant for now)
@@ -357,46 +398,6 @@ def draw_model(s, L, a, b_1, c_x, c_y):
 	# print(img.shape, rotate(img,-a).shape)
 	return model
 	
-# def residual(par):
-# 	global img_rot, star_x_ext, star_y_ext, centroid
-# 	s, L, a, b_1, x_0, y_0 = par[0], par[1], par[2], par[3], par[4], par[5]
-	
-# 	model = draw_model(s, L, a, b_1, x_0, y_0)
-
-# 	L_but_longer = L
-# 	s_but_wider  = s*1.3
-
-# 	box_y_width = np.abs(star_y_ext[1] - star_y_ext[0]) * 1.1
-# 	box_x_width = np.abs(star_x_ext[1] - star_x_ext[0]) * 1.1
-
-# 	y_extension = box_y_width * .2
-# 	x_extension = box_x_width * .2
-# 	# 4/25/2022 --> box has to be bigger to account to account for whole trail
-
-# 	# observed = img_rot[int(y_0 - box_y_width/2 + .5):int(y_0 + box_y_width/2 + .5) , int(x_0 - box_x_width + .5):int(x_0 + box_x_width + .5)]
-# 	observed = img_rot[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
-# 	# observed = img_rot[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
-# 	# observed_row_sums = np.array([np.sum(i) for i in observed])
-# 	# observed_col_sums = np.sum(observed, axis=0)
-
-# 	# model_slice = model[int(y_0 - box_y_width/2 + .5):int(y_0 + box_y_width/2 + .5) , int(x_0 - box_x_width + .5):int(x_0 + box_x_width + .5)]
-# 	model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
-# 	# model_slice = model[int(star_y_ext[0] - y_extension + .5):int(star_y_ext[1] + y_extension + .5) , int(star_x_ext[0]- x_extension + .5):int(star_x_ext[1] + x_extension + .5) ]
-# 	# model_row_sums = np.array([np.sum(i) for i in model_slice])
-# 	# model_col_sums = np.sum(model_slice, axis=0)
-
-# 	# print(model_slice.shape, observed.shape)
-# 	# print()
-# 	# print(model.shape)
-# 	# print(observed.shape)
-
-# 	r = np.sqrt(np.sum(model_slice-observed)**2)
-# 	# r = np.sqrt( (model_row_sums-observed_row_sums)**2 ) 
-# 	# r = np.sqrt((model_col_sums-observed_col_sums)**2)
-
-# 	return r
-
-
 
 if __name__ == '__main__':
 	
@@ -495,7 +496,8 @@ if __name__ == '__main__':
 			ast_fwhm			  = ast_param[0] * 2.355
 			ast_trail_length	  = ast_param[1]
 			# ast_height_correction = ast_trail_length * 0
-			ast_height_correction = - 4
+			# ast_height_correction = - 2
+			ast_height_correction = - ast_param[0]
 			
 			trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
 
@@ -509,17 +511,6 @@ if __name__ == '__main__':
 
 			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 			
-			# normed_ast = obj_minus_sky / np.nanmedian(obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)- ast_height_correction + .5) ])
-
-			# trimmed_obj_minus_sky   = obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)-ast_height_correction+.5)]
-			# trimmed_sigma    	    = obj_minus_sky[int(ast_height_correction+.5): int(len(obj_minus_sky)-ast_height_correction+.5)]
-
-			# ast_trail_length        = int(len(obj_minus_sky)-2*ast_height_correction+.5) 
-
-			# if True: break
-
-			# x = np.arange(0, len(obj_minus_sky), 1)
-
 			# WCS stuff
 			w = WCS(hdr)
 			c = SkyCoord(f'{obj[7]} {obj[8]}', unit=(u.deg, u.deg))
@@ -533,16 +524,10 @@ if __name__ == '__main__':
 				print(e)
 				continue
 
-
 			sex_output = np.loadtxt(se_index, skiprows=9)
 			print('SExtractor found stars: ',sex_output.shape[0])
 			star_x = sex_output[:,5]
 			star_y = sex_output[:,6]
-
-			# star_x_min = sex_output[:,1]
-			# star_y_min = sex_output[:,2]
-			# star_x_max = sex_output[:,3]
-			# star_y_max = sex_output[:,4]
 
 			dist_to_asteroid = []
 
@@ -560,10 +545,6 @@ if __name__ == '__main__':
 
 			star_x     = star_x[dist_sorted]
 			star_y     = star_y[dist_sorted]
-			# star_x_min = star_x_min[dist_sorted]
-			# star_y_min = star_y_min[dist_sorted]
-			# star_x_max = star_x_max[dist_sorted]
-			# star_y_max = star_y_max[dist_sorted]
 
 			# filtering bad stars from sextractor
 			bad_stars = np.where((star_x<ast_trail_length) | (star_x>img_rotated.shape[1]-ast_trail_length) | (star_y<ast_trail_length) | (star_y>img_rotated.shape[0]-ast_trail_length)) # too close to edge
@@ -572,24 +553,10 @@ if __name__ == '__main__':
 			print('filter on sextractor', len(bad_stars))
 			star_x     = np.delete(star_x, bad_stars, 0)
 			star_y     = np.delete(star_y, bad_stars, 0)
-			# star_x_min = np.delete(star_x_min, bad_stars, 0)
-			# star_y_min = np.delete(star_y_min, bad_stars, 0)
-			# star_x_max = np.delete(star_x_max, bad_stars, 0)
-			# star_y_max = np.delete(star_y_max, bad_stars, 0)
-
-
-			# L_0 = ((star_x_max-star_x_min)**2 + ((star_y_max-star_y_min)))**.5 
-			# # to rotate image -- negative angle from vertical
-			# a_0 = -1*np.arctan2( star_x_max-star_x_min,  star_y_max-star_y_min) * 180/np.pi
-
+			
 			l = float(l_from_input)
 			a = float(a_from_input)
 			
-			# L_0 = np.ones(L_0.shape) * l
-			# a_0 = np.ones(L_0.shape) * a
-			
-			# f_stars, ax_stars = plt.subplots(3, 5)
-			# f_stars_sm, ax_stars_sm = plt.subplots(3, 5)
 			cheats_on = False
 
 			try:
@@ -603,7 +570,7 @@ if __name__ == '__main__':
 			trail_starts    = []
 			trail_ends      = []
 			# residuals       = []
-			row_sums 		= []
+			row_sums_err	= []
 			row_sums_smooth = []
 			total_flux      = []
 
@@ -614,75 +581,23 @@ if __name__ == '__main__':
 				if i==3: break
 
 				centroid = star_x[i], star_y[i]
-				# x_correction = (star_x_min[i] - star_x_max[i])*.10
-				# y_correction = (star_y_min[i] - star_y_max[i])*.10
-				# x_correction = 0
-				# y_correction = 0
-				# star_x_ext = int(star_x_min[i]-x_correction+.5), int(star_x_max[i]+x_correction+.5)
-				# star_y_ext = int(star_y_min[i]-y_correction+.5), int(star_y_max[i]+y_correction+.5)
-				# print(centroid, star_x_ext, star_y_ext)
-
+				
 				img_star_rotated = rotate(img_rotated, a)
 				img_rot = img_star_rotated # setting the global variable img_rot for trail fitting
 
 				centroid   = point_rotation( centroid[0]   , centroid[1]   , a , img_rotated , img_star_rotated )
-				# upper_left = point_rotation( star_x_min[i] , star_y_min[i] , a , img_rotated , img_star_rotated )
-				# lower_rite = point_rotation( star_x_max[i] , star_y_max[i] , a , img_rotated , img_star_rotated )
-
-				# star_trail_start = np.array([centroid[0] , centroid[1] - l/2])
-				# star_trail_end   = np.array([centroid[0] , centroid[1] + l/2])
 
 				star_fwhm = 4
 
-				# star_spread, star_spread_covs, star_width = trail_spread_function(img_rotated, star_trail_start, star_trail_end, display=False)
-				# star_fwhm = int(star_spread[0] * 2.355 + .5)
-
-				# star_deviation = star_spread[1] - star_width # if negative, trail is to the left, if positive, trail to right
-			
-				# centroid[0] += star_deviation
-
-				# setting global variables to predefine how big the star fitting box is, *only lengthwise, because fitting width with fwhm
-				# star_x_ext = centroid[0] - 4*star_fwhm, centroid[0] + 4*star_fwhm
-				# star_y_ext = centroid[1] - l/2 - 20 , lower_rite[1] + l/2 + 20
-
-				str_p0 = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
+				str_p0 = np.array([4, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
 				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 				str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
 				print('star parameters: ', str_param)
 				print('param uncertainties:, ', np.sqrt(np.diag(star_param_cov)))
+
 				str_flux = flux
-				# print()
-
-				'''
-				try:
-					if cheats_on and False:
-						param = cheat_codes[i]
-						r_fit = residual(param)
-						print('hell ofa cheat code')
-					else: 
-						fit = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
-						r_fit = residual(fit.x)
-						param = np.array(fit.x)
-						# param = p0
-						# r_fit = residual(param)
-					total_flux.append(flux)
-				except Exception as e:
-					print(f, i, e)
-					i+=1
-					# if i >= len(star_x): break
-					continue
-				
-				# residuals.append([r_p0, r_p0])
-				r_p0  = residual(p0)
-				residuals.append([r_p0, r_fit])
-				# print('p0:', p0)
-				print('residual(p0) : ' , r_p0, p0)
-				print('residual(fit): ' , r_fit, param)
-				'''
-
-				
 				s, L, A, b, x_0, y_0 = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
 				# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 				
@@ -692,7 +607,8 @@ if __name__ == '__main__':
 
 				fwhm = s * 2.355
 				# st_height_correction = -L * 0
-				st_height_correction = ast_height_correction * L/ast_trail_length
+				# st_height_correction = -int(ast_height_correction * L/ast_trail_length + 1) 
+				st_height_correction = - int(fwhm + 1)
 
 				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, binning=len(obj_minus_sky), fwhm=fwhm, height_correction=st_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 
@@ -702,16 +618,17 @@ if __name__ == '__main__':
 
 				# str_minus_sky_trimmed = str_minus_sky[star_start:star_end]
 				# str_minus_sky_trimmed = str_minus_sky[int(st_height_correction+.5):int(len(str_minus_sky)-st_height_correction+.5) ]
-				str_minus_sky_trimmed = str_minus_sky
-				sigma_row_str_trimmed = sigma_row_star
+				# str_minus_sky_trimmed = str_minus_sky
+				# sigma_row_str_trimmed = sigma_row_star
 
 				# smoothed = bin_lightcurve(str_minus_sky_trimmed, trail_length, np.sum)
 				
-				print('star lightcurve shape: ', str_minus_sky_trimmed.shape)
+				print('star lightcurve shape: ', str_minus_sky.shape)
 				# smooth_norm = np.max(smoothed)
 				# smoothed = np.array(smoothed)
 				
-				row_sums_smooth.append(str_minus_sky_trimmed)
+				row_sums_smooth.append(str_minus_sky)
+				row_sums_err   .append(sigma_row_star)
 				trail_starts.append(star_trail_start)
 				trail_ends  .append(star_trail_end  )
 				stars       .append(np.hstack((str_param, a, flux)))
@@ -721,6 +638,7 @@ if __name__ == '__main__':
 		
 				
 			row_sums_smooth = np.array(row_sums_smooth)
+			row_sums_err    = np.array(row_sums_err   )
 
 			stars 		 = np.array(stars)
 			# residuals    = np.array(residuals)
