@@ -39,9 +39,10 @@ if __name__ == '__main__':
 
 			errs   = lc_file[:,2]
 
-			b      = 1.1
-			binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)/b))
+			# b      = 1.1
+			# binned = bin_lightcurve(lc_file[:,1], int(len(lc_file)/b))
 			# errs_b = bin_lightcurve(errs**2, int(len(lc_file)/b), np.sum) ** .5
+			binned = lc_file[:,1]
 
 			mag_b  = -2.5*np.log10(binned)
 			# mag_er = errs_b * (1.08574 / binned) ** .5 
@@ -98,7 +99,7 @@ if __name__ == '__main__':
 			# folded_lcs = []
 			# for period in actual_peak:
 			# 	print('period: ', period)
-			# 	phase, data = fold_lightcurve(binned, time, period, exp_time=time[-1]-time[0])
+			# 	phase, data = fold_lightcurve(time,  period, exp_time=time[-1]-time[0])
 			# 	folded_lcs.append(data)
 			# 	print(phase)
 			# 	print(data)
@@ -109,14 +110,14 @@ if __name__ == '__main__':
 			# 	plt.title(period)
 
 
-			phase, data = fold_lightcurve(binned, time, actual_peak, exp_time=time[-1]-time[0])
+			# phase, data = fold_lightcurve( time, binned, actual_peak, exp_time=time[-1]-time[0])
 
-			plt.figure()
-			plt.scatter(phase*24*3600+actual_peak/2, data)
-			# plt.scatter(np.linspace(-actual_peak, actual_peak, len(data)), data)
-			plt.xlabel('seconds')
-			plt.ylabel('Mag')
-			plt.title (f'Lightcurve folded on {actual_peak:.2f} seconds')
+			# plt.figure()
+			# plt.scatter(phase*24*3600+actual_peak/2, data)
+			# # plt.scatter(np.linspace(-actual_peak, actual_peak, len(data)), data)
+			# plt.xlabel('seconds')
+			# plt.ylabel('Mag')
+			# plt.title (f'Lightcurve folded on {actual_peak:.2f} seconds')
 
 		
 		times = np.array(times, dtype=object)

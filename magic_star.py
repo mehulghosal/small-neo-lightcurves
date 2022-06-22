@@ -44,8 +44,25 @@ mins = {'g':100, 'r': 150, 'i': 250}
 from scipy.optimize import curve_fit
 from scipy.optimize import least_squares
 
-# rotate points by angle a [degrees]
-# pyplot rotation: origin (0,0) is to pleft of image. +x to the right, +y down
+
+"""
+rotate points by angle a [degrees]
+	origin (0,0) is to pleft of image. +x to the right, +y down
+
+PARAMETERS
+-----------
+
+x 		: float
+	ccd column pixel coordinate
+y 		: float
+	ccd row pixel coordinate
+img 	: array
+	original image rotated from
+img_rot : array
+	rotated image 
+
+"""
+
 def point_rotation(x,y,a,img,img_rot):
 	a = -a * np.pi/180
 	x_0, y_0 = 0, 0
@@ -60,38 +77,49 @@ def point_rotation(x,y,a,img,img_rot):
 
 	return x_, y_
 
-def display_streak(img, s, L, a, b, x_0, y_0, display=False, width=1):
-	obj_width = width * s * 2.355
-	obj_rect  = img[int(y_0 - L/2 + .5) : int(y_0 + L/2 + .5), int(x_0 - obj_width + .5) : int(x_0 + obj_width + .5) ]
-	# if display: 
-	# 	plt.figure()
-	# 	plt.imshow(obj_rect)
-	return obj_rect
 
 
 '''
 taking a lightcurve of streaked artifact in CCD image
 
-returns list of stuff
+PARAMETERS
+----------
+img 				: array, dtype=float 
+	numpy nxm array representing CCD image
+trail_start 		: array, dtype=float
+	x, y CCD pixel coordinates of trail start (~top)
+trail_end 			: array, dtype=float 
+	x, y CCD pixel coordinates of trail end (~bottom)
+fwhm 				: float
+	(optional) FWHM of trailed Gaussian in CCD pixels; default = 4
+b 					: float 
+	(optional) average sky flux contribution per pixel; defaults to calculating sky from region around trail
+height_correction 	: float
+	(optional) pixels to extend lightcurve above/below trail start/stop; default = 0
+display 			: bool
+	(optional) will plt.show the lightcurve and mess the mojo up ; default = False
+err 				: bool
+	(optional) whether to return uncertainties on flux measurements ; default = False
+binnning			: int
+	(optional) will bin_lightcurve(lightcurve, binning), returned lightcurve will have len = binning
+gain 				: float 
+	(optional) e-/ADU for CCD image ; default = 1.6
+rd_noise 			: float
+	(optional) read noise in ADU of image ; default = 3
+obj_width			: float
+	(optional) width (in FWHM) either side of centroid to sum for object flux ; default = 1
+sky_width 			: float 
+	(optional) width (in FWHM) either side of object box to sum for sky flux ; default = 4
+autotrim 			: bool 
+	(optional) if True, will run obj_row_sums through curve_fit with another_box() !! doesnt do anything yet !!
+
+RETURNS
+--------
+
+list
 	to return uncertainties on measurement, err = True
 		returns [fluxes[array(dtype=float)], uncertainties[array(dtype=float)], average sky measurement[float]]
-	without uncertainties, returns [fluxes[array(dtype=float)]]
-
-img 					[array(dtype=float)]: numpy nxm array representing CCD image
-trail_start 			[array(dtype=float)]: x, y CCD pixel coordinates of trail start (~top)
-trail_end 				[array(dtype=float)]: x, y CCD pixel coordinates of trail end   (~bottom)
-fwhm 					[float or int      ]: (optional) FWHM of trailed Gaussian in CCD pixels
-b 						[float or int      ]: (optional) average sky flux contribution per pixel
-height_correction 		[float or int 	   ]: (optional) pixels to extend lightcurve above/below trail start/stop
-display 				[bool 			   ]: (optional) will plt.show the lightcurve and mess the mojo up
-err 					[bool 			   ]: (optional) whether to return uncertainties on flux measurements
-binnning				[int 		 	   ]: (optional) if given, will bin_lightcurve(lightcurve, binning)
-gain 					[float 			   ]: (optional) e-/ADU for CCD image
-rd_noise 				[float 			   ]: (optional) read noise in ADU of image
-obj_width 				[float or int 	   ]: (optional) width (in FWHM) either side of centroid to sum for object flux
-sky_width 				[float or int 	   ]: (optional) width (in FWHM) either side of object box to sum for sky flux
-autotrim 				[bool 			   ]: (optional) if True, will run obj_row_sums through curve_fit with another_box() to get actual 
-
+	without uncertainties, returns: [ fluxes : array(dtype=float) ]
 '''
 
 def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=0, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=1, sky_width=4, autotrim=False):
@@ -120,7 +148,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		sky_row_sum  = bin_lightcurve(sky_row_sum , binning)
 
 	sky_n_pixels      = sky_left_row_sum.size+sky_right_row_sum.size		# num sky pixels
-	sky_row_avg       = sky_row_sum/sky_n_pixels			# sky counts/n_px
+	sky_row_avg       = sky_row_sum/sky_n_pixels							# sky counts/n_px
 
 	if b is not None:
 		sky_row_avg = b
@@ -145,16 +173,42 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 	return r
 
 '''
-another attempt at binning - this time looking at fractional pixel fluxes.
+another attempt at binning - this time extracting fractional pixel fluxes.
 
-returns array (shape 1xtrail_length) of same dtype as lc. 
-	takes fractional pixel fluxes and reorganizes the bins
-
+PARAMETERS
+----------
 lc 			 [array(dtype=float)]: original lightcurve to be rebinneddisplay
 trail_length [int]				 : length we want our output lightcurve
 
+
+RETURNS 
+---------
+array: 
+	(shape 1xtrail_length) of same dtype as lc. 
+	reorganizes bins and takes fractional pixel fluxes across adjacent pixels according to ratio between len(lc) and trail_length
+
 '''
 def bin_lightcurve(lc, trail_length):
+	L = len(lc)
+	length_ratio = L/trail_length
+
+	binned = []
+	for i in range(0, int(trail_length)):
+		first = lc[ int( i * length_ratio ) ] * ( 1 - (i * length_ratio)%1  )
+		j = (i+1) * length_ratio 
+		secon = 0
+		if not int(j) == len(lc): 
+			print(j)
+			secon = lc[ int(j) ] * ( j % 1)
+		third = np.sum( lc[ int( i * length_ratio + 1 ) : int(j) ] )
+		s = first + secon + third
+		# print(int(c+1), int(j), s, lc[int(c)] * (1-c%1), lc[int(j+1)] * (j%1))
+		# c = j 
+		binned.append(s)
+
+	return np.array(binned)
+
+def bin_lightcurve_(lc, trail_length):
 	L = len(lc)
 	length_ratio = L/trail_length
 
@@ -171,26 +225,32 @@ def bin_lightcurve(lc, trail_length):
 
 
 '''
-folding lightcurves on dominant period w/ stropy timeseries
+folding lightcurves on dominant period w/ astropy timeseries
 
-returns phase & data
+PARAMETERS
+----------
+time 	   : array, dtype=float
+	expects time values in mjd, same length as lightcurve
+lightcurve : array, dtype=float
+	lightcurve data values
+period 	   : float 
+	dominant period, 2x peak Lomb-Scargle period
+exp_time   : float 
+	doesn't change anything rn
+phase 	   : float 
+	doesn't change anythign rn
+
+RETURNS
+--------
+phase : array  
 	phase is the range of -period/2 to period/2
+data  : array-like
 	data is the folded lightcurve data
-
-lightcurve [array(float)] : lightcurve data values
-time 	   [array(float)] : expects time values in mjd, same length as lightcurve
-period 	   [float]		  : dominant period, 2x peak Lomb-Scargle period
-exp_time   [float]		  : doesn't change anything rn
-phase 	   [float]        : doesn't change anythign rn
-
 '''
-
-def fold_lightcurve(lightcurve, time, period, exp_time=60, phase=0):
+def fold_lightcurve( time , lightcurve , period , exp_time=60 , phase=0 ):
 	lightcurve_table = Table([Time(time, format='mjd'), lightcurve], names=('time', 'data'))
-	# ts = TimeSeries(data=list(lightcurve), time=Time(time, format='mjd'))
 	ts = TimeSeries(data=lightcurve_table)
 	folded_lc = ts.fold( period=period*u.second, normalize_phase=False)
-	# print(ts)
 	phase = np.array(folded_lc['time'].value)
 	data  = np.array(folded_lc['data'])
 	return phase, data
@@ -198,16 +258,26 @@ def fold_lightcurve(lightcurve, time, period, exp_time=60, phase=0):
 '''
 lomb scargle periodogram of lightcurve
 
-returns period, power, (peak_period)
-	period is the range of periods
-	power is the power associated with each period
-	(peak_period) is an num_maxes long tuple with dominant periods
+PARAMETERS
+----------
 
-time 	   [array(float)] : expects time values in mjd, same length as lightcurve
-lightcurve [array(float)] : lightcurve data values
-num_maxes  [int]		  : number of maxima returned in (peak_period)
-err 	   [array(float)] : if provided, uncertainty on each value in lightcurve
+time 	   : array, dtype=float 
+	expects time values in mjd
+lightcurve : array, dtype=float
+	lightcurve data values, same length as time
+num_maxes  : int		  
+	(optional) number of maxima returned in (peak_period)
+err 	   : array, dtype=float
+	(optional) uncertainty on each value in lightcurve
 
+RETURNS
+----------
+period      : array 
+	range of periods
+power       : array
+	power associated with each period
+peak_period : tuple
+	num_maxes long tuple with dominant periods
 '''
 def periodogram(time, lightcurve, num_maxes=1, err=None):
 	if err is None:
@@ -224,7 +294,32 @@ def periodogram(time, lightcurve, num_maxes=1, err=None):
 	return period, power, (peak_period)
 
 
-#assuming vertical streaks for drawing rectangles and moving down 
+'''
+perpendicular summing to lightcurves -- testing trailed point spread function by summing along columns
+runs this summed/replicated PSF through curve_fit, "model" is  a Gaussian
+
+PARAMETERS
+----------
+img 		: array, dtype=float 
+	numpy nxm array representing CCD image
+trail_start : array, dtype=float
+	x, y CCD pixel coordinates of trail start (~top)
+trail_end 	: array, dtype=float 
+	x, y CCD pixel coordinates of trail end (~bottom)
+obj_width 	: float
+	(optional) CCD pixel columns to sample over ; default=25
+display 	: bool
+	(optional) !! doesn't do anything yet !!
+
+RETURNS
+----------
+param_vals : array 
+	curve_fit best fit parameters: [ s , m , a , c , b , d ]
+param_covs : array
+	covariance matrix of best fit parameteres. to get 1 sigma errors on params, np.sqrt(np.diag(param_covs))
+obj_width  : tuple
+	returns the same param?  forgot why i needed this lol
+'''
 def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = False):
 		
 	obj_rect = img[int(trail_start[1] + .5):int(trail_end[1] + .5), int(trail_start[0]-obj_width + .5):int(trail_start[0]+obj_width + .5)]
@@ -233,16 +328,67 @@ def trail_spread_function(img, trail_start, trail_end, obj_width=25, display = F
 		
 	# col_sums /= np.max(col_sums)
 	rect_width = np.arange(0, 2*obj_width, 1)
-	param_vals, param_covs = curve_fit(model, rect_width, col_sums, p0=[3, obj_width, .03, 60000, 20000, -3])
+	param_vals, param_covs = curve_fit( gaussian_1D , rect_width , col_sums , p0=[ 3 , obj_width , .03 , 60000 , 20000 , -3 ] )
 
 	# ax[2].scatter(rect_width, col_sums, label='column sums')
 	# ax[2].plot(rect_width, model(rect_width, *param_vals), label='model fit')
 	# ax[2].legend()
 	return param_vals, param_covs, obj_width
 
-def model(x, s, m, a, c, b, d):
+'''
+one dimensional Gaussian function - used for curve_fit in trail_spread_function
+
+PARAMETERS
+----------
+x : array
+	independent axis
+s : float
+	Gaussian spread
+m : float
+	center of spread along x
+a : float
+	coefficient of linear term in background estimate
+c : float
+	vertical scaling of Gaussian 
+b : float
+	coefficient of constant term in background
+d : float
+	coefficient of quadratic term in background
+
+
+RETURNS
+----------
+returns Gaussian model used for curve_fit 
+'''
+
+def gaussian_1D(x, s, m, a, c, b, d):
 	return c*np.exp(-.5* ((x-m)/s)**2) + a*x + b + d*x**2
 
+
+'''
+one dimensional box function - used for nothing (hopefully) 
+	~ potentially for fitting lightcurves to get start/endpoints 
+
+PARAMETERS
+----------
+x   : array
+	independent axis
+t_1 : float
+	coordinate along x of first boundry
+t_2 : float
+	coordinate along x of second boundry
+s_1 : float
+	value of lc where x < t_1
+s_2 : float
+	value of lc where t1 <= x <= t_2 
+s_3 : float
+	value of lc where x > t_2
+
+
+RETURNS
+----------
+returns box model used for curve_fit 
+'''
 def another_box( x , t_1 , t_2 , s_1 , s_2 , s_3  ):
 	r = np.zeros(x.shape)
 	r[               : int(t_1 + .5) ] += s_1
@@ -250,6 +396,24 @@ def another_box( x , t_1 , t_2 , s_1 , s_2 , s_3  ):
 	r[ int(t_2 + .5) :               ] += s_3
 	return r
 
+'''
+one dimensional Fourier series function - used for nothing (hopefully) 
+	~ potentially for fitting lightcurves to get pretties
+
+PARAMETERS
+----------
+x      : array
+	independent axis
+params : array
+	len(rows) is number of Fourier terms 
+		a ~ vertical scaling of sine term
+		b ~ frequency of sine term
+		c ~ vertical offset of term
+
+RETURNS
+----------
+returns Fourier model used for curve_fit 
+'''
 
 def fourier(x, *params):
     params = np.array(params).reshape(-1,3)
@@ -269,13 +433,11 @@ count = 0
 scipy.optimize.curve_fit attempt: 6/13/2022
 2d trail function from Veres 2012, Gaussian convolved with a straight line
 
-returns fit parameters, and covariance matrix
 
 parameters will be an array of 6 floats
 
 covariance matrix will be 5x5 matrix of cross correlation of parameters
 	square root of diagonals gives uncertainties on fit parameters
-
 
 ! obj type for now -- some typa np ndarray
 coord [obj  ]: is this just meshgrid ? 
@@ -286,18 +448,26 @@ coord [obj  ]: is this just meshgrid ?
 	ORRRRR, i just give it img_rot.shape that draw_model uses,, and it creates the xx, yy
 	maybe img_rot?
 
+PARAMETERS
+-----------
+s   : float 
+	Gaussian spread 
+L   : float
+	trail length
+a   : float
+	angle from positive horizontal
+b   : float
+	constant estimate of background flux
+x_0 : float
+	CCD pixel column number of trail centroid 
+y_0 : float
+	CCD pixel row number of trail centroid
 
-!!LMAO IT WORKS
-s     [float]: Gaussian spread 
-L     [float]: trail length
-a     [float]: angle from positive horizontal
-b     [float]: constant estimate of background flux
-x_0   [float]: CCD pixel column number of trail centroid 
-y_0   [float]: CCD pixel row number of trail centroid
+RETURNS
+-------- 
+	trail spread function for curve_fit's pleasure, this is flattened
 
 '''
-
-# this one works!! 
 def trail_model_2d( coord , s , L , a , b , x_0 , y_0 ):
 
 	global flux, img_rot
@@ -308,54 +478,6 @@ def trail_model_2d( coord , s , L , a , b , x_0 , y_0 ):
 	model  = draw_model ( s , L , a, b , x_0 , y_0 )
 
 	return model.flatten()
-
-# trying to compare just the relavant box...
-def trail_model_2d_( coord , s , L , a , b , x_0 , y_0 ):
-
-	global flux, img_rot, box_y_width, box_x_width, centroid
-
-	# img_rot = coord
-
-	# xx, yy = np.meshgrid( np.arange( 0 , coord.shape[1] ) , np.arange( 0 , coord.shape[0] ) )
-	model  = draw_model ( s , L , a, b , x_0 , y_0 )
-	# model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
-	# model_slice = model[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
-	model_slice = display_streak(img_rot, 10, 300, 90, b, x_0, y_0, width=2)
-
-	return model_slice.flatten()
-
-'''
-DEBUGGING UTILITIES -- NOT FOR USE IN __MAIN__
-
-	these are to be used in ipython test scipts with only three stars in row_sums_smooth
-
-row_sums_smooth  [list or array-like: shape=(3, length)]: every row is a lightcurve, columns are row number/time whatever
-
-returns fig, ax
-
-'''
-
-def plot_st_lcs(row_sums_smooth, display=False):
-	fig, ax = plt.subplots(3, 1)
-	for i in range(3):
-		ax[i].plot(row_sums_smooth[i])
-	if display: fig.show()
-	return fig, ax
-
-
-def plot_unbinned(img, trail_starts, trail_ends, display=False):
-	fig, ax  = plt.subplots(3, 1)
-	# unbinned = []
-	for i in range(3):
-		st_lc = take_lightcurve(img, trail_starts[i], trail_starts[i])
-		# unbinned.append(st_lc)
-		ax[i].plot(st_lc)
-	if display: fig.show()
-	return fig, ax
-
-# def 
-
-
 
 # Veres 2012 eq 3
 # r = [x,y], s = sigma, L is length, a is angle, b is background noise (holding constant for now)
@@ -414,7 +536,7 @@ if __name__ == '__main__':
 		errors      = []
 
 		for f in file_names:
-			if '66o13' not in f: continue
+			# if '04o13' not in f: continue
 			try:
 				file = fits.open(f)
 				print(f)
@@ -453,15 +575,15 @@ if __name__ == '__main__':
 			# IMG ROTATED TO ASTEROID TRAIL IS VERTICAL
 			img_rotated = rotate(img, angle)
 
-			ast_trail_start = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
-			ast_trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
+			ast_trail_start  = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
+			ast_trail_end	 = np.array(point_rotation(trail_end  [0], trail_end  [1], angle, img, img_rotated), dtype=int)
 			ast_trail_length = ast_trail_end[1] - ast_trail_start[1]
 
 			# DOING TRAIL SPREAD TO GET FIRST APPROX FOR FWHM
 			trail_spread, trail_spread_covs, trail_width = trail_spread_function(img_rotated, ast_trail_start, ast_trail_end, display=False)
 			fwhm = int(trail_spread[0] * 2.355 + .5)
 			# correcting trail start/end
-			centroid_deviation = trail_spread[1] - trail_width # if negative, trail is to the left, if positive, trail to right
+			centroid_deviation  = trail_spread[1] - trail_width # if negative, trail is to the left, if positive, trail to right
 			ast_trail_start[0] += int(centroid_deviation+.5)
 			ast_trail_end  [0] += int(centroid_deviation+.5)
 
@@ -496,8 +618,8 @@ if __name__ == '__main__':
 			ast_fwhm			  = ast_param[0] * 2.355
 			ast_trail_length	  = ast_param[1]
 			# ast_height_correction = ast_trail_length * 0
-			# ast_height_correction = - 2
-			ast_height_correction = - ast_param[0]
+			ast_height_correction = - int(ast_param[0] - 1)
+			# ast_height_correction = - ast_fwhm
 			
 			trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
 
@@ -569,7 +691,7 @@ if __name__ == '__main__':
 			stars           = []
 			trail_starts    = []
 			trail_ends      = []
-			# residuals       = []
+			residuals       = []
 			row_sums_err	= []
 			row_sums_smooth = []
 			total_flux      = []
@@ -578,28 +700,32 @@ if __name__ == '__main__':
 			while True:
 
 				if i >= len(star_x) or i == 50: break
-				if i==3: break
+				# if i==3: break
+				# if i == 2: break
 
-				centroid = star_x[i], star_y[i]
 				
 				img_star_rotated = rotate(img_rotated, a)
-				img_rot = img_star_rotated # setting the global variable img_rot for trail fitting
 
-				centroid   = point_rotation( centroid[0]   , centroid[1]   , a , img_rotated , img_star_rotated )
+				# setting global variables for trail fitting
+				img_rot  = img_star_rotated 
+				centroid = star_x[i], star_y[i]
 
-				star_fwhm = 4
+				centroid = point_rotation( centroid[0] , centroid[1] , a , img_rotated , img_star_rotated )
 
-				str_p0 = np.array([4, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
+				str_p0   = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 
 				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 
 				str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
-				print('star parameters: ', str_param)
+				s, L, A, b, x_0, y_0      = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
+
+				residual = np.sum((trail_model_2d(0, *str_param) - img_star_rotated.flatten()) ** 2 ) ** .5
+
+				print('star parameters: '     , str_param)
 				print('param uncertainties:, ', np.sqrt(np.diag(star_param_cov)))
 
+				# capturing that global variable after the trail fit has converged
 				str_flux = flux
-				s, L, A, b, x_0, y_0 = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
-				# s, L, a, b, x_0, y_0 = p0[0], p0[1], p0[2], p0[3], p0[4], p0[5]
 				
 				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
 				star_trail_start = np.array([x_0, y_0 - L/2 ])
@@ -607,41 +733,31 @@ if __name__ == '__main__':
 
 				fwhm = s * 2.355
 				# st_height_correction = -L * 0
-				# st_height_correction = -int(ast_height_correction * L/ast_trail_length + 1) 
-				st_height_correction = - int(fwhm + 1)
+				# st_height_correction = int(ast_height_correction * L/ast_trail_length - 3) 
+				st_height_correction = - int(fwhm/2) - 1
 
-				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, binning=len(obj_minus_sky), fwhm=fwhm, height_correction=st_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
+				# str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, binning=len(obj_minus_sky), fwhm=fwhm, height_correction=st_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
+				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
 
-				# normalized_star = str_minus_sky / np.nanmedian(str_minus_sky[int(height_correction+.5): int(len(str_minus_sky)-height_correction+.5)] )
-				# param_norm_box, covs_norm_box = curve_fit(normal_box, np.arange(len(str_minus_sky)), str_minus_sky, p0=[height_correction, len(str_minus_sky)-height_correction ])
-				# star_start, star_end = int(param_norm_box[0] + .5), int(param_norm_box[1] + .5)
-
-				# str_minus_sky_trimmed = str_minus_sky[star_start:star_end]
-				# str_minus_sky_trimmed = str_minus_sky[int(st_height_correction+.5):int(len(str_minus_sky)-st_height_correction+.5) ]
-				# str_minus_sky_trimmed = str_minus_sky
-				# sigma_row_str_trimmed = sigma_row_star
-
-				# smoothed = bin_lightcurve(str_minus_sky_trimmed, trail_length, np.sum)
-				
-				print('star lightcurve shape: ', str_minus_sky.shape)
+				# print('star lightcurve shape: ', str_minus_sky.shape)
 				# smooth_norm = np.max(smoothed)
 				# smoothed = np.array(smoothed)
 				
 				row_sums_smooth.append(str_minus_sky)
 				row_sums_err   .append(sigma_row_star)
-				trail_starts.append(star_trail_start)
-				trail_ends  .append(star_trail_end  )
-				stars       .append(np.hstack((str_param, a, flux)))
-				
+				trail_starts   .append(star_trail_start)
+				trail_ends     .append(star_trail_end  )
+				residuals      .append(residual)
+				stars          .append(np.hstack((str_param, a, flux)))
+
 				print(' ')
 				i+=1
-		
 				
 			row_sums_smooth = np.array(row_sums_smooth)
 			row_sums_err    = np.array(row_sums_err   )
 
 			stars 		 = np.array(stars)
-			# residuals    = np.array(residuals)
+			residuals    = np.array(residuals)
 			trail_starts = np.array(trail_starts)
 			trail_ends   = np.array(trail_ends)
 			# total_flux   = np.array(total_flux)
@@ -664,21 +780,21 @@ if __name__ == '__main__':
 			stars        = stars       [star_filter]
 			trail_starts = trail_starts[star_filter]
 			trail_ends   = trail_ends  [star_filter]
-			# residuals    = residuals   [star_filter]
+			residuals    = residuals   [star_filter]
 			# total_flux   = total_flux  [star_filter]
 
 			row_sums_smooth = row_sums_smooth[star_filter]
 			print('filtering: ', stars.shape[0])
 
 			# sorting by residuals from biiiig fit
-			# res_filter   = np.argsort(residuals[:,1])
-			# residuals    = residuals   [res_filter]
-			# stars        = stars       [res_filter]
-			# trail_starts = trail_starts[res_filter]
-			# trail_ends   = trail_ends  [res_filter]
+			res_filter   = np.argsort(residuals)
+			residuals    = residuals   [res_filter]
+			stars        = stars       [res_filter]
+			trail_starts = trail_starts[res_filter]
+			trail_ends   = trail_ends  [res_filter]
 			# total_flux   = total_flux  [res_filter]
 
-			# row_sums_smooth = row_sums_smooth[res_filter]
+			row_sums_smooth = row_sums_smooth[res_filter]
 
 			np.savetxt(f'{f[:-4]}_params.txt', stars)
 
@@ -706,20 +822,6 @@ if __name__ == '__main__':
 			file.close()
 
 			# ax[0].legend()
-
-		# if True: break
-		# indices     = np.array ([len(i) for i in lightcurves])
-		# lightcurves = np.hstack(np.array(lightcurves, dtype=object))
-		# start_times = np.hstack(np.array(start_times, dtype=object))
-		# errors      = np.hstack(np.array(errors     , dtype=object))
-		# f_err       = np.random.random(size=lightcurves.shape)
-
-		# frequency, power = LombScargle(start_times, lightcurves).autopower()
-
-		# peak_frequency = frequency[np.argmax(power)]
-		# peak_period    = 1/peak_frequency * 24 * 3600
-		# print('peak period: ', peak_period )
-
 
 
 		# plt.show()

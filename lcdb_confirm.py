@@ -33,7 +33,10 @@ for index in range(len(f)):
 	# print(lcdb_ind)
 	if not lcdb_ind == -1: 
 
-		print(obj_name, lcdb_summary[lcdb_ind, 19], lcdb_summary[lcdb_ind, 8])
+		period   = float(lcdb_summary[lcdb_ind, 19].split('"')[1])
+		diameter = float(lcdb_summary[lcdb_ind,  8].split('"')[1])
+
+		print(obj_name, period * 3600, diameter)
 		# print(lcdb_summary[lcdb_ind])
 		# pass
 
