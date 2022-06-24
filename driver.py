@@ -15,8 +15,9 @@ print(f)
 # print(f)
 # index = sys.argv[1]
 #for index in range(len(f)-1, -1, -1):
-for index in range(8,len(f)):
-	if ('EV84' in f[index][0]) or ('GE1' in f[index][0]) or ('FF14' in f[index][0]): continue
+for index in range(8, 20):
+	if  ('EV84' in f[index][0]) or ('GE1' in f[index][0]) or ('FF14' in f[index][0]): continue
 	#if index == 8: break
 	print(f[index])
-	subprocess.run([ 'python3' , 'magic_star.py' , f[index, 0].split(' ')[1] , str(L[index]) , str(a[index]) , str(True) ])#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	subprocess.run([ 'python3' , 'magic_star.py' , f[index, 0].split(' ')[1] , str(L[index]) , str(a[index]) , str(True) ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
