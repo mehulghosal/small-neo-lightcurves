@@ -20,10 +20,10 @@ def plot_st_lcs(row_sums_smooth, display=False):
 	return fig, ax
 
 
-def plot_unbinned(img, trail_starts, trail_ends, display=False):
+def plot_unbinned(img, trail_starts, trail_ends, display=False, height_correction=0):
 	fig, ax  = plt.subplots(3, 1)
 	for i in range(3):
-		st_lc = take_lightcurve(img, trail_starts[i], trail_ends[i])[0]
+		st_lc = take_lightcurve(img, trail_starts[i], trail_ends[i], height_correction=height_correction)[0]
 		ax[i].plot(st_lc)
 	if display: fig.show()
 	return fig, ax

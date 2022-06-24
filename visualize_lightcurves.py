@@ -21,7 +21,7 @@ if __name__ == '__main__':
 		lightcurves = []
 		times       = []
 
-		if  not ('GE1' in d): continue
+		if  not ('FF14' in d): continue
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
@@ -68,7 +68,8 @@ if __name__ == '__main__':
 			ax2.set_xbound(lower=0, upper=60)
 			ax2.set_xticklabels(np.linspace(0,60,6))
 			# ax2.cla()
-			tit = ax1.set_title('2016 GE1 lightcurve')
+			# tit = ax1.set_title('2016 GE1 lightcurve')
+			tit = ax1.set_title(f)
 			tit.set_y(1.1)
 			fig.subplots_adjust(top=0.85)
 			ax2.set_xlabel('seconds')

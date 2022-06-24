@@ -48,7 +48,7 @@ for d in dir_names:
 
 	for f in file_names:
 
-		# if '66' not in f: continue
+		if '66' not in f: continue
 
 		try:
 			file = fits.open(f)
@@ -153,7 +153,7 @@ for d in dir_names:
 		# print(np.where(d.split('_')[1] == star_params[:,0][5:]))
 
 		# rotated_x = []
-		# rotated_y = []
+		rotated_y = []
 		# for i in range(len(refcat_x)):
 		# 	rot_x, rot_y = point_rotation(refcat_x[i], refcat_y[i], a, img, img_star_rotated)
 
@@ -198,11 +198,11 @@ for d in dir_names:
 		# print((d2D.deg)*3600)
 		# print(len(sep_constraint[0]))
 
-		plt.scatter(refcat_x[idx] , refcat_y[idx], label='refcat stars')
+		plt.scatter(refcat_x, refcat_y, label='refcat stars')
 		# plt.scatter(refcat_x , refcat_y, label='refcat stars')
 		# plt.scatter(refcat_x[sep_constraint], refcat_y[sep_constraint], label='refcat stars')
 
-		plt.scatter(star_x_rot, star_y_rot, label='rotated fitted stars')
+		plt.scatter(star_x_rot[idX], star_y_rot[idX], label='rotated fitted stars')
 
 		# plt.scatter(star_x, star_y, label='unrotated')
 		plt.legend()
