@@ -717,13 +717,12 @@ if __name__ == '__main__':
 			except Exception as e:
 				print('Invalid cheat code: ', e, cheats_on)
 			
-			stars           = []
-			trail_starts    = []
-			trail_ends      = []
-			residuals       = []
-			row_sums_err	= []
-			row_sums_smooth = []
-			total_flux      = []
+			stars        = []
+			trail_starts = []
+			trail_ends   = []
+			residuals    = []
+			row_errs     = []
+			row_flux     = []
 
 			i = 0
 			while True:
@@ -767,18 +766,18 @@ if __name__ == '__main__':
 
 				norm = np.median(str_minus_sky)
 
-				row_sums_smooth.append(str_minus_sky/norm)
-				row_sums_err   .append(sigma_row_star)
-				trail_starts   .append(star_trail_start)
-				trail_ends     .append(star_trail_end  )
-				residuals      .append(residual)
-				stars          .append(np.hstack((str_param, a, flux)))
+				row_flux    .append(str_minus_sky /norm)
+				row_errs    .append(sigma_row_star/norm)
+				trail_starts.append(star_trail_start)
+				trail_ends  .append(star_trail_end  )
+				residuals   .append(residual)
+				stars       .append(np.hstack((str_param, a, flux)))
 
 				print(' ')
 				i+=1
 				
-			row_sums_smooth = np.array(row_sums_smooth)
-			row_sums_err    = np.array(row_sums_err   )
+			row_flux = np.array(row_flux)
+			row_errs = np.array(row_errs)
 
 			stars 		 = np.array(stars)
 			residuals    = np.array(residuals)
@@ -806,7 +805,7 @@ if __name__ == '__main__':
 			residuals    = residuals   [star_filter]
 			# total_flux   = total_flux  [star_filter]
 
-			row_sums_smooth = row_sums_smooth[star_filter]
+			row_flux = row_flux[star_filter]
 			print('filtering: ', stars.shape[0])
 
 			# sorting by residuals from biiiig fit
@@ -817,24 +816,19 @@ if __name__ == '__main__':
 			trail_ends   = trail_ends  [res_filter]
 			# total_flux   = total_flux  [res_filter]
 
-			row_sums_smooth = row_sums_smooth[res_filter]
+			row_flux = row_flux[res_filter][:10]
 
+			print('row_sums_smooth shape: ', row_flux.shape)
 
-			row_sums_smooth = row_sums_smooth[:10]
-
-			print('row_sums_smooth shape: ', row_sums_smooth.shape)
-
-			row_avgs_smooth = np.nanmean(row_sums_smooth, axis=0)
+			row_avgs = np.nanmean(row_flux, axis=0)
 		
-			norm = np.nanmean(row_avgs_smooth)
-			row_avgs_smooth/=norm
+			# norm = np.nanmean(row_avgs)
+			# row_avgs/=norm
 
 			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
 			sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
 
-			# light_curve = lightcurves[i]
 			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
-			# ax_ast.plot(x, norm_ast_lightcurve)
 
 			directory_name = d.split('/')[1]
 
