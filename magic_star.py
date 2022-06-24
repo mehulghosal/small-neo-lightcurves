@@ -159,7 +159,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 
 	obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
-	sigma_row = obj_minus_sky/gain + (len(obj_row_sums)) * (sky_row_avg/gain + rd_noise**2) + (len(obj_row_sums))**2 * (sky_row_sum**.5 * sky_n_pixels)**2 # from magnier
+	sigma_row = obj_minus_sky/gain + (obj_rect.shape[1]) * (sky_row_avg/gain + rd_noise**2) + (obj_rect.shape[1])**2 * (sky_row_sum**.5 * sky_n_pixels)**2 # from magnier
 	sigma_row = sigma_row ** .5
 
 	if display:
@@ -728,7 +728,7 @@ if __name__ == '__main__':
 			while True:
 
 				if i >= len(star_x) or i == 50: break
-				# if i==3: break
+				if i==3: break
 				# if i == 2: break
 
 				
@@ -826,7 +826,7 @@ if __name__ == '__main__':
 			# row_avgs/=norm
 
 			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
-			sky_corrected_lightcurve = obj_minus_sky / row_avgs_smooth
+			sky_corrected_lightcurve = obj_minus_sky / row_avgs
 
 			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
 
