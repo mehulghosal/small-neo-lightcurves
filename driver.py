@@ -18,4 +18,4 @@ print(f)
 for index in range(len(f)):
 	if 'GE1' not in f[index][0]: continue
 	print(f[index])
-	subprocess.run(['python3', 'magic_star.py', f[index, 0].split(' ')[1], str(L[index]), str(a[index])])#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	subprocess.run([ 'python3' , 'magic_star.py' , f[index, 0].split(' ')[1] , str(L[index]) , str(a[index]) , str(True) ])#, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

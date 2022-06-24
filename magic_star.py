@@ -19,9 +19,10 @@ from astropy import units as u
 from astropy.utils.exceptions import AstropyWarning
 
 try:
-	f_name = sys.argv[1]
+	f_name 		 = sys.argv[1]
 	l_from_input = sys.argv[2]
 	a_from_input = sys.argv[3]
+	write_output = sys.argv[4]
 except Exception as e:
 	print(e)
 
@@ -61,8 +62,13 @@ img 	: array
 img_rot : array
 	rotated image 
 
+RETURNS
+--------
+x_ : float
+	rotated CCD column pixel coordinate
+y_ : float
+	rotated CCD row pixel coordinate
 """
-
 def point_rotation(x,y,a,img,img_rot):
 	a = -a * np.pi/180
 	x_0, y_0 = 0, 0
@@ -76,7 +82,6 @@ def point_rotation(x,y,a,img,img_rot):
 	if y_<0: y_=0
 
 	return x_, y_
-
 
 
 '''
@@ -116,12 +121,11 @@ autotrim 			: bool
 RETURNS
 --------
 
-list
+r : list
 	to return uncertainties on measurement, err = True
 		returns [fluxes[array(dtype=float)], uncertainties[array(dtype=float)], average sky measurement[float]]
 	without uncertainties, returns: [ fluxes : array(dtype=float) ]
 '''
-
 def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=0, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=1, sky_width=4, autotrim=False):
 	obj_width = obj_width*fwhm
 	sky_width = sky_width*fwhm
@@ -186,7 +190,6 @@ RETURNS
 array: 
 	(shape 1xtrail_length) of same dtype as lc. 
 	reorganizes bins and takes fractional pixel fluxes across adjacent pixels according to ratio between len(lc) and trail_length
-
 '''
 def bin_lightcurve(lc, trail_length):
 	L = len(lc)
@@ -198,27 +201,12 @@ def bin_lightcurve(lc, trail_length):
 		j = (i+1) * length_ratio 
 		secon = 0
 		if not int(j) == len(lc): 
-			print(j)
+			# print(j)
 			secon = lc[ int(j) ] * ( j % 1)
 		third = np.sum( lc[ int( i * length_ratio + 1 ) : int(j) ] )
 		s = first + secon + third
 		# print(int(c+1), int(j), s, lc[int(c)] * (1-c%1), lc[int(j+1)] * (j%1))
 		# c = j 
-		binned.append(s)
-
-	return np.array(binned)
-
-def bin_lightcurve_(lc, trail_length):
-	L = len(lc)
-	length_ratio = L/trail_length
-
-	binned = []
-	c = 0
-	for i in range(-1, int(trail_length)-1):
-		j = (i+1) * length_ratio
-		s = np.sum( lc[ int(c+1) : int(j) ]) + lc[int(c)] * (1-c%1) + lc[int(j+1)] * (j%1)
-		# print(int(c+1), int(j), s, lc[int(c)] * (1-c%1), lc[int(j+1)] * (j%1))
-		c = j 
 		binned.append(s)
 
 	return np.array(binned)
@@ -360,7 +348,6 @@ RETURNS
 ----------
 returns Gaussian model used for curve_fit 
 '''
-
 def gaussian_1D(x, s, m, a, c, b, d):
 	return c*np.exp(-.5* ((x-m)/s)**2) + a*x + b + d*x**2
 
@@ -414,7 +401,6 @@ RETURNS
 ----------
 returns Fourier model used for curve_fit 
 '''
-
 def fourier(x, *params):
     params = np.array(params).reshape(-1,3)
     a = params[:, 0]
@@ -433,11 +419,6 @@ count = 0
 scipy.optimize.curve_fit attempt: 6/13/2022
 2d trail function from Veres 2012, Gaussian convolved with a straight line
 
-
-parameters will be an array of 6 floats
-
-covariance matrix will be 5x5 matrix of cross correlation of parameters
-	square root of diagonals gives uncertainties on fit parameters
 
 ! obj type for now -- some typa np ndarray
 coord [obj  ]: is this just meshgrid ? 
@@ -467,24 +448,49 @@ RETURNS
 -------- 
 	trail spread function for curve_fit's pleasure, this is flattened
 
+	parameters will be an array of 6 floats
+
+	covariance matrix will be 5x5 matrix of cross correlation of parameters square root of diagonals gives uncertainties on fit parameters
+
 '''
 def trail_model_2d( coord , s , L , a , b , x_0 , y_0 ):
 
 	global flux, img_rot
 
-	# img_rot = coord
-
-	# xx, yy = np.meshgrid( np.arange( 0 , img_rot.shape[1] ) , np.arange( 0 , img_rot.shape[0] ) )
 	model  = draw_model ( s , L , a, b , x_0 , y_0 )
-
 	return model.flatten()
 
-# Veres 2012 eq 3
-# r = [x,y], s = sigma, L is length, a is angle, b is background noise (holding constant for now)
-# img_rotis not fitting variables - want to pass these in as constants;
+
+'''
+actually doing the Veres 2012 eq 3 calculations for every x, y given
+	in usage, have to explicitely define img_rot and flux, so these are the variables you expect!!
+
+PARAMETERS
+-----------
+x 	: array, dtype=int
+	array of CCD column coordinates in px
+y 	: array, dtype=int
+	array of CCD row coordinates in px
+s   : float 
+	Gaussian spread 
+L   : float
+	trail length
+a   : float
+	angle from positive horizontal
+b_1 : float
+	constant estimate of background flux
+x_0 : float
+	CCD pixel column number of trail centroid 
+y_0 : float
+	CCD pixel row number of trail centroid
+
+RETURNS
+-------- 
+	2d numpy array -- same shape as img_rot. scalar background estimate is b_1, with trail drawn vertically at x_0, y_0
+'''
 def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
-	global img_rot, centroid, flux
+	global img_rot, flux
 	
 	# ok i think this needs to be > 1
 	L_but_longer = L*1.3
@@ -507,6 +513,30 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 
 	return flux_term * exponential * (erf1-erf2) + background
 
+
+'''
+driver function for trail_model, but used in trail_model_2d to get the entire image.
+	in usage, have to explicitely define img_rot
+
+PARAMETERS
+-----------
+s   : float 
+	Gaussian spread 
+L   : float
+	trail length
+a   : float
+	angle from positive horizontal
+b_1 : float
+	constant estimate of background flux
+x_0 : float
+	CCD pixel column number of trail centroid 
+y_0 : float
+	CCD pixel row number of trail centroid
+
+RETURNS
+-------- 
+	2d numpy array -- same shape as img_rot
+'''
 def draw_model(s, L, a, b_1, c_x, c_y):
 
 	global img_rot
@@ -514,7 +544,6 @@ def draw_model(s, L, a, b_1, c_x, c_y):
 	# dont actually know if this meshgrid business works??? come back to this first if breaks
 	# xx, yy = np.meshgrid(np.arange(0, img_rot.shape[1]), np.arange(0, img_rot.shape[0]))
 	xx, yy = np.meshgrid( np.arange(0, img_rot.shape[1]), np.arange(0, img_rot.shape[0]) )
-
 	model = trail_model(xx, yy, s, L, a, b_1, c_x, c_y)	#assuming this is 2FWHM wide and 2L tall
 
 	# print(img.shape, rotate(img,-a).shape)
@@ -536,7 +565,7 @@ if __name__ == '__main__':
 		errors      = []
 
 		for f in file_names:
-			# if '04o13' not in f: continue
+			# if '06o13' not in f: continue
 			try:
 				file = fits.open(f)
 				print(f)
@@ -571,7 +600,7 @@ if __name__ == '__main__':
 			flux = 0
 
 			# NEGATIVE ANGLE OF ASTEROID TRAIL WRT HOME FRAME			
-			angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
+			angle       = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
 			# IMG ROTATED TO ASTEROID TRAIL IS VERTICAL
 			img_rotated = rotate(img, angle)
 
@@ -609,16 +638,16 @@ if __name__ == '__main__':
 			ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rotated, img_rot.flatten(), p0=p0)	
 
 
-			ast_flux     = flux
+			ast_flux = flux
 			
-			print('asteroid p0[  s , L , a , b , x_0 , y_0 ]: ', p0)
+			print('asteroid p0[  s , L , a , b , x_0 , y_0 ]: '            , p0)
 			print('asteroid fit parameters [ s , L , a , b , x_0 , y_0 ]: ', ast_param)
-			print('parameter uncertainties: ', np.sqrt(np.diag(ast_param_cov)))
+			print('parameter uncertainties: '                              , np.sqrt(np.diag(ast_param_cov)))
 
 			ast_fwhm			  = ast_param[0] * 2.355
 			ast_trail_length	  = ast_param[1]
 			# ast_height_correction = ast_trail_length * 0
-			ast_height_correction = - int(ast_param[0] - 1)
+			ast_height_correction = - int( ast_fwhm ) - 1
 			# ast_height_correction = - ast_fwhm
 			
 			trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
@@ -659,10 +688,10 @@ if __name__ == '__main__':
 				# star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i] , star_y_min[i] , angle, img, img_rotated)
 				# star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i] , star_y_max[i] , angle, img, img_rotated)
 
-				dist_to_asteroid.append((star_x[i] - trail_centroid[0])**2 + (star_y[i] - trail_centroid[1])**2)
+				dist_to_asteroid.append( ((star_x[i] - trail_centroid[0]) **2 + (star_y[i] - trail_centroid[1]) **2 ) **.5 )
 				
 			# filtering based on distance to asteroid
-			dist_to_asteroid = np.array(dist_to_asteroid)
+			dist_to_asteroid = np.array  (dist_to_asteroid)
 			dist_sorted      = np.argsort(dist_to_asteroid)
 
 			star_x     = star_x[dist_sorted]
@@ -709,17 +738,15 @@ if __name__ == '__main__':
 				# setting global variables for trail fitting
 				img_rot  = img_star_rotated 
 				centroid = star_x[i], star_y[i]
-
 				centroid = point_rotation( centroid[0] , centroid[1] , a , img_rotated , img_star_rotated )
 
-				str_p0   = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
-
+				str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
-
+				
 				str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
 				s, L, A, b, x_0, y_0      = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
 
-				residual = np.sum((trail_model_2d(0, *str_param) - img_star_rotated.flatten()) ** 2 ) ** .5
+				residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
 
 				print('star parameters: '     , str_param)
 				print('param uncertainties:, ', np.sqrt(np.diag(star_param_cov)))
@@ -732,18 +759,15 @@ if __name__ == '__main__':
 				star_trail_end   = np.array([x_0, y_0 + L/2 ])
 
 				fwhm = s * 2.355
-				# st_height_correction = -L * 0
-				# st_height_correction = int(ast_height_correction * L/ast_trail_length - 3) 
-				st_height_correction = - int(fwhm/2) - 1
+				st_height_correction = int(ast_height_correction * L/ast_trail_length ) - 1
+				# st_height_correction = - int(fwhm/2) - 1
 
 				# str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, binning=len(obj_minus_sky), fwhm=fwhm, height_correction=st_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
 
-				# print('star lightcurve shape: ', str_minus_sky.shape)
-				# smooth_norm = np.max(smoothed)
-				# smoothed = np.array(smoothed)
-				
-				row_sums_smooth.append(str_minus_sky)
+				norm = np.median(str_minus_sky)
+
+				row_sums_smooth.append(str_minus_sky/norm)
 				row_sums_err   .append(sigma_row_star)
 				trail_starts   .append(star_trail_start)
 				trail_ends     .append(star_trail_end  )
@@ -760,7 +784,6 @@ if __name__ == '__main__':
 			residuals    = np.array(residuals)
 			trail_starts = np.array(trail_starts)
 			trail_ends   = np.array(trail_ends)
-			# total_flux   = np.array(total_flux)
 
 			print('initially, ', stars.shape[0])
 
@@ -796,7 +819,6 @@ if __name__ == '__main__':
 
 			row_sums_smooth = row_sums_smooth[res_filter]
 
-			np.savetxt(f'{f[:-4]}_params.txt', stars)
 
 			row_sums_smooth = row_sums_smooth[:10]
 
@@ -816,10 +838,13 @@ if __name__ == '__main__':
 
 			directory_name = d.split('/')[1]
 
-			np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([x, sky_corrected_lightcurve, sigma_row]).T)
+			if write_output == 'True':
+				np.savetxt(f'{f[:-4]}_params.txt'    , stars )
+				np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sigma_row ]).T )
 
 			print()
 			file.close()
+			if True: break
 
 			# ax[0].legend()
 
