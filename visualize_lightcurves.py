@@ -21,13 +21,14 @@ if __name__ == '__main__':
 		lightcurves = []
 		times       = []
 
-		if  not ('FF14' in d): continue
+		if  not ('YA' in d): continue
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 		for f in file_names:
-			if '_lightcurve' not in f:
-				continue
+
+			if ('_lightcurve' not in f)  : continue
+			# if 		: continue 
 			# if count==5: continue
 			count+=1
 			# if not count==5: continue
@@ -45,6 +46,7 @@ if __name__ == '__main__':
 			binned = lc_file[:,1]
 
 			mag_b  = -2.5*np.log10(binned)
+			# binned = mag_b
 			# mag_er = errs_b * (1.08574 / binned) ** .5 
 
 			# binned = -2.5*np.log10(binned)
@@ -60,6 +62,7 @@ if __name__ == '__main__':
 			# ax1.errorbar(time, binned, errs_b, fmt='b.', linewidth=0, elinewidth=2)
 			# ax1.errorbar(time, mag_b, mag_er, fmt='b.', linewidth=0, elinewidth=2)
 			ax1.scatter   (time, binned)
+			# ax1.errorbar  (time, binned, errs, elinewidth=2)
 			# ax1.scatter   (time, mag_b)
 
 			ax1.set_xlabel('mjd')
@@ -79,20 +82,20 @@ if __name__ == '__main__':
 			period, power, peak_period = periodogram(time, binned, num_maxes = 100)
 			# period, power, peak_period = periodogram(time, binned, num_maxes = 100, err=errs)
 			# period, power, peak_period = periodogram(time, mag_b, num_maxes = 100, err=errs_b)
-			plt.figure ()
-			plt.plot(period, power)
-			plt.title('Lomb-Scargle periodogram')
-			plt.xlim((2, 50))
+			fig_per, ax_per = plt.subplots()
+			ax_per.plot(period, power)
+			ax_per.set_title('Lomb-Scargle periodogram')
+			ax_per.set_xlim((2, 50))
 
-			print('peak_period: ', peak_period[np.where(peak_period>1)][:5])
 			actual_peak = peak_period[:30] 
 			for T in peak_period:
-				if T>15 and T<17: 
+				if T>10 and T<18: 
 					actual_peak=T*2
 					break
-			print(actual_peak)
+			print('actual peak [s]: ', actual_peak)
+
 			# plt.axvline(x=actual_peak/2, color='g', linestyle='-', label=f'peak period: {actual_peak/2:.2f} s ')
-			plt.legend()
+			# plt.legend()
 			# actual_peak = [15]
 
 
@@ -113,12 +116,13 @@ if __name__ == '__main__':
 
 			# phase, data = fold_lightcurve( time, binned, actual_peak, exp_time=time[-1]-time[0])
 
-			# plt.figure()
-			# plt.scatter(phase*24*3600+actual_peak/2, data)
+			# fig_fold, ax_fold = plt.subplots()
+
+			# ax_fold.scatter(phase*24*3600+actual_peak/2, data)
 			# # plt.scatter(np.linspace(-actual_peak, actual_peak, len(data)), data)
-			# plt.xlabel('seconds')
-			# plt.ylabel('Mag')
-			# plt.title (f'Lightcurve folded on {actual_peak:.2f} seconds')
+			# ax_fold.set_xlabel('seconds')
+			# ax_fold.set_ylabel('Mag')
+			# ax_fold.set_title (f'Lightcurve folded on {actual_peak:.2f} seconds')
 
 		
 		times = np.array(times, dtype=object)
@@ -126,13 +130,15 @@ if __name__ == '__main__':
 		start_times = []
 		for t in times: start_times.append(t[0])
 		ind = np.argsort(start_times)
-		print(ind)
+		# print(ind)
 		lightcurves = np.array(lightcurves, dtype=object)
 		combined_lc = np.concatenate(lightcurves[ind])
 		combined_T  = np.concatenate(times[ind])
 
-		print(combined_T.shape, combined_lc.shape)
-		plt.figure()
-		plt.scatter(combined_T, combined_lc)
+		fig_com, ax_com = plt.subplots()
+
+		# print(combined_T.shape, combined_lc.shape)
+		ax_com.scatter(combined_T, combined_lc)
+		ax_com.set_title('combined lightcurves')
 
 		plt.show()

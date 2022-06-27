@@ -621,8 +621,8 @@ if __name__ == '__main__':
 			# ASTEROID TRAIL FITTING
 			img_rot     = img_rotated
 			centroid    = trail_centroid
-			box_x_width = 30
-			box_y_width = ast_trail_length * 2
+			# box_x_width = 30
+			# box_y_width = ast_trail_length * 2
 
 			p0           = np.array([trail_spread[0], ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 			param_bounds = ([1, ast_trail_length/4, -180, 0, 0, 0], [15, 650, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
@@ -630,7 +630,7 @@ if __name__ == '__main__':
 			# TRAIL FITTING ATTEMPT WITH scipy.optimize.least_squares()
 			# fit          = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
 
-			img_slice = img_rotated[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
+			# img_slice = img_rotated[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
 
 			# TRAIL FITTING WITH scipy.optimize.curve_fit()
 			# ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rotated, img_slice.flatten(), p0=p0)	
@@ -684,7 +684,7 @@ if __name__ == '__main__':
 
 			# to rotate to asteroid's reference -- SExtractor works with raw fits file data
 			for i in range(len(star_x)):
-				star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
+				# star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
 				# star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i] , star_y_min[i] , angle, img, img_rotated)
 				# star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i] , star_y_max[i] , angle, img, img_rotated)
 
@@ -728,16 +728,16 @@ if __name__ == '__main__':
 			while True:
 
 				if i >= len(star_x) or i == 50: break
-				if i==3: break
-				# if i == 2: break
+				# if i==15: break
+				if i == 3: break
 
 				
-				img_star_rotated = rotate(img_rotated, a)
+				img_star_rotated = rotate(img, a)
 
 				# setting global variables for trail fitting
 				img_rot  = img_star_rotated 
 				centroid = star_x[i], star_y[i]
-				centroid = point_rotation( centroid[0] , centroid[1] , a , img_rotated , img_star_rotated )
+				centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
 
 				str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
