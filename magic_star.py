@@ -729,7 +729,7 @@ if __name__ == '__main__':
 
 				if i >= len(star_x) or i == 50: break
 				# if i==15: break
-				if i == 3: break
+				#if i == 3: break
 
 				
 				img_star_rotated = rotate(img, a)
@@ -838,7 +838,7 @@ if __name__ == '__main__':
 
 			print()
 			file.close()
-			if True: break
+			#if True: break
 
 			# ax[0].legend()
 
