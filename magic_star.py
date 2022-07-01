@@ -728,7 +728,7 @@ if __name__ == '__main__':
 			while True:
 
 				if i >= len(star_x) or i == 50: break
-				# if i==15: break
+				if i==40: break
 				#if i == 3: break
 
 				
