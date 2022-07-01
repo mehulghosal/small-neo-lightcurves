@@ -737,10 +737,7 @@ if __name__ == '__main__':
 			while True:
 
 				if i >= len(star_x) or i == 50: break
-				# if i==15: break
-				if i == 3: break
 
-				
 				# img_star_rotated = rotate(img, a)
 				img_star_rotated = img
 

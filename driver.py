@@ -21,5 +21,6 @@ for index in range(13):
 	#if  ('EV84' in f[index][0]) or ('GE1' in f[index][0]) or ('FF14' in f[index][0]): continue
 	#if index == 8: break
 	print(f[index])
+	print([ 'python3' , 'magic_star.py' , f[index, 0].split(' ')[1] , str(L[index]) , str(a[index]) , str(True) ])
 	subprocess.run([ 'python3' , 'magic_star.py' , f[index, 0].split(' ')[1] , str(L[index]) , str(a[index]) , str(True) ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
