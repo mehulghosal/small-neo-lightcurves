@@ -159,7 +159,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 
 	obj_minus_sky = obj_row_sums - sky_row_avg * obj_rect.shape[1]
 
-	sigma_row = obj_minus_sky/gain + (obj_rect.shape[1]) * (sky_row_avg/gain + rd_noise**2) + (obj_rect.shape[1])**2 * (sky_row_sum**.5 * sky_n_pixels)**2 # from magnier
+	sigma_row = obj_minus_sky/gain + (obj_rect.shape[1]) * (sky_row_avg/gain + rd_noise**2) + (obj_rect.shape[1])**2 * (sky_row_sum**.5 / sky_n_pixels)**2 # from magnier
 	sigma_row = sigma_row ** .5
 
 	if display:
@@ -549,6 +549,13 @@ def draw_model(s, L, a, b_1, c_x, c_y):
 	# print(img.shape, rotate(img,-a).shape)
 	return model
 	
+'''
+
+I guess this is where the shitshow begins i guess
+	this will be less well commented for a while just because i haven't had the care to.
+	so a lot of it will be ugly and inexplicable unless u ask me.
+
+'''
 
 if __name__ == '__main__':
 	
@@ -724,25 +731,35 @@ if __name__ == '__main__':
 			row_errs     = []
 			row_flux     = []
 
+			failed_log   = []
+
 			i = 0
 			while True:
 
 				if i >= len(star_x) or i == 50: break
 				# if i==15: break
-				#if i == 3: break
+				if i == 3: break
 
 				
-				img_star_rotated = rotate(img, a)
+				# img_star_rotated = rotate(img, a)
+				img_star_rotated = img
 
 				# setting global variables for trail fitting
-				img_rot  = img_star_rotated 
+				# img_rot  = img_star_rotated 
+				img_rot = img
 				centroid = star_x[i], star_y[i]
-				centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
+				# centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
 
-				str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
+				str_p0       = np.array([3, l, a, np.mean(sky_row_avg), centroid[0], centroid[1]])
 				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 				
-				str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
+				try:
+					str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
+				except Exception as e:
+					print(e , f' LOL star fit failed , skipping trail number {i} for filname : {f}  ')
+					failed_log.append(str_p0)
+					continue
+					
 				s, L, A, b, x_0, y_0      = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
 
 				residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
@@ -752,8 +769,12 @@ if __name__ == '__main__':
 
 				# capturing that global variable after the trail fit has converged
 				str_flux = flux
+
+				img_star_rotated = rotate(img, A)
 				
 				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
+				x_0, y_0 = point_rotation( x_0 , y_0 , A , img , img_star_rotated )
+
 				star_trail_start = np.array([x_0, y_0 - L/2 ])
 				star_trail_end   = np.array([x_0, y_0 + L/2 ])
 
@@ -838,7 +859,7 @@ if __name__ == '__main__':
 
 			print()
 			file.close()
-			#if True: break
+			if True: break
 
 			# ax[0].legend()
 
