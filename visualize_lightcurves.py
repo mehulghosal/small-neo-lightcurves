@@ -21,7 +21,7 @@ if __name__ == '__main__':
 		lightcurves = []
 		times       = []
 
-		if  not ('FF14' in d): continue
+		if  not ('EN156' in d): continue
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 

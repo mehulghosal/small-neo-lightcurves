@@ -31,6 +31,9 @@ def reverse_rotation(star_x, star_y, a, img):
 def linear_function(x , m , b):
 	return x * m + b
 
+def line_slope_one(x , b):
+	return x + b
+
 directory  = './'
 dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(directory,f))] 
 mins = {'g':100, 'r': 150, 'i': 250}
@@ -129,9 +132,7 @@ for d in dir_names:
 		# refcat_y      = np.delete(refcat_y , 1)
 		# refcat_ra_dec = np.delete(refcat_ra_dec , 1)
 
-
 		# print(refcat_x, refcat_y)
-
 
 		fit_ra_dec = utils.pixel_to_skycoord(cen_x_r , cen_y_r , w )
 
@@ -141,17 +142,13 @@ for d in dir_names:
 		ax_unr.set_xlim((0, img.shape[1]))
 		ax_unr.set_ylim((img.shape[0], 0))
 		
-
 		# print(fit_ra_dec)
 
-		idx, d2d, d3d = refcat_ra_dec.match_to_catalog_sky(fit_ra_dec, nthneighbor=1)
-
+		idx, d2d, d3d = fit_ra_dec.match_to_catalog_sky(refcat_ra_dec, nthneighbor=1)
 		
-		ax_unr.scatter(refcat_x     , refcat_y     , label='refcat')
-		ax_unr.scatter(cen_x_r[idx] , cen_y_r[idx] , label='fitted')
+		ax_unr.scatter(refcat_x[idx]     , refcat_y[idx]     , label='refcat')
+		ax_unr.scatter(cen_x_r , cen_y_r , label='fitted')
 		ax_unr.legend()
-
-
 
 		# print(refcat)
 		# refcat_g = refcat[:,2]
@@ -172,24 +169,22 @@ for d in dir_names:
 
 		inst_mag = -2.5 * np.log10(star_flux)
 
-
 		# print(inst_mag[idx])
 
 		fig_mag, ax_mag = plt.subplots()
-		ax_mag.scatter(inst_mag[idx], ref_mag)
+		ax_mag.scatter(inst_mag, ref_mag[idx])
 
-
-		cal_fit, cal_fit_cov = curve_fit ( linear_function , inst_mag[idx] , ref_mag )
-		line_label = f'M = {cal_fit[0]}*m + {cal_fit[1]}'
-		ax_mag.plot( inst_mag[idx] , linear_function( inst_mag[idx] , *cal_fit ) , label=line_label )
+		cal_fit, cal_fit_cov = curve_fit ( line_slope_one , inst_mag , ref_mag[idx] )
+		# line_label = f'M = {cal_fit[0]}*m + {cal_fit[1]}'
+		line_label = f'M = m + {cal_fit[0]}'
+		ax_mag.plot( inst_mag , line_slope_one( inst_mag , *cal_fit ) , label=line_label )
 		ax_mag.legend()
 		# print(cal_fit)
 		print('fit (1 sigma) errors : ' , np.diag(cal_fit_cov) **.5)
 		# print(f'{f[:-11]}_zeropoint.txt')
 
-		np.savetxt(f'{f[:-11]}_zeropoint.txt'    , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
-
-
+		if False:
+			np.savetxt(f'{f[:-11]}_zeropoint.txt'    , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
 
 
 		# if True: break

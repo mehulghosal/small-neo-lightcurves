@@ -688,21 +688,22 @@ if __name__ == '__main__':
 			star_y = sex_output[:,6]
 
 			dist_to_asteroid = []
+			dist_to_asteroid = ( (star_x - trail_centroid[0]) ** 2 + (star_y - trail_centroid[1]) **2 ) **.5 
 
 			# to rotate to asteroid's reference -- SExtractor works with raw fits file data
-			for i in range(len(star_x)):
-				# star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
-				# star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i] , star_y_min[i] , angle, img, img_rotated)
-				# star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i] , star_y_max[i] , angle, img, img_rotated)
+			# for i in range(len(star_x)):
+			# 	star_x[i], star_y[i] = point_rotation(star_x[i], star_y[i], angle, img, img_rotated)
+			# 	star_x_min[i], star_y_min[i] = point_rotation(star_x_min[i] , star_y_min[i] , angle, img, img_rotated)
+			# 	star_x_max[i], star_y_max[i] = point_rotation(star_x_max[i] , star_y_max[i] , angle, img, img_rotated)
 
-				dist_to_asteroid.append( ((star_x[i] - trail_centroid[0]) **2 + (star_y[i] - trail_centroid[1]) **2 ) **.5 )
+			# 	dist_to_asteroid.append( ((star_x[i] - trail_centroid[0]) **2 + (star_y[i] - trail_centroid[1]) **2 ) **.5 )
 				
 			# filtering based on distance to asteroid
-			dist_to_asteroid = np.array  (dist_to_asteroid)
-			dist_sorted      = np.argsort(dist_to_asteroid)
+			# dist_to_asteroid = np.array  (dist_to_asteroid)
+			dist_sorted = np.argsort(dist_to_asteroid)
 
-			star_x     = star_x[dist_sorted]
-			star_y     = star_y[dist_sorted]
+			star_x      = star_x[dist_sorted]
+			star_y      = star_y[dist_sorted]
 
 			# filtering bad stars from sextractor
 			bad_stars = np.where((star_x<ast_trail_length) | (star_x>img_rotated.shape[1]-ast_trail_length) | (star_y<ast_trail_length) | (star_y>img_rotated.shape[0]-ast_trail_length)) # too close to edge
@@ -732,6 +733,8 @@ if __name__ == '__main__':
 			row_flux     = []
 
 			failed_log   = []
+
+			rebin = False
 
 			i = 0
 			while True:
@@ -778,9 +781,12 @@ if __name__ == '__main__':
 				fwhm = s * 2.355
 				st_height_correction = int(ast_height_correction * L/ast_trail_length ) - 1
 				# st_height_correction = - int(fwhm/2) - 1
-
-				# str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, binning=len(obj_minus_sky), fwhm=fwhm, height_correction=st_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
-				str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
+ 
+				if L - 2*st_height_correction > len(obj_minus_sky):  # star lightcurve longer than asteroid
+					str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
+				else:     # star lightcurve shorter than asteroid -- no binning step here, we will rebin the asteroid lightcurve 
+					rebin = True
+					str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction)
 
 				norm = np.median(str_minus_sky)
 
@@ -844,6 +850,11 @@ if __name__ == '__main__':
 			# row_avgs/=norm
 
 			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
+
+			if rebin:
+				obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise) 
+
+
 			sky_corrected_lightcurve = obj_minus_sky / row_avgs
 
 			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))

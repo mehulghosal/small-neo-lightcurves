@@ -20,12 +20,12 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 # output = open('output_rates.csv', 'w+')
 
 input_file = np.loadtxt('input.csv', dtype=object, skiprows=1, usecols=(i for i in range(25)), delimiter=',')
-
+i=0
 mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'BA15' in d: continue
+	# if not 'BA15' in d: continue
 
 	for f in file_names:
 		try:
@@ -96,9 +96,11 @@ for d in dir_names:
 
 		# output.writelines(to_write)
 
-		if True: break
+		# if True: break
 
 	# plt.figure()
 	# plt.plot(np.sort(start_times))
-	plt.show()
+	i+=1
+	# plt.show()
 # output.close()
+print(i)
