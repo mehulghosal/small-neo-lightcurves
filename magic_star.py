@@ -845,6 +845,8 @@ if __name__ == '__main__':
 			print('row_sums_smooth shape: ', row_flux.shape)
 
 			row_avgs = np.nanmean(row_flux, axis=0)
+
+			avgs_err = np.sum(row_errs ** 2, axis=0) ** .5 * .1
 		
 			# norm = np.nanmean(row_avgs)
 			# row_avgs/=norm
@@ -857,13 +859,16 @@ if __name__ == '__main__':
 
 			sky_corrected_lightcurve = obj_minus_sky / row_avgs
 
+			sky_corrected_errs = (sigma_row / row_avgs) ** 2 + (avgs_err * obj_minus_sky / row_avgs**2) ** 2
+			sky_corrected_errs = sky_corrected_errs ** .5
+
 			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
 
 			directory_name = d.split('/')[1]
 
 			if write_output == 'True':
 				np.savetxt(f'{f[:-4]}_params.txt'    , stars )
-				np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sigma_row ]).T )
+				np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
 
 			print()
 			file.close()
