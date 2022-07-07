@@ -872,7 +872,7 @@ if __name__ == '__main__':
 
 			print()
 			file.close()
-			if True: break
+			# if True: break
 
 			# ax[0].legend()
 
