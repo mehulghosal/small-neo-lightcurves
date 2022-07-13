@@ -50,14 +50,17 @@ y_0   : float
 	CCD pixel row coordinate of centroid
 width : int
 	width in FWHM of returned view
+height: int
+	height in L of returned view
 
 RETURNS
 ---------
 obj_rect : array
 	2 * width * s * 2.355 columns wide
-	L rows tall
+	L * height rows tall
 """
-def display_streak(img, s, L, a, b, x_0, y_0, width=1):
-	obj_width = width * s * 2.355
-	obj_rect  = img[int(y_0 - L/2 + .5) : int(y_0 + L/2 + .5), int(x_0 - obj_width + .5) : int(x_0 + obj_width + .5) ]
+def display_streak(img, s, L, a, b, x_0, y_0, width=1, height=1):
+	obj_width  = width * s * 2.355
+	obj_height = L * height
+	obj_rect   = img[int(y_0 - obj_height/2 + .5) : int(y_0 + obj_height/2 + .5), int(x_0 - obj_width + .5) : int(x_0 + obj_width + .5) ]
 	return obj_rect

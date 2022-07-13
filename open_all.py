@@ -25,7 +25,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	# if not 'BA15' in d: continue
+	if not 'NM15' in d: continue
 
 	for f in file_names:
 		try:
@@ -59,7 +59,7 @@ for d in dir_names:
 			trail_start = np.array(obj[-4:-2], dtype=int)
 			trail_end	= np.array(obj[-2:], dtype=int)
 		except Exception as e:
-			# print(f,obj[-4:-2],obj[-2:])
+			print(f,'skipped')
 			plt.close()
 			continue
 

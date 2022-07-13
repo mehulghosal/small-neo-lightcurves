@@ -69,7 +69,7 @@ x_ : float
 y_ : float
 	rotated CCD row pixel coordinate
 """
-def point_rotation(x,y,a,img,img_rot):
+def point_rotation( x , y , a , img , img_rot ):
 	a = -a * np.pi/180
 	x_0, y_0 = 0, 0
 	x_0_, y_0_ = img.shape[0]*np.abs(np.sin(a)), img.shape[1]*np.abs(np.sin(a))
@@ -82,6 +82,40 @@ def point_rotation(x,y,a,img,img_rot):
 	if y_<0: y_=0
 
 	return x_, y_
+
+"""
+inverse of point_rotation() - 
+
+PARAMETERS
+-----------
+
+star_x 		: float
+	ccd column pixel coordinate in rotated frame
+star_y 		: float
+	ccd row pixel coordinate in rotated frame
+img 		: array
+	original image rotated from -- trying to rotate back to this frame
+
+RETURNS
+--------
+star_x_rot : float
+	un-rotated CCD column pixel coordinate
+star_y_rot : float
+	un-rotated CCD row pixel coordinate
+"""
+def reverse_rotation( star_x , star_y , a , img ):
+	a *= -np.pi/180
+	if a>0: 
+		m = img.shape[0] * np.abs(np.sin(a))
+		star_x_rot =  (star_x -m) * np.cos(a) + star_y * np.sin(a) 
+		star_y_rot = -(star_x -m) * np.sin(a) + star_y * np.cos(a)
+
+	elif a<0:
+		# a *= -np.pi/180
+		m = img.shape[1] * np.abs(np.sin(a))
+		star_x_rot =  (star_x) * np.cos(a) + (star_y -m) * np.sin(a)
+		star_y_rot = -(star_x) * np.sin(a) + (star_y -m) * np.cos(a)
+	return star_x_rot, star_y_rot
 
 
 '''
@@ -414,6 +448,47 @@ def fourier(x, *params):
 img_rot, centroid, = 0, 0
 count = 0
 
+"""
+returns cropped in rectangle displaying the trail from parameters
+	usage:  > plt.imshow(display_streak(img_star_rotated, *stars[0]))
+
+PARAMETERS
+-----------
+img   : array
+	2d numpy array representing image we extract trail from 
+s 	  : float
+	Gaussian spread of trail
+L 	  : float
+	length of trail
+a 	  : float
+	angle of trail counterclockwise from positive x axis
+b 	  : float
+	scalar representation of background contribution 
+x_0   : float
+	CCD pixel column coordinate of centroid
+y_0   : float
+	CCD pixel row coordinate of centroid
+width : int
+	width in FWHM of returned view
+height: int
+	height in L of returned view
+
+RETURNS
+---------
+obj_rect : array
+	2 * width * s * 2.355 columns wide
+	L * height rows tall
+"""
+def trail_view(img, s, L, a, b, x_0, y_0, width=1, height=1):
+	obj_width  = width * s * 2.355
+	obj_height = L * height
+	obj_rect   = img[int(y_0 - obj_height/2 + .5) : int(y_0 + obj_height/2 + .5), int(x_0 - obj_width + .5) : int(x_0 + obj_width + .5) ]
+	return obj_rect
+
+def trail_view(img, x_0, y_0, width=20, height=100):
+	obj_rect = img[int(y_0 - height/2 + .5) : int(y_0 + height/2 + .5), int(x_0 - width + .5) : int(x_0 + width + .5) ]
+	return obj_rect
+
 '''
 
 scipy.optimize.curve_fit attempt: 6/13/2022
@@ -493,12 +568,10 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 	global img_rot, flux
 	
 	# ok i think this needs to be > 1
-	L_but_longer = L*1.3
-	s_but_wider  = s*1.3
+	L_but_longer = L*1.2
+	s_but_wider  = s*1.2
 
-	# trail = img_rot[int(c_y-L/2+0.5):int(c_y+L/2+.5) , int(c_x-s*2.355+.5): int(c_x+s*2.355+.5) ]
 	trail = img_rot[int(y_0 - L_but_longer/2):int(y_0 + L_but_longer/2+1) , int(x_0 - s_but_wider*2.355 + .5):int(x_0 + s_but_wider*2.355 + .5)]
-	# print( 'trail shape', trail.shape)
 
 	flux   = np.sum(trail)
 	a      = (a) * np.pi/180
@@ -563,9 +636,7 @@ if __name__ == '__main__':
 		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 		yea = False
 
-		# if not ('XD169' in d): continue
 		if not f_name in d: continue
-		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 		start_times = []
 		lightcurves = []
@@ -632,7 +703,6 @@ if __name__ == '__main__':
 			# box_y_width = ast_trail_length * 2
 
 			p0           = np.array([trail_spread[0], ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
-			param_bounds = ([1, ast_trail_length/4, -180, 0, 0, 0], [15, 650, 180, 2e3, img_rotated.shape[1], img_rotated.shape[0] ])
 
 			# TRAIL FITTING ATTEMPT WITH scipy.optimize.least_squares()
 			# fit          = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
@@ -642,8 +712,15 @@ if __name__ == '__main__':
 			# TRAIL FITTING WITH scipy.optimize.curve_fit()
 			# ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rotated, img_slice.flatten(), p0=p0)	
 			#  display_streak(img_rot, 10, 300, 90, b, x_0, y_0, width=2)
-			ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rotated, img_rot.flatten(), p0=p0)	
 
+
+			# img_view = trail_view( img_rot, *p0 )
+
+			# img_view = 
+
+
+
+			ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rot, img_rot.flatten(), p0=p0)	
 
 			ast_flux = flux
 			
@@ -662,18 +739,10 @@ if __name__ == '__main__':
 			ast_trail_start = np.array([trail_centroid[0] , trail_centroid[1] - ast_trail_length/2 ])
 			ast_trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + ast_trail_length/2 ])
 
-
-			print('asteroid trail length: ', ast_trail_length)
-
-			# asteroid trail length in 70o13 is 101 tall
-
 			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 			
-			# WCS stuff
-			w = WCS(hdr)
-			c = SkyCoord(f'{obj[7]} {obj[8]}', unit=(u.deg, u.deg))
-			target_x, target_y = np.round(utils.skycoord_to_pixel(c, w))
-			
+			print( 'asteroid trail length: ', len(obj_minus_sky) )
+
 			# source extractor !!
 			# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			try:
@@ -683,11 +752,11 @@ if __name__ == '__main__':
 				continue
 
 			sex_output = np.loadtxt(se_index, skiprows=9)
-			print('SExtractor found stars: ',sex_output.shape[0])
+			print('SExtractor found stars: ', sex_output.shape[0])
 			star_x = sex_output[:,5]
 			star_y = sex_output[:,6]
 
-			dist_to_asteroid = []
+			# dist_to_asteroid = []
 			dist_to_asteroid = ( (star_x - trail_centroid[0]) ** 2 + (star_y - trail_centroid[1]) **2 ) **.5 
 
 			# to rotate to asteroid's reference -- SExtractor works with raw fits file data
@@ -706,7 +775,7 @@ if __name__ == '__main__':
 			star_y      = star_y[dist_sorted]
 
 			# filtering bad stars from sextractor
-			bad_stars = np.where((star_x<ast_trail_length) | (star_x>img_rotated.shape[1]-ast_trail_length) | (star_y<ast_trail_length) | (star_y>img_rotated.shape[0]-ast_trail_length)) # too close to edge
+			bad_stars = np.where((star_x < ast_trail_length) | (star_x > img.shape[1] - ast_trail_length) | (star_y < ast_trail_length) | (star_y > img.shape[0]-ast_trail_length)) # too close to edge
 			bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too
 			# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
 			print('filter on sextractor', len(bad_stars))
@@ -715,6 +784,9 @@ if __name__ == '__main__':
 			
 			l = float(l_from_input)
 			a = float(a_from_input)
+
+			if len(obj_minus_sky) > l: 
+				rebin = True
 			
 			cheats_on = False
 
@@ -737,20 +809,24 @@ if __name__ == '__main__':
 			rebin = False
 
 			i = 0
+
+			img_star_rotated = rotate(img, a)
+
 			while True:
 
 				if i >= len(star_x) or i == 50: break
+				# if i == 3: break
 
-				# img_star_rotated = rotate(img, a)
-				img_star_rotated = img
+				
+				# img_star_rotated = img
 
 				# setting global variables for trail fitting
-				# img_rot  = img_star_rotated 
-				img_rot = img
+				img_rot  = img_star_rotated 
+				# img_rot = img
 				centroid = star_x[i], star_y[i]
-				# centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
+				centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
 
-				str_p0       = np.array([3, l, a, np.mean(sky_row_avg), centroid[0], centroid[1]])
+				str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
 				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 				
 				try:
@@ -759,33 +835,36 @@ if __name__ == '__main__':
 					print(e , f' LOL star fit failed , skipping trail number {i} for filname : {f}  ')
 					failed_log.append(str_p0)
 					continue
-					
-				s, L, A, b, x_0, y_0      = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
 
 				residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
 
 				print('star parameters: '     , str_param)
 				print('param uncertainties:, ', np.sqrt(np.diag(star_param_cov)))
+					
+				s, L, A, b, x_0, y_0 = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
+
+				x_0_ , y_0_ = reverse_rotation(x_0 , y_0 , a , img)
+				angle_from_initial = a - (A-90)
 
 				# capturing that global variable after the trail fit has converged
 				str_flux = flux
 
-				img_star_rotated = rotate(img, A)
+				img_star_rotated = rotate(img, angle_from_initial)
+				x_0_ , y_0_ = point_rotation(x_0_ , y_0_ , angle_from_initial , img , img_star_rotated )
 				
 				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
-				x_0, y_0 = point_rotation( x_0 , y_0 , A , img , img_star_rotated )
+				# x_0, y_0 = point_rotation( x_0 , y_0 , A , img , img_star_rotated )
 
-				star_trail_start = np.array([x_0, y_0 - L/2 ])
-				star_trail_end   = np.array([x_0, y_0 + L/2 ])
+				star_trail_start = np.array([x_0_, y_0_ - L/2 ])
+				star_trail_end   = np.array([x_0_, y_0_ + L/2 ])
 
 				fwhm = s * 2.355
 				st_height_correction = int(ast_height_correction * L/ast_trail_length ) - 1
 				# st_height_correction = - int(fwhm/2) - 1
  
-				if L - 2*st_height_correction > len(obj_minus_sky):  # star lightcurve longer than asteroid
+				if not rebin:  # star lightcurve longer than asteroid
 					str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
 				else:     # star lightcurve shorter than asteroid -- no binning step here, we will rebin the asteroid lightcurve 
-					rebin = True
 					str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction)
 
 				norm = np.median(str_minus_sky)

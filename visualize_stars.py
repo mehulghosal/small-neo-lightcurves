@@ -11,22 +11,9 @@ from astropy.timeseries import LombScargle
 from astropy.coordinates import SkyCoord
 from scipy.ndimage import rotate
 from scipy.optimize import curve_fit
-from magic_star import take_lightcurve, point_rotation
+from magic_star import take_lightcurve, point_rotation, reverse_rotation
 from debugging import display_streak
 
-def reverse_rotation(star_x, star_y, a, img):
-	a *= -np.pi/180
-	if a>0: 
-		m = img.shape[0] * np.abs(np.sin(a))
-		star_x_rot =  (star_x -m) * np.cos(a) + star_y * np.sin(a) 
-		star_y_rot = -(star_x -m) * np.sin(a) + star_y * np.cos(a)
-
-	elif a<0:
-		# a *= -np.pi/180
-		m = img.shape[1] * np.abs(np.sin(a))
-		star_x_rot =  (star_x) * np.cos(a) + (star_y -m) * np.sin(a)
-		star_y_rot = -(star_x) * np.sin(a) + (star_y -m) * np.cos(a)
-	return star_x_rot, star_y_rot
 
 def linear_function(x , m , b):
 	return x * m + b
