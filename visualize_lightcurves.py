@@ -20,19 +20,26 @@ if __name__ == '__main__':
 		yea = False
 		lightcurves = []
 		times       = []
+		img_filters = []
 
-		if  not ('NM15' in d): continue
+		if  not ('GE1' in d): continue
+
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
 
 		for f in file_names:
 
 			if ('_lightcurve' not in f)  : continue
+			print()
+
+			fits_file  = fits.open(f[:-15] + '.flt')
+			img_filter = fits_file[0].header['FILTER']
+			img_filters.append(img_filter[0])
+			print(img_filter)
 			# if ('70o13' not in f) and  ('72o13' not in f) : continue
 			# if 		: continue 
 			# if count==5: continue
 			count+=1
-			# if not count==5: continue
 
 			lc_file = np.loadtxt(f)
 
@@ -47,16 +54,18 @@ if __name__ == '__main__':
 			binned = lc_file[:,1]
 
 			mag_b  = -2.5*np.log10(binned)
+			mag_er = 1.08574 * errs / binned
 
-			# zp_filename = f[:-15]+'_zeropoint.txt'
+			zp_filename = f[:-15]+'_zeropoint.txt'
 			# print(zp_filename)
-			# zeropoint = np.loadtxt( zp_filename )[0,1]
-			zeropoint = 0
+			zeropoint = np.loadtxt( zp_filename )
+			zp_err    = zeropoint[1] 
+			zeropoint = zeropoint[0]
+			# zeropoint = 0
+			# print(zeropoint)
 
 			mag_cal = mag_b + zeropoint
-
-			# binned = mag_b
-			# mag_er = errs_b * (1.08574 / binned) ** .5 
+			mag_cal_err = (mag_er**2 + zp_err**2)**.5
 
 			# binned = -2.5*np.log10(binned)
 			lightcurves.append(mag_cal)
@@ -72,7 +81,8 @@ if __name__ == '__main__':
 			# ax1.errorbar(time, mag_b, mag_er, fmt='b.', linewidth=0, elinewidth=2)
 			# ax1.scatter   (time, binned)
 			# ax1.errorbar  (time, binned, errs, elinewidth=2)
-			ax1.scatter   (time, mag_cal)
+			# ax1.scatter   (time_, mag_cal)
+			ax1.errorbar  ( time_ , mag_cal , mag_cal_err , elinewidth=2 )
 
 			ax1.set_xlabel('mjd')
 			# ax2.plot(np.linspace(0, 60, 94), binned)
@@ -88,7 +98,7 @@ if __name__ == '__main__':
 			
 
 			# period, power, peak_period = periodogram(np.arange(len(binned)), binned, num_maxes = 20)
-			period, power, peak_period = periodogram(time, mag_cal, num_maxes = 100)
+			period, power, peak_period = periodogram(time_, mag_cal, num_maxes = 100)
 			# period, power, peak_period = periodogram(time, binned, num_maxes = 100, err=errs)
 			# period, power, peak_period = periodogram(time, mag_b, num_maxes = 100, err=errs_b)
 			fig_per, ax_per = plt.subplots()
@@ -98,51 +108,39 @@ if __name__ == '__main__':
 
 			actual_peak = peak_period[:30] 
 			for T in peak_period:
-				if T>5 and T<18: 
+				if T>16 and T<19: 
 					actual_peak=T*2
 					break
+			# actual_peak = 32.49
 			print('actual peak [s]: ', actual_peak)
 
-			# plt.axvline(x=actual_peak/2, color='g', linestyle='-', label=f'peak period: {actual_peak/2:.2f} s ')
-			# plt.legend()
-			# actual_peak = [15]
-
-
-			# WORKS!!!
-			# folded_lcs = []
-			# for period in actual_peak:
-			# 	print('period: ', period)
-			# 	phase, data = fold_lightcurve(time,  period, exp_time=time[-1]-time[0])
-			# 	folded_lcs.append(data)
-			# 	print(phase)
-			# 	print(data)
-
-			# 	plt.figure()
-			# 	# plt.scatter( np.array(folded_lightcurve['time']) , np.array(folded_lightcurve['data']) )
-			# 	plt.scatter( phase, data )
-			# 	plt.title(period)
-
-
-			# phase, data = fold_lightcurve( time, mag_cal, actual_peak, exp_time=time[-1]-time[0])
-			# # phase, data = fold_lightcurve( time_, mag_cal, actual_peak)
+			# phase, data = fold_lightcurve( time, mag_cal, actual_peak)
+			# # phase, data = fold_lightcurve( time_, mag_cal, actual_peak , exp_time=time[-1]-time[0])
 
 			# fig_fold, ax_fold = plt.subplots()
 
 			# ax_fold.scatter(phase*24*3600+actual_peak/2, data)
+			# # ax_fold.scatter(phase, data)
 			# # plt.scatter(np.linspace(-actual_peak, actual_peak, len(data)), data)
 			# ax_fold.set_xlabel('seconds')
 			# ax_fold.set_ylabel('Mag')
 			# ax_fold.set_title (f'Lightcurve folded on {actual_peak:.2f} seconds')
+			# if True: break
 
 		
 		times = np.array(times, dtype=object)
-		# print(times[0])
+		img_filters = np.array(img_filters, dtype=object)
+
 		start_times = []
 		for t in times: start_times.append(t[0])
 		ind = np.argsort(start_times)
-		# print(ind)
+
 		lightcurves = np.array(lightcurves, dtype=object)
 		norms       = np.array([np.median(i) for i in lightcurves])
+		
+		img_filters = img_filters[ind]
+		print(img_filters)
+
 		combined_lc = np.concatenate(lightcurves[ind])
 		# combined_lc = np.concatenate(lightcurves[ind]/norms[ind])
 		combined_T  = np.concatenate(times[ind])
@@ -154,15 +152,15 @@ if __name__ == '__main__':
 		ax_com.set_title('combined lightcurves')
 
 
-		combined_period, combined_power, combined_peak = periodogram( combined_T , combined_lc , num_maxes = 50 )
-		fig_c_per, ax_c_per = plt.subplots()
-		ax_c_per.plot(combined_period , combined_power)
-		print(combined_peak[combined_peak>10])
+		# combined_period, combined_power, combined_peak = periodogram( combined_T , combined_lc , num_maxes = 50 )
+		# fig_c_per, ax_c_per = plt.subplots()
+		# ax_c_per.plot(combined_period , combined_power)
+		# print(combined_peak[combined_peak>10])
 
-		P = combined_peak[combined_peak>10] [0] *2
-		print(P)
-		phase , data = fold_lightcurve(combined_T , combined_lc , P)
-		fig_fold , ax_fold = plt.subplots()
-		ax_fold.scatter(phase, data)
+		# P = combined_peak[combined_peak>10] [0] *2
+		# print(P)
+		# phase , data = fold_lightcurve(combined_T , combined_lc , P)
+		# fig_fold , ax_fold = plt.subplots()
+		# ax_fold.scatter(phase, data)
 
 		plt.show()

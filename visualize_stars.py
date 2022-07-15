@@ -26,7 +26,7 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
-	if 'FF14' not in d: continue
+	if 'GE1' not in d: continue
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 
 	for f in file_names:
@@ -70,6 +70,21 @@ for d in dir_names:
 		cen_x_r = np.array(cen_x_r)
 		cen_y_r = np.array(cen_y_r)
 
+
+		inst_mag = -2.5 * np.log10(star_flux)
+		mag_filter = np.where(inst_mag <= 0)
+		inst_mag = inst_mag[mag_filter]
+
+
+
+		cen_y_r = cen_y_r [ mag_filter ]
+		cen_x_r = cen_x_r [ mag_filter ]
+
+
+		w = WCS(hdr)
+		c = SkyCoord(f'{hdr["CRVAL1"]} {hdr["CRVAL2"]}', unit=(u.deg, u.deg))
+		fit_ra_dec = utils.pixel_to_skycoord(cen_x_r , cen_y_r , w )
+
 		img_star_rotated = rotate(img, star_angle)
 
 		fig_lc, ax_lc = plt.subplots(3,5)
@@ -79,25 +94,21 @@ for d in dir_names:
 
 		sum_lc = np.zeros((binning))
 
-		for i in range(10):
-			lc = take_lightcurve(img_star_rotated, [centroid_x[i], trail_start_y[i]], [centroid_x[i], trail_end_y[i]], fwhm=star_fwhm[i], binning=binning)[0]
-			# print(lc.shape)
-			sum_lc += lc
-			# print(len(lc))
-			# ax_lc[i%3, i%5].scatter(np.arange( len(lc) ), lc)
-			#  s, L, a, b, x_0, y_0, width=1
-			ax_lc[i%3, i%5].imshow(display_streak(img_star_rotated, star_s[i] , star_length[i] , star_angle , 0 , centroid_x[i] , centroid_y[i] ))
+		# for i in range(10):
+		# 	lc = take_lightcurve(img_star_rotated, [centroid_x[i], trail_start_y[i]], [centroid_x[i], trail_end_y[i]], fwhm=star_fwhm[i], binning=binning)[0]
+		# 	# print(lc.shape)
+		# 	sum_lc += lc
+		# 	# print(len(lc))
+		# 	# ax_lc[i%3, i%5].scatter(np.arange( len(lc) ), lc)
+		# 	ax_lc[i%3, i%5].imshow(display_streak(img_star_rotated, star_s[i] , star_length[i] , star_angle , 0 , centroid_x[i] , centroid_y[i] ))
 
 
-		fig, ax = plt.subplots()
-		ax.scatter(np.arange(binning), sum_lc/np.median(sum_lc))
+		# fig, ax = plt.subplots()
+		# ax.scatter(np.arange(binning), sum_lc/np.median(sum_lc))
 
-		w = WCS(hdr)
-		c = SkyCoord(f'{hdr["CRVAL1"]} {hdr["CRVAL2"]}', unit=(u.deg, u.deg))
-
+		
 		# args_str = f'./refcat {c.ra.deg} {c.dec.deg} -rad 0.5 -dir 00_m_16/'
 		args_str = f'./refcat {c.ra.deg} {c.dec.deg} -rect 0.25,0.25 -dir 00_m_16/'
-		# print(args_str)
 
 		# RA, Dec, g, r, i, z, J, cyan, orange.
 		ref_stars = np.array(os.popen(args_str).read().split('\n')[:-1])
@@ -105,6 +116,14 @@ for d in dir_names:
 		for i in ref_stars:
 			refcat.append(np.array(i.split(), dtype=float))
 		refcat = np.array(refcat)
+
+		ref_mag = []
+
+		img_filter = hdr['FILTER'][0]
+		
+		if   img_filter == 'g': ref_mag = refcat[:,2]
+		elif img_filter == 'r': ref_mag = refcat[:,3]
+		elif img_filter == 'i': ref_mag = refcat[:,4]
 
 		refcat_ra_dec      = SkyCoord(ra=refcat[:,0]*u.degree, dec=refcat[:,1]*u.degree, frame='fk5')
 		refcat_x, refcat_y = utils.skycoord_to_pixel(refcat_ra_dec, w)
@@ -114,14 +133,8 @@ for d in dir_names:
 		refcat_x      = refcat_x[image_dim] #0, img.shape[1]
 		refcat_y      = refcat_y[image_dim]
 		refcat_ra_dec = refcat_ra_dec[image_dim]
+		ref_mag       = ref_mag[image_dim]
 
-		# refcat_x      = np.delete(refcat_x , 1)
-		# refcat_y      = np.delete(refcat_y , 1)
-		# refcat_ra_dec = np.delete(refcat_ra_dec , 1)
-
-		# print(refcat_x, refcat_y)
-
-		fit_ra_dec = utils.pixel_to_skycoord(cen_x_r , cen_y_r , w )
 
 		fig_unr, ax_unr = plt.subplots()
 		ax_unr.imshow(img, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
@@ -129,50 +142,38 @@ for d in dir_names:
 		ax_unr.set_xlim((0, img.shape[1]))
 		ax_unr.set_ylim((img.shape[0], 0))
 		
-		# print(fit_ra_dec)
+		# idx, d2d, d3d = fit_ra_dec.match_to_catalog_sky(refcat_ra_dec, nthneighbor=1)
+		idx, d2d, d3d = refcat_ra_dec.match_to_catalog_sky(fit_ra_dec, nthneighbor=1)
+		print(d2d.arcsec)
 
-		idx, d2d, d3d = fit_ra_dec.match_to_catalog_sky(refcat_ra_dec, nthneighbor=1)
+		dist_filter = np.where(d2d.arcsec < 100)
+		# idx = idx[dist_filter]
+		# fit_ra_dec = fit_ra_dec[dist_filter]
 		
-		ax_unr.scatter(refcat_x[idx]     , refcat_y[idx]     , label='refcat')
-		ax_unr.scatter(cen_x_r , cen_y_r , label='fitted')
+		ax_unr.scatter(refcat_x     , refcat_y     , label='refcat')
+		ax_unr.scatter(cen_x_r[idx] , cen_y_r[idx] , label='fitted')
 		ax_unr.legend()
 
-		# print(refcat)
-		# refcat_g = refcat[:,2]
-		# refcat_r = refcat[:,3]
-		# refcat_i = refcat[:,4]
-		ref_mag = []
-
-		img_filter = hdr['FILTER'][0]
-		
-		if   img_filter == 'g': ref_mag = refcat[:,2]
-		elif img_filter == 'r': ref_mag = refcat[:,3]
-		elif img_filter == 'i': ref_mag = refcat[:,4]
-
-		ref_mag = ref_mag[image_dim]
-		# print(ref_mag.shape)
-
-		# ref_mag = np.delete(ref_mag , 1)
-
-		inst_mag = -2.5 * np.log10(star_flux)
-
-		# print(inst_mag[idx])
 
 		fig_mag, ax_mag = plt.subplots()
-		ax_mag.scatter(inst_mag, ref_mag[idx])
+		# ax_mag.scatter(inst_mag[dist_filter], ref_mag[idx[dist_filter]])
+		ax_mag.scatter(inst_mag[idx], ref_mag)
 
-		cal_fit, cal_fit_cov = curve_fit ( line_slope_one , inst_mag , ref_mag[idx] )
+		# print(ref_mag[idx[dist_filter]] )
+
+		cal_fit, cal_fit_cov = curve_fit ( line_slope_one , inst_mag[idx[dist_filter]] , ref_mag[dist_filter] )
 		# line_label = f'M = {cal_fit[0]}*m + {cal_fit[1]}'
-		line_label = f'M = m + {cal_fit[0]}'
-		ax_mag.plot( inst_mag , line_slope_one( inst_mag , *cal_fit ) , label=line_label )
-		ax_mag.legend()
+		# line_label = f'M = m + {cal_fit[0]}'
+		print(cal_fit) 
+		ax_mag.plot( inst_mag[idx[dist_filter]] , line_slope_one( inst_mag[idx[dist_filter]] , *cal_fit )  )
+		# ax_mag.legend()
 		# print(cal_fit)
-		print('fit (1 sigma) errors : ' , np.diag(cal_fit_cov) **.5)
+		# print('fit (1 sigma) errors : ' , np.diag(cal_fit_cov) **.5)
+		ax_mag.set_title(f'ZP = {cal_fit} +/- {np.diag(cal_fit_cov) **.5}')
 		# print(f'{f[:-11]}_zeropoint.txt')
 
-		if False:
-			np.savetxt(f'{f[:-11]}_zeropoint.txt'    , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
-
+		if True:
+			np.savetxt(f'{f[:-11]}_zeropoint.txt' , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
 
 		# if True: break
 

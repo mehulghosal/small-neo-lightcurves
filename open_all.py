@@ -25,7 +25,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'NM15' in d: continue
+	if not 'JB' in d: continue
 
 	for f in file_names:
 		try:
@@ -54,24 +54,24 @@ for d in dir_names:
 
 		obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
 
-		try:
-			obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
-			trail_start = np.array(obj[-4:-2], dtype=int)
-			trail_end	= np.array(obj[-2:], dtype=int)
-		except Exception as e:
-			print(f,'skipped')
-			plt.close()
-			continue
+		# try:
+		# 	obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
+		# 	trail_start = np.array(obj[-4:-2], dtype=int)
+		# 	trail_end	= np.array(obj[-2:], dtype=int)
+		# except Exception as e:
+		# 	print(f,'skipped')
+		# 	plt.close()
+		# 	continue
 
-		plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail')
-		# plt.legend()
+		# plt.scatter([trail_start[0], trail_end[0]], [trail_start[1], trail_end[1]], marker='*', label='2016 LT1 trail')
+		# # plt.legend()
 
-		angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
-		img_rotated = rotate(img, angle)
-		# ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
+		# angle = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
+		# img_rotated = rotate(img, angle)
+		# # ax[0].imshow(img_rotated, cmap='gray', norm=colors.LogNorm(vmin=mins[hdr['FILTER'][0]]))
 
-		trail_start = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
-		trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
+		# trail_start = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
+		# trail_end	= np.array(point_rotation(trail_end[0]  , trail_end[1]  , angle, img, img_rotated), dtype=int)
 
 		# plt.figure()
 		# plt.title(f)
@@ -101,6 +101,6 @@ for d in dir_names:
 	# plt.figure()
 	# plt.plot(np.sort(start_times))
 	i+=1
-	# plt.show()
+	plt.show()
 # output.close()
 print(i)

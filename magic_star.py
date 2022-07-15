@@ -269,8 +269,8 @@ phase : array
 data  : array-like
 	data is the folded lightcurve data
 '''
-def fold_lightcurve( time , lightcurve , period , exp_time=60 , phase=0 ):
-	lightcurve_table = Table([Time(time, format='mjd'), lightcurve], names=('time', 'data'))
+def fold_lightcurve( time , lightcurve , period , exp_time=60 , phase=0 ) :
+	lightcurve_table = Table( [Time(time, format='mjd'), lightcurve] , names=('time', 'data'))
 	ts = TimeSeries(data=lightcurve_table)
 	folded_lc = ts.fold( period=period*u.second, normalize_phase=False)
 	phase = np.array(folded_lc['time'].value)
