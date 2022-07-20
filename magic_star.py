@@ -1,6 +1,7 @@
 import warnings, subprocess, sys
 import numpy as np
 import astropy as ap
+import exoplanet as xo
 
 # import matplotlib.pyplot as plt
 from astropy.time import Time
@@ -259,8 +260,6 @@ period 	   : float
 	dominant period, 2x peak Lomb-Scargle period
 exp_time   : float 
 	doesn't change anything rn
-phase 	   : float 
-	doesn't change anythign rn
 
 RETURNS
 --------
@@ -269,13 +268,20 @@ phase : array
 data  : array-like
 	data is the folded lightcurve data
 '''
-def fold_lightcurve( time , lightcurve , period , exp_time=60 , phase=0 ) :
-	lightcurve_table = Table( [Time(time, format='mjd'), lightcurve] , names=('time', 'data'))
+def fold_lightcurve( time , lightcurve , period , exp_time=60 , errs = None ) :
+	if errs is None:
+		lightcurve_table = Table( [Time(time, format='mjd'), lightcurve] , names=('time', 'data'))
+	else: 
+		lightcurve_table = Table( [Time(time, format='mjd'), lightcurve, errs] , names=('time', 'data', 'errs'))
+	# print(folded_lc)
 	ts = TimeSeries(data=lightcurve_table)
 	folded_lc = ts.fold( period=period*u.second, normalize_phase=False)
 	phase = np.array(folded_lc['time'].value)
 	data  = np.array(folded_lc['data'])
-	return phase, data
+	err_  = None
+	if errs is not None: err_  = np.array(folded_lc['errs'])
+	# print(phase, data)
+	return phase, data, err_
 
 '''
 lomb scargle periodogram of lightcurve
@@ -314,6 +320,21 @@ def periodogram(time, lightcurve, num_maxes=1, err=None):
 	# print('peak period: ', peak_period )
 
 	return period, power, (peak_period)
+
+def periodogram_xo ( time , lightcurve , num_maxes=1 , err=None , min_period=.1 , max_period = 2):
+	if err is None: results = xo.estimators.lomb_scargle_estimator( time, lightcurve, max_peaks=num_maxes, min_period=min_period, max_period=max_period, samples_per_peak=50 )
+	else: 			results = xo.estimators.lomb_scargle_estimator( time, lightcurve, max_peaks=num_maxes, min_period=min_period, max_period=max_period, samples_per_peak=50, yerr=err)
+
+	peak = results["peaks"][0]['period']
+	print(peak)
+	freq, power = results["periodogram"]
+	return 1/freq * 24*3600, power , (peak)
+	# plt.plot(1 / freq, power, "k")
+	# plt.axvline(peak["period"], color="k", lw=4, alpha=0.3)
+	# plt.xlim((1 / freq).min(), (1 / freq).max())
+	# plt.yticks([])
+	# plt.xlabel("period [days]")
+	# _ = plt.ylabel("power")
 
 
 '''
@@ -488,6 +509,24 @@ def trail_view(img, s, L, a, b, x_0, y_0, width=1, height=1):
 def trail_view(img, x_0, y_0, width=20, height=100):
 	obj_rect = img[int(y_0 - height/2 + .5) : int(y_0 + height/2 + .5), int(x_0 - width + .5) : int(x_0 + width + .5) ]
 	return obj_rect
+
+
+'''
+
+PARAMETERS
+-----------
+lc_sequence 	: list or arraylike of indiviual lightcurve values
+
+RETURNS
+--------
+normalized_lcs 	: array of normalized lightcurve values
+
+'''
+def normalize_lightcurves( lc_sequence , filters=None ):
+	norms = [ np.mean(lc) for lc in lc_sequence]
+	return [ lc_sequence[i] - norms[i] for i in range(len(lc_sequence)) ] , norms
+
+
 
 '''
 

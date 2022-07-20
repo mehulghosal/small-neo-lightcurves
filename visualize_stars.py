@@ -94,17 +94,17 @@ for d in dir_names:
 
 		sum_lc = np.zeros((binning))
 
-		# for i in range(10):
-		# 	lc = take_lightcurve(img_star_rotated, [centroid_x[i], trail_start_y[i]], [centroid_x[i], trail_end_y[i]], fwhm=star_fwhm[i], binning=binning)[0]
-		# 	# print(lc.shape)
-		# 	sum_lc += lc
-		# 	# print(len(lc))
-		# 	# ax_lc[i%3, i%5].scatter(np.arange( len(lc) ), lc)
-		# 	ax_lc[i%3, i%5].imshow(display_streak(img_star_rotated, star_s[i] , star_length[i] , star_angle , 0 , centroid_x[i] , centroid_y[i] ))
+		for i in range(9):
+			lc = take_lightcurve(img_star_rotated, [centroid_x[i], trail_start_y[i]], [centroid_x[i], trail_end_y[i]], fwhm=star_fwhm[i], binning=binning)[0]
+			# print(lc.shape)
+			sum_lc += lc
+			# print(len(lc))
+			# ax_lc[i%3, i%5].scatter(np.arange( len(lc) ), lc)
+			ax_lc[i%3, i%5].imshow(display_streak(img_star_rotated, star_s[i] , star_length[i] , star_angle , 0 , centroid_x[i] , centroid_y[i] ))
 
 
-		# fig, ax = plt.subplots()
-		# ax.scatter(np.arange(binning), sum_lc/np.median(sum_lc))
+		fig, ax = plt.subplots()
+		ax.scatter(np.arange(binning), sum_lc/np.median(sum_lc))
 
 		
 		# args_str = f'./refcat {c.ra.deg} {c.dec.deg} -rad 0.5 -dir 00_m_16/'
@@ -146,12 +146,12 @@ for d in dir_names:
 		idx, d2d, d3d = refcat_ra_dec.match_to_catalog_sky(fit_ra_dec, nthneighbor=1)
 		print(d2d.arcsec)
 
-		dist_filter = np.where(d2d.arcsec < 100)
+		dist_filter = np.where(d2d.arcsec < 75)
 		# idx = idx[dist_filter]
 		# fit_ra_dec = fit_ra_dec[dist_filter]
 		
 		ax_unr.scatter(refcat_x     , refcat_y     , label='refcat')
-		ax_unr.scatter(cen_x_r[idx] , cen_y_r[idx] , label='fitted')
+		ax_unr.scatter(cen_x_r[idx[dist_filter]] , cen_y_r[idx[dist_filter]] , label='fitted')
 		ax_unr.legend()
 
 
