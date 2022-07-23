@@ -1,7 +1,7 @@
 import warnings, subprocess, sys
 import numpy as np
 import astropy as ap
-import exoplanet as xo
+#import exoplanet as xo
 
 # import matplotlib.pyplot as plt
 from astropy.time import Time
@@ -770,7 +770,7 @@ if __name__ == '__main__':
 			ast_fwhm			  = ast_param[0] * 2.355
 			ast_trail_length	  = ast_param[1]
 			# ast_height_correction = ast_trail_length * 0
-			ast_height_correction = - int( ast_fwhm ) - 1
+			ast_height_correction = - int( ast_fwhm ) - 5
 			# ast_height_correction = - ast_fwhm
 			
 			trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
