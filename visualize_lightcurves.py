@@ -8,6 +8,7 @@ from os.path import isfile, join, isdir
 from magic_star import bin_lightcurve, periodogram, fold_lightcurve, normalize_lightcurves, periodogram_xo
 from gp_test import gaussian_process
 
+actual_peak = 0
 directory = './'	
 dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(directory,f))] 
 
@@ -23,7 +24,7 @@ if __name__ == '__main__':
 		times       = []
 		img_filters = []
 
-		if not ('LT1' in d): continue
+		if not ('YA' in d): continue
 		# count += 1
 		# if   ('NM15' in d): continue
 
@@ -77,8 +78,8 @@ if __name__ == '__main__':
 			ax1 = fig.add_subplot(111)
 			ax2 = ax1.twiny()
 
-			ax1.scatter ( time_ , mag_cal - np.mean(mag_cal) , color='blue' , s=5 )
-			# ax1.errorbar  ( time_ , mag_cal - np.mean(mag_cal) , mag_cal_err , fmt='b.' , elinewidth=2 , linewidth=0 )
+			# ax1.scatter ( time_ , mag_cal - np.mean(mag_cal) , color='blue' , s=5 )
+			ax1.errorbar  ( time_ , mag_cal - np.mean(mag_cal) , mag_cal_err , fmt='b.' , elinewidth=2 , linewidth=0 )
 
 			ax1.set_xlabel('mjd')
 			# ax2.plot(np.linspace(0, 60, 94), binned)
@@ -87,8 +88,8 @@ if __name__ == '__main__':
 			ax2.set_xticklabels(np.linspace(0,60,6))
 			# ax2.cla()
 			# tit = ax1.set_title('2016 GE1 lightcurve')
-			tit = ax1.set_title(f)
-			tit.set_y(1.1)
+			# tit = ax1.set_title(f)
+			# tit.set_y(1.1)
 			fig.subplots_adjust(top=0.85)
 			ax2.set_xlabel('seconds')
 			
@@ -108,9 +109,10 @@ if __name__ == '__main__':
 			ax_per.set_xlim((2, 50))
 			# ax_per.set_ylim((0, 1))
 
-			actual_peak = 0
+			
 			for T in peak_period:
-				if (T>14 and T<16) or ( T>28 and T<40 ) :  
+				# if (T>14 and T<16) or ( T>28 and T<40 ) :  
+				if (T>24 and T<28):
 					actual_peak=T*2
 					break
 			# actual_peak = 32.49
@@ -147,6 +149,7 @@ if __name__ == '__main__':
 		img_filters = np.array(img_filters, dtype=object)
 		lightcurves = np.array(lightcurves, dtype=object)
 
+
 		normed_lcs , norms = normalize_lightcurves(lightcurves) 
 
 		start_times = [t[0] for t in times]
@@ -163,6 +166,8 @@ if __name__ == '__main__':
 		normed_lcs  = np.concatenate(normed_lcs[ind])
 		# combined_lc = np.concatenate(lightcurves[ind]/norms[ind])
 		combined_T  = np.concatenate(times[ind])
+		period_cutoff = (times[ind][-1][-1] - times[ind][0][0])/4 * 24*3600
+		print(period_cutoff)
 
 
 		fig_com, ax_com = plt.subplots()
@@ -177,10 +182,10 @@ if __name__ == '__main__':
 		# '''
 
 
-		combined_period, combined_power, combined_peak = periodogram( combined_T , combined_lc , num_maxes = 30 )
+		combined_period, combined_power, combined_peak = periodogram( combined_T , combined_lc , num_maxes = 150 )
 		fig_c_per, ax_c_per = plt.subplots()
 		ax_c_per.plot(combined_period , combined_power)
-		ax_c_per.set_xlim((2, 1000))
+		ax_c_per.set_xlim((2, period_cutoff))
 
 		# P = combined_peak[combined_peak>10] [0] *2
 		print(combined_peak[combined_peak>10])
@@ -189,13 +194,13 @@ if __name__ == '__main__':
 
 		# fig_fold , ax_fold = plt.subplots()
 		for T in combined_peak:
-			if T>100 and T<400: 
+			if T>26 and T<27: 
 				actual_peak=T*2
 				print('combined peak period [s] : ' , actual_peak)
 				phase , data, errs = fold_lightcurve(combined_T , normed_lcs , actual_peak)
 				plt.figure()
-				plt.title(actual_peak)
+				# plt.title(actual_peak)
 				plt.errorbar(phase * 24*3600 + actual_peak/2, data, errs, fmt='b.' , elinewidth=2 , linewidth=0 )
 
 		# '''
-		# plt.show()
+		plt.show()
