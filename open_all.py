@@ -25,7 +25,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 start_times = []
 for d in dir_names:
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-	if not 'JB' in d: continue
+	if not 'LT1_2016_06_07' in d: continue
 
 	for f in file_names:
 		try:

@@ -307,11 +307,11 @@ power       : array
 peak_period : tuple
 	num_maxes long tuple with dominant periods
 '''
-def periodogram(time, lightcurve, num_maxes=1, err=None):
+def periodogram(time, lightcurve, num_maxes=1, err=None, method='auto'):
 	if err is None:
-		frequency, power = LombScargle(time, lightcurve).autopower()
+		frequency, power = LombScargle(time, lightcurve).autopower(method=method)
 	else:
-		frequency, power = LombScargle(time, lightcurve, err).autopower()
+		frequency, power = LombScargle(time, lightcurve, err).autopower(method=method)
 	period = 1/frequency * 24*3600
 	# period = 1/frequency
 
