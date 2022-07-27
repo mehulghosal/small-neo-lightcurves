@@ -26,7 +26,7 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
-	if 'GE1' not in d: continue
+	if 'CG18' not in d: continue
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 
 	for f in file_names:
