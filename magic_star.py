@@ -851,7 +851,7 @@ if __name__ == '__main__':
 
 			img_star_rotated = rotate(img, a)
 
-			output_for_bryce = f'{f[:,-4]}/'
+			output_for_bryce = f'{f[:-4]}/'
 
 			while True:
 
