@@ -689,6 +689,8 @@ if __name__ == '__main__':
 			except Exception as e:
 				print(f)
 				continue
+
+
 			hdr = file[0].header
 			img = file[0].data
 
@@ -852,6 +854,8 @@ if __name__ == '__main__':
 			img_star_rotated = rotate(img, a)
 
 			output_for_bryce = f'{f[:-4]}/'
+			if not isdir(output_for_bryce):
+				os.mkdir(output_for_bryce)
 
 			while True:
 
