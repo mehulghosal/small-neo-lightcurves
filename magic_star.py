@@ -999,6 +999,7 @@ if __name__ == '__main__':
 			if write_output == 'True':
 				# np.savetxt(f'{f[:-4]}_params.txt'    , stars )
 				# np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
+				np.savetxt(f'{output_for_bryce}lightcurve_asteroid.dat', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
 
 
 			print()
