@@ -9,7 +9,7 @@ from magic_star import bin_lightcurve, periodogram, fold_lightcurve, normalize_l
 from gp_test import gaussian_process
 
 plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['figure.dpi'] = 200
+plt.rcParams['figure.dpi'] = 100
 
 actual_peak = 0
 directory = './'	
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
 		# if not ('CG18' in d): continue
 		# count += 1
-		if  not ('EV84' in d): continue
+		if  not ('LT1' in d): continue
 
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue

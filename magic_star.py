@@ -851,6 +851,8 @@ if __name__ == '__main__':
 
 			img_star_rotated = rotate(img, a)
 
+			output_for_bryce = f'{f[:,-4]}/'
+
 			while True:
 
 				if i >= len(star_x) or i == 50: break
@@ -914,6 +916,14 @@ if __name__ == '__main__':
 				trail_ends  .append(star_trail_end  )
 				residuals   .append(residual)
 				stars       .append(np.hstack((str_param, a, flux)))
+
+				dt = 60 * st_height_correction / L
+
+				# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
+
+				to_write = np.hstack ( [ np.linspace( start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
+
+				np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
 
 				print(' ')
 				i+=1
@@ -980,13 +990,16 @@ if __name__ == '__main__':
 			sky_corrected_errs = (sigma_row / row_avgs) ** 2 + (avgs_err * obj_minus_sky / row_avgs**2) ** 2
 			sky_corrected_errs = sky_corrected_errs ** .5
 
-			x = np.linspace(start_time, start_time + exp_time/(60*60*24), len(sky_corrected_lightcurve))
+			dt = 60 * ast_height_correction / ast_trail_length
+
+			x = np.linspace(start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(sky_corrected_lightcurve))
 
 			directory_name = d.split('/')[1]
 
 			if write_output == 'True':
-				np.savetxt(f'{f[:-4]}_params.txt'    , stars )
-				np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
+				# np.savetxt(f'{f[:-4]}_params.txt'    , stars )
+				# np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
+
 
 			print()
 			file.close()
