@@ -690,6 +690,8 @@ if __name__ == '__main__':
 				print(f)
 				continue
 
+			# if '66o13' in f or '67o13' in f or '71o13' in f or '72o13' in f  : continue
+
 
 			hdr = file[0].header
 			img = file[0].data
@@ -925,7 +927,7 @@ if __name__ == '__main__':
 
 				# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
 
-				to_write = np.hstack ( [ np.linspace( start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
+				to_write = np.array ( [ np.linspace( start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
 
 				np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
 

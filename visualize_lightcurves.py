@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
 		# if not ('CG18' in d): continue
 		# count += 1
-		if  not ('LT1' in d): continue
+		if  not ('GE1' in d): continue
 
 		# if not f_name in d: continue
 		#if not ('2015_TG24' in d or '2016_NM15' in d or '2015_VH1' in d): continue
