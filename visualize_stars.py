@@ -26,7 +26,7 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
-	if 'YA' not in d: continue
+	if 'GE1' not in d: continue
 	file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 
 	for f in file_names:
@@ -172,10 +172,10 @@ for d in dir_names:
 		ax_mag.set_title(f'ZP = {cal_fit} +/- {np.diag(cal_fit_cov) **.5}')
 		# print(f'{f[:-11]}_zeropoint.txt')
 
-		if True:
-			np.savetxt(f'{f[:-11]}_zeropoint.txt' , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
+		# if True:
+		# 	np.savetxt(f'{f[:-11]}_zeropoint.txt' , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
 
-		# if True: break
+		if True: break
 
 
 

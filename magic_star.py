@@ -690,7 +690,7 @@ if __name__ == '__main__':
 				print(f)
 				continue
 
-			# if '66o13' in f or '67o13' in f or '71o13' in f or '72o13' in f  : continue
+			if  ('1938060o04.flt' not in f and '1938061o04.flt' not in f) : continue
 
 
 			hdr = file[0].header
