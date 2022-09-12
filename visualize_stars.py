@@ -94,7 +94,7 @@ for d in dir_names:
 
 		sum_lc = np.zeros((binning))
 
-		for i in range(9):
+		for i in range(len(centroid_x)):
 			lc = take_lightcurve(img_star_rotated, [centroid_x[i], trail_start_y[i]], [centroid_x[i], trail_end_y[i]], fwhm=star_fwhm[i], binning=binning)[0]
 			# print(lc.shape)
 			sum_lc += lc
@@ -175,7 +175,7 @@ for d in dir_names:
 		# if True:
 		# 	np.savetxt(f'{f[:-11]}_zeropoint.txt' , np.vstack([cal_fit , np.diag(cal_fit_cov) **.5 ]) )
 
-		if True: break
+		# if True: break
 
 
 
