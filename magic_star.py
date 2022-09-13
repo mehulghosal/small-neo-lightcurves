@@ -675,7 +675,7 @@ if __name__ == '__main__':
 		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 		yea = False
 
-		if not f_name in d: continue
+		# if not f_name in d: continue
 
 		start_times = []
 		lightcurves = []
@@ -691,6 +691,10 @@ if __name__ == '__main__':
 				continue
 
 			# if  ('1938060o04.flt' not in f and '1938061o04.flt' not in f) : continue
+
+			output_for_bryce = f'{f[:-4]}/'
+			if not isdir(output_for_bryce):
+				os.mkdir(output_for_bryce)
 
 
 			hdr = file[0].header
@@ -771,6 +775,14 @@ if __name__ == '__main__':
 			print('asteroid fit parameters [ s , L , a , b , x_0 , y_0 ]: ', ast_param)
 			print('parameter uncertainties: '                              , np.sqrt(np.diag(ast_param_cov)))
 
+			w = WCS ( hdr )
+			# ast_ra_dec = utils.pixel_to_skycoord ( ast_param[-2] , ast_param[-1] , w )
+
+			# header = 'id ra dec s L A b x y a flux'
+			# to_write = np.array ( [0 , ast_ra_dec.ra.deg , ast_ra_dec.dec.deg , ast_param[0] , ast_param[1] , ast_param[2] , ast_param[3] , ast_param[4] , ast_param[5] , angle , ast_flux ] )
+			# np.savetxt(f'{output_for_bryce}target_params.dat' , to_write , header=header)
+			# if True: continue
+
 			ast_fwhm			  = ast_param[0] * 2.355
 			ast_trail_length	  = ast_param[1]
 			# ast_height_correction = ast_trail_length * 0
@@ -785,6 +797,14 @@ if __name__ == '__main__':
 			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 			
 			print( 'asteroid trail length: ', len(obj_minus_sky) )
+
+			dt = 60 * ast_height_correction / ast_trail_length
+
+			x = np.linspace(start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(obj_minus_sky))
+			to_write = np.array ( [x , obj_minus_sky , sigma_row] )
+			np.savetxt(f'{output_for_bryce}lightcurve_uncorrected_asteroid.dat' , to_write )
+			if True: continue
+
 
 			# source extractor !!
 			# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -847,10 +867,6 @@ if __name__ == '__main__':
 			i = 0
 
 			img_star_rotated = rotate(img, a)
-
-			output_for_bryce = f'{f[:-4]}/'
-			if not isdir(output_for_bryce):
-				os.mkdir(output_for_bryce)
 
 			while True:
 
@@ -989,7 +1005,7 @@ if __name__ == '__main__':
 			# trail_ends   = trail_ends  [res_filter]
 			# total_flux   = total_flux  [res_filter]
 
-			w = WCS ( hdr )
+			
 
 			ra_dec = utils.pixel_to_skycoord ( centroids[:,0] , centroids[:,1] , w )
 			to_write = np.hstack([ np.array([np.arange(len(centroids)) , ra_dec.ra.deg , ra_dec.dec.deg]).T , stars ])

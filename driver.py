@@ -17,7 +17,7 @@ print()
 # print(f)
 # index = sys.argv[1]
 #for index in range(len(f)-1, -1, -1):
-for index in range(4 , len(f)):
+for index in range( len(f)):
 	#if  ('EV84' in f[index][0]) or ('GE1' in f[index][0]) or ('FF14' in f[index][0]): continue
 	#if index == 8: break
 	print(f[index])
