@@ -144,6 +144,11 @@ cm_data = [[0.2081, 0.1663, 0.5292], [0.2116238095, 0.1897809524, 0.5776761905],
 
 parula_map = LinearSegmentedColormap.from_list('parula', cm_data)
 
+paperheight = 10
+paperwidth = 13
+margin = 1.0
+
+fontsize_standard = 28
 
 #lightcurve and PDM
 
@@ -281,7 +286,7 @@ N = 100
 period_s = 25.
 f = 1/period_s
 A = 0.5
-sig = 0.05
+sig = 0.25
 mag_err_array = np.ones(N) * sig
 
 time = np.arange(float(N))
@@ -297,7 +302,11 @@ plt.xlabel('Time (s)')
 #periodogram test fake data
 from PyAstronomy.pyTiming import pyPeriod
 
-clp = pyPeriod.Gls((time, flux))
+'''
+https://pyastronomy.readthedocs.io/en/latest/pyTimingDoc/pyPeriodDoc/gls.html
+'''
+
+clp = pyPeriod.Gls((time, flux, mag_err_array))
 
 #false positive levels
 # Define FAP levels of 5% and 0.5%
@@ -376,7 +385,7 @@ plt.xlabel('Time (s)')
 #periodogram real data
 from PyAstronomy.pyTiming import pyPeriod
 
-clp = pyPeriod.Gls((DCTAPO_date_seconds_from_start_s, DCTAPO_mag_norm))
+clp = pyPeriod.Gls((DCTAPO_date_seconds_from_start_s, DCTAPO_mag_norm,DCTAPO_mag_unc))
 
 #false positive levels
 # Define FAP levels of 5 and 0.5%
