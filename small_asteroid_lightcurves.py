@@ -432,6 +432,8 @@ plt.xlabel('Phase')
 
 
 #lightcurve from GE1lc_errs.png plot in Mehul's July 26 email
+
+
 DCTAPO_date_MJD, DCTAPO_mag, DCTAPO_mag_unc = np.loadtxt('/Users/bolin/NEO/Follow_up/APO_observing/test_lightcurve.txt').T
 
 DCTAPO_date_seconds_from_start_s = DCTAPO_date_MJD
@@ -443,3 +445,161 @@ line1 = plt.errorbar(x=DCTAPO_date_seconds_from_start_s, y=DCTAPO_mag_norm, yerr
 plt.show()
 
 #heat map showing efficiency as function of period vs ampltidue
+
+#do test using Generalized LS
+from PyAstronomy.pyTiming import pyPeriod
+
+
+#first generate random data according to input period and amplitude in mag units
+
+in_file = '/Users/bolin/NEO/Follow_up/APO_observing/mehul_test/GE_1_lightcurves/1917070o13_lightcurve.txt'
+
+DCTAPO_date_MJD, DCTAPO_flux, DCTAPO_flux_unc = np.loadtxt(in_file).T
+
+DCTAPO_date_seconds_from_start_s = (DCTAPO_date_MJD - DCTAPO_date_MJD[0]) * 3600. * 24.
+
+time_s = DCTAPO_date_seconds_from_start_s
+
+median_flux = np.median(DCTAPO_flux)
+
+DCTAPO_flux_norm = DCTAPO_flux-median_flux
+
+sig = np.median(DCTAPO_flux_unc)
+
+mag_err_array = np.ones(len(time_s)) * sig
+
+#number of tests per period and amplitude bin
+
+number_of_tests_per_bin = 100
+period_low_s, period_high_s, period_bin_width_s = 11,261,20#bin centers with bin width
+amplitude_low_mag, amplitude_high_mag, amplitude_bin_width_mag = 0.11,2.21,0.2#bin centers with bin width
+
+#false alarm probability and period similarity threshold
+false_alarm_probability_threshold = 0.005
+period_similarity_threshold = 0.2
+
+# ranges for period and ampltiude
+#need to generate fake lightcurves with period and amplitude between upper and lower bounds for period and amplitude for each bin, starting at each bin center
+
+#period bins
+period_range_s = np.arange(period_low_s, period_high_s, period_bin_width_s)
+period_range_low_s = period_range_s - (period_bin_width_s/2)
+period_range_high_s = period_range_s + (period_bin_width_s/2)
+
+#amplitude bins
+amplitude_range_mag = np.arange(amplitude_low_mag, amplitude_high_mag, amplitude_bin_width_mag)
+amplitude_range_low_mag = amplitude_range_mag - (amplitude_bin_width_mag/2)
+amplitude_range_high_mag = amplitude_range_mag + (amplitude_bin_width_mag/2)
+
+#matrices for storing the fraction passing 3 sigma test divided by total number of runs and fraction of runs passing 3 sigma test and period within 20% divided by the number of runs passing the 3 sigma test
+
+#3 sigma divided by total
+efficiency_period_vs_amplitude_3_sigma_pass = np.zeros(len(period_range_s) * len(amplitude_range_mag)).reshape(len(period_range_s),len(amplitude_range_mag))
+
+#3 sigma + similarity divided by 3 sigma
+efficiency_period_vs_amplitude_3_sigma_plus_pass_similar_period_pass = np.zeros(len(period_range_s) * len(amplitude_range_mag)).reshape(len(period_range_s),len(amplitude_range_mag))
+
+max_3_sigma_period_similarity_test_count = 0.0
+
+#loop over range periods
+for i in range(0,len(period_range_s)):
+ #loop over range of amplitudes
+ if i % 2 == 0:
+  print i, "period of", len(period_range_s)
+ for j in range(0,len(amplitude_range_mag)):
+  #execute number of tests
+  if j % 2 == 0:
+   print j, "amplitude of", len(amplitude_range_mag)
+  for k in range(0,number_of_tests_per_bin):
+   if k % 20 == 0:
+    print k, "run of", number_of_tests_per_bin
+   #randomize period
+   period_s = np.random.uniform(period_range_low_s[i],period_range_high_s[i])
+   freq = 1/period_s
+   #randomize amplitude
+   amplitude_mag = np.random.uniform(amplitude_range_low_mag[j],amplitude_range_high_mag[j])
+   flux_ratio = 10**(amplitude_mag/-2.5) #for lower peak
+   A = ((1./flux_ratio) * median_flux) - median_flux
+   #randomize phase
+   phase = np.random.uniform(-2*np.pi,2*np.pi)
+   #generate flux
+   flux = A * np.sin(2. * np.pi*(time_s-phase)*freq)
+   #generate the noise
+   noise_flux = np.random.normal(0, sig, time_s.size)
+   #add the noise
+   flux_noise_added = flux + noise_flux
+   #do the generalized LS test
+   clp = pyPeriod.Gls((time_s, flux_noise_added,mag_err_array))
+   #false alarm probability (FAP) levels
+   # Define FAP levels at x-sigma/ y%
+   false_alarm_prob_level = np.array([false_alarm_probability_threshold])
+   # Obtain the associated power thresholds
+   false_alarm_power_level = clp.powerLevel(false_alarm_prob_level)
+   #determine the best period
+   periods_LS = 1/clp.freq
+   max_arg = np.argmax(clp.power)
+   best_power = clp.power[max_arg]
+   best_period = periods_LS[max_arg]
+   #false alarm test
+   if best_power > false_alarm_power_level: #test if above 3 sigma
+    efficiency_period_vs_amplitude_3_sigma_pass[i,j] += 1.0
+    period_fraction = np.abs(best_period-period_s)/period_s
+    if period_fraction<period_similarity_threshold: #test if above 3 sigma and within 20% of period
+     efficiency_period_vs_amplitude_3_sigma_plus_pass_similar_period_pass[i,j] += 1.0
+
+#show efficiency plot
+read_pyc_name = 'GE1_1917070o13_per_9.0_130.0_16.0_amp_0.09_1.21_0.16_num_trials_200_false_alarm_prob_0.0025_period_threshold_0.05_amp_threshold_0.1_3_sigma_and_threshold.pyc'
+
+read_false_positive_pyc_name = 'GE1_1917070o13_per_9.0_130.0_16.0_amp_0.09_1.21_0.16_num_trials_200_false_alarm_prob_0.0025_period_threshold_0.05_amp_threshold_0.1_3_sigma.pyc'
+
+
+period_min_bin_center_s, period_max_bin_center_s, period_min_bin_width_s = string_seperated_to_array_spaces(read_pyc_name[read_pyc_name.find('per_')+4:read_pyc_name.find('_amp')].replace("_", " "),'float')
+period_global_min_s, period_global_max_s = period_min_bin_center_s-(period_min_bin_width_s/2.), period_max_bin_center_s+(period_min_bin_width_s/2.)
+amp_min_bin_center_mag, amp_max_bin_center_mag, amp_min_bin_width_mag = string_seperated_to_array_spaces(read_pyc_name[read_pyc_name.find('amp_')+4:read_pyc_name.find('_num')].replace("_", " "),'float')
+amp_global_min_mag, amp_global_max_mag = amp_min_bin_center_mag-(amp_min_bin_width_mag/2.), amp_max_bin_center_mag+(amp_min_bin_width_mag/2.)
+total_sum = float(read_pyc_name[read_pyc_name.find('num_trials_')+11:read_pyc_name.find('_false_alarm_prob_')])
+#matricies
+efficiency_matrix = np.load(read_pyc_name,allow_pickle=True)/total_sum
+false_positive_matrix = (np.load(read_false_positive_pyc_name,allow_pickle=True) - np.load(read_pyc_name,allow_pickle=True))/total_sum
+
+#for x and y tickmarks
+period_range_s = np.arange(period_min_bin_center_s, period_max_bin_center_s, period_min_bin_width_s)
+amplitude_range_mag = np.arange(amp_min_bin_center_mag, amp_max_bin_center_mag, amp_min_bin_width_mag)
+x_label_list = period_range_s.astype('str')
+y_label_list = np.round(amplitude_range_mag,2).astype('str')
+
+#efficiency plot
+
+fig = plt.figure(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+ax1 = fig.add_subplot(111)
+im = plt.imshow(efficiency_matrix[:,::-1].T, cmap=parula_map)
+plt.xlabel("Period (s)")
+plt.ylabel("Amplitude (mag)")
+ax1.set_xticks(np.arange(0,len(period_range_s))[::1])
+ax1.set_yticks(np.arange(0,len(amplitude_range_mag)))
+ax1.set_xticklabels(x_label_list[::1])
+ax1.set_yticklabels(y_label_list[::-1])
+ax = plt.gca();
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="2.5%", pad=0.25)
+cb = plt.colorbar(im,cax=cax)
+cb.set_label('Efficiency')
+plt.savefig('efficiency_matrix_test.png')
+
+
+#false positive plot
+fig = plt.figure(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+ax1 = fig.add_subplot(111)
+im = plt.imshow(false_positive_matrix[:,::-1].T, cmap=parula_map)
+plt.xlabel("Period (s)")
+plt.ylabel("Amplitude (mag)")
+ax1.set_xticks(np.arange(0,len(period_range_s))[::1])
+ax1.set_yticks(np.arange(0,len(amplitude_range_mag)))
+ax1.set_xticklabels(x_label_list[::1])
+ax1.set_yticklabels(y_label_list[::-1])
+ax = plt.gca();
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="2.5%", pad=0.25)
+cb = plt.colorbar(im,cax=cax)
+cb.set_label('False positive rate')
+plt.savefig('false_postive_matrix_test.png')
