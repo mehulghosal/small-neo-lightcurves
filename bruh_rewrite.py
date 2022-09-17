@@ -55,7 +55,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'lightcurve_asteroid' in f: continue
-			# if not 'GE1' in f: continue
+			if not 'FF14' in f: continue
 			try :
 				jd, flux, flux_err , mag, mag_err = np.loadtxt(f , unpack=True, skiprows=1)
 				# except:
@@ -68,8 +68,11 @@ for d in dir_names:
 				if not isdir (ld+'/periodogram_figs/'): os.mkdir (ld+'/periodogram_figs/')
 
 				fapLevels = np.array([0.05, 0.005])
+				periods = np.linspace (0 , 60 , 1000)
 
-				seconds_from_start = (jd - jd[0]) * 24 * 3600
+
+				# seconds_from_start = (jd - jd[0]) * 24 * 3600
+				seconds_from_start = np.linspace ( 0 , 60 , len(mag))
 				fig_lc , ax_lc = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 				unbinned = ax_lc.errorbar( seconds_from_start , mag - np.mean(mag) , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3 )
 				ax_lc.set_ylim([-1,1])
@@ -79,7 +82,7 @@ for d in dir_names:
 				plt.tight_layout()
 				plt.savefig(ld+'/lightcurve_figs/asteroid_lightcurve-bin1.png')
 
-				clp = pyPeriod.Gls(( seconds_from_start , flux , flux_err ))
+				clp = pyPeriod.Gls(( seconds_from_start , flux , flux_err ) , )
 				plevel = clp.powerLevel(fapLevels)
 
 				fig_p , ax_p = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -89,7 +92,8 @@ for d in dir_names:
 				ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[1]]*2, ':', c='black',lw=3,label =r'$3\sigma$')
 				ax_p.legend()
 				ax_p.set_xlabel('Period [s]')
-				ax_p.set_xlim([0 , 150])
+				ax_p.set_xlim([0 , 60])
+				ax_p.set_ylim([0 , 1])
 				plt.tight_layout()
 				plt.savefig(ld+'/periodogram_figs/periodogram_bin1.png')
 
@@ -109,7 +113,7 @@ for d in dir_names:
 				plt.tight_layout()
 				plt.savefig(ld+'/lightcurve_figs/asteroid_lightcurve-bin2.png')
 
-				clp2 = pyPeriod.Gls(( t_2 , lc_2 , lc_err_2 ))
+				clp2 = pyPeriod.Gls(( t_2 , lc_2 , lc_err_2 ) , freq=1/periods)
 				plevel2 = clp2.powerLevel(fapLevels)
 
 				fig_p2 , ax_p2 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -119,7 +123,8 @@ for d in dir_names:
 				ax_p2.plot([min(1/clp2.freq), max(1/clp2.freq)], [plevel2[1]]*2, ':', c='black',lw=3,label =r'$3\sigma$')
 				ax_p2.legend()
 				ax_p2.set_xlabel('Period [s]')
-				ax_p2.set_xlim([0 , 150])
+				ax_p2.set_xlim([0 , 60])
+				ax_p2.set_ylim([0 , 1])
 				plt.tight_layout()
 				plt.savefig(ld+'/periodogram_figs/periodogram_bin2.png')
 				print( f'PyAstronomy GLs best period: {1/clp2.freq[np.argmax(clp2.power)]}s'  )
@@ -139,7 +144,7 @@ for d in dir_names:
 				plt.savefig(ld+'/lightcurve_figs/asteroid_lightcurve-bin3.png')
 
 
-				clp3 = pyPeriod.Gls(( t_3 , lc_3 , lc_err_3 ))
+				clp3 = pyPeriod.Gls(( t_3 , lc_3 , lc_err_3 ) , freq=1/periods)
 				plevel3 = clp3.powerLevel(fapLevels)
 
 				fig_p4 , ax_p4 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -149,7 +154,8 @@ for d in dir_names:
 				ax_p4.plot([min(1/clp3.freq), max(1/clp3.freq)], [plevel3[1]]*2, ':', c='black',lw=3,label =r'$3\sigma$')
 				ax_p4.legend()
 				ax_p4.set_xlabel('Period [s]')
-				ax_p4.set_xlim([0 , 150])
+				ax_p4.set_xlim([0 , 60])
+				ax_p4.set_ylim([0 , 1])
 				plt.tight_layout()
 				plt.savefig(ld+'/periodogram_figs/periodogram_bin3.png')
 				print( f'PyAstronomy GLs best period: {1/clp3.freq[np.argmax(clp3.power)]}s'  )
@@ -167,7 +173,7 @@ for d in dir_names:
 				plt.tight_layout()
 				plt.savefig(ld+'/lightcurve_figs/asteroid_lightcurve-bin4.png')
 
-				clp4 = pyPeriod.Gls(( t_4 , lc_4 , lc_err_4 ))
+				clp4 = pyPeriod.Gls(( t_4 , lc_4 , lc_err_4 ) , freq=1/periods)
 				plevel4 = clp4.powerLevel(fapLevels)
 
 				fig_p5 , ax_p5 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -177,7 +183,8 @@ for d in dir_names:
 				ax_p5.plot([min(1/clp4.freq), max(1/clp4.freq)], [plevel4[1]]*2, ':', c='black',lw=3,label =r'$3\sigma$')
 				ax_p5.legend()
 				ax_p5.set_xlabel('Period [s]')
-				ax_p5.set_xlim([0 , 150])
+				ax_p5.set_xlim([0 , 60])
+				ax_p5.set_ylim([0 , 1])
 				plt.tight_layout()
 				plt.savefig(ld+'/periodogram_figs/periodogram_bin4.png')
 				print( f'PyAstronomy GLs best period: {1/clp4.freq[np.argmax(clp4.power)]}s'  )
@@ -195,7 +202,7 @@ for d in dir_names:
 				plt.tight_layout()
 				plt.savefig(ld+'/lightcurve_figs/asteroid_lightcurve-bin5.png')
 
-				clp5 = pyPeriod.Gls(( t_5 , lc_5 , lc_err_5 ))
+				clp5 = pyPeriod.Gls(( t_5 , lc_5 , lc_err_5 ) , freq=1/periods)
 				plevel5 = clp5.powerLevel(fapLevels)
 
 				fig_p6, ax_p6 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -205,10 +212,13 @@ for d in dir_names:
 				ax_p6.plot([min(1/clp5.freq), max(1/clp5.freq)], [plevel5[1]]*2, ':', c='black',lw=3,label =r'$3\sigma$')
 				ax_p6.legend()
 				ax_p6.set_xlabel('Period [s]')
-				ax_p6.set_xlim([0 , 150])
+				ax_p6.set_xlim([0 , 60])
+				ax_p6.set_ylim([0 , 1])
 				plt.tight_layout()
 				plt.savefig(ld+'/periodogram_figs/periodogram_bin5.png')
 				print( f'PyAstronomy GLs best period: {1/clp5.freq[np.argmax(clp5.power)]}s'  )
+
+				plt.show()
 			except:
 				continue
 
