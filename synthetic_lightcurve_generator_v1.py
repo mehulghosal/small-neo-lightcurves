@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#for small asteroid lightcurve project
+#for small asteroid lightcurve project, generates synthetic lightcurve data based off of real streak asteroid lightcurve data
 
 #bryce bolin
 
@@ -24,9 +24,10 @@ python synthetic_lightcurve_generator_v1.py @if /Users/bolin/NEO/Follow_up/APO_o
 
 change log:
 
-2022-Sep-13: changed amplitude unites from flux to mag. The out put is still in time, flux, flux unc
+2022-Sep-13: changed amplitude unites from flux to mag. The out put is still in time_s, flux, flux unc
 
 '''
+
 parser = argparse.ArgumentParser(prefix_chars='@')
 parser.add_argument("@if", "@@in_file", help="read in mehul's data in format of mjd, flux, flux unc")
 parser.add_argument("@per", "@@period", help="period in seconds")
@@ -55,12 +56,14 @@ flux_ratio = 10**(amplitude_mag/-2.5) #for lower peak
 A = ((1./flux_ratio) * median_flux) - median_flux
 sig = np.median(DCTAPO_flux_unc)
 
-time = DCTAPO_date_seconds_from_start_s
-mag_err_array = np.ones(len(time)) * sig
-
-flux = A * np.sin(2. * np.pi*time*f)
+time_s = DCTAPO_date_seconds_from_start_s
+mag_err_array = np.ones(len(time_s)) * sig
+#generate random phase
+phase = np.random.uniform(-2*np.pi,2*np.pi)
+#generate flux
+flux = A * np.sin(2. * np.pi*(time_s-phase)*f)
 # Adding the noise
-flux += np.random.normal(0, sig, time.size)
+flux += np.random.normal(0, sig, time_s.size)
 
 for i in range(0,len(flux)):
-    print '%10.2f %10.2f %10.1f'%(time[i], flux[i], sig)
+    print '%10.2f %10.2f %10.1f'%(time_s[i], flux[i], sig)
