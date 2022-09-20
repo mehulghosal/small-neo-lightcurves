@@ -32,7 +32,7 @@ from os.path import isdir, isfile, join
 directory = './'	
 dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(directory,f))] 
 
-filt_ind = {'g':2, 'r': 3, 'i': 4}
+filt_ind = {'g':21, 'r': 25, 'i': 29}
 mins = {'g':100, 'r': 150, 'i': 250}
 
 
@@ -54,13 +54,14 @@ for d in dir_names:
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 
+
 			try:
 				fits_file = fits.open(fits_name)
-				print(fits_name)
+				print(fits_name.split('/')[-1])
 			except Exception as e:
 				print(f'NO FITS FILE FOUND: {fits_name}')
 				continue
-
+			if True: break
 			hdr = fits_file[0].header
 			img = fits_file[0].data
 
@@ -85,22 +86,29 @@ for d in dir_names:
 
 			# refcat magic
 			# RA, Dec, g, r, i, z, J, cyan, orange.
+			# using -all: 
+			#   RA             Dec      plx  dplx    pmra dpmra   pmdec dpmdec Gaia  dGaia   BP   dBP     RP    dRP   Teff AGaia dupvar Ag rp1     r1    r10    g   dg  gchi gcontrib r   dr  rchi rcontrib i   di  ichi icontrib z   dz  zchi zcontrib nstat J   dJ     H     dH     K     dK
+
 			refcat = []
 
-			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/'
-			ref_stars = np.array(os.popen(args_str).read().split('\n')[:-1])
+			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/ -all'
+			print ( 'refcat call to terminal: ' , args_str )
+			ref_stars = np.array(os.popen(args_str).read().split('\n')[1:-1])
 			for j in ref_stars:
 				refcat.append(np.array(j.split(), dtype=float))
 			refcat = np.array(refcat)
-			# print(len(refcat))
+			# print(refcat.shape)
 			# end refcat magic
+
+			# if True: break
 
 			ref_ra_dec = SkyCoord ( ra=refcat[:,0]*u.degree , dec=refcat[:,1]*u.degree)
 
 			idx , d2d , d3d = ra_dec.match_to_catalog_sky (ref_ra_dec , nthneighbor=1)
 
-			# fig_1 , ax1 = plt.subplots()
-			hist , bins  = np.histogram(d2d.arcsec , bins=np.linspace(0 , 200 , 100) , range=[0,200])
+			fig_1 , ax1 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
+			ax1.hist ( d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200] )
+			hist , bins  = np.histogram(d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200])
 			# ax1.set_xlabel('offset in arcsec')
 
 			# basically converting bins --> integers so we find the mode. digitize gives me the index of which bin each d2d goes into
@@ -109,7 +117,7 @@ for d in dir_names:
 			# print(binsd)
 
 			bins_mode = mode ( binsd  )[0]
-			mode_err  = (bins_mode ** .5 )/2
+			mode_err  = (bins_mode ** .5 )
 			print(f'Mode offset: {bins_mode[0]} +/- {mode_err}')
 			
 			# now we constrain the offsets by +/- 1" around mode offset
@@ -126,21 +134,31 @@ for d in dir_names:
 
 			# ax.scatter ( x_0[idx_[dist_filter_]] , y_0[idx_[dist_filter_]] , label='My stars')
 
+			g_mag = refcat[idx[dist_filter]] [ :, 2 ]
+			r_mag = refcat[idx[dist_filter]] [ :, 3 ]
+			i_mag = refcat[idx[dist_filter]] [ :, 4 ]
+
+			print( 'g-r colors: ' , g_mag-r_mag )
+			print( 'r-i colors: ' , r_mag-i_mag )
+
 
 			instrumental_mag = -2.5*np.log10(flux)
+			# instrumental_err = 1.08574 * 
 			ref_mag =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]]
+			ref_err =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]+1]
 
-			fig_cal , ax_cal = plt.subplots( )
-			ax_cal .scatter ( instrumental_mag[dist_filter] , ref_mag )
+			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
+			ax_cal .errorbar ( instrumental_mag[dist_filter] , ref_mag , ref_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
 
-			param , param_cov = curve_fit ( line , instrumental_mag[dist_filter] , ref_mag )
+			param , param_cov = curve_fit ( line , instrumental_mag[dist_filter] , ref_mag, sigma=ref_err , absolute_sigma=True )
 			print('general line: ', param , np.diag(param_cov)**.5)
-			ax_cal.plot (instrumental_mag[dist_filter] , line(instrumental_mag[dist_filter] , *param) , label=f'y={param[0]}x + {param[1]}')
+			ax_cal.plot (instrumental_mag[dist_filter] , line(instrumental_mag[dist_filter] , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
 
-			param_one , one_cov = curve_fit ( line_one , instrumental_mag[dist_filter] , ref_mag )
-			print( 'line slope one: ',  param_one , np.diag(one_cov)**.5)
-			ax_cal.plot (instrumental_mag[dist_filter] , line_one(instrumental_mag[dist_filter] , *param_one) , label=f'y=x + {param[0]}')
+			param_one , one_cov = curve_fit ( line_one , instrumental_mag[dist_filter] , ref_mag , sigma=ref_err , absolute_sigma=True  )
+			print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
+			ax_cal.plot (instrumental_mag[dist_filter] , line_one(instrumental_mag[dist_filter] , *param_one) , label=f'y=x + {param_one[0]:.1f}')
 
+			print('image filter: ', hdr['FILTER'][0])
 
 			ax.legend()
 			ax_cal.legend()

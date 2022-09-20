@@ -150,7 +150,7 @@ obj_width			: float
 	(optional) width (in FWHM) either side of centroid to sum for object flux ; default = 1
 sky_width 			: float 
 	(optional) width (in FWHM) either side of object box to sum for sky flux ; default = 4
-autotrim 			: bool 
+autotrim 			: bool [not implemented]
 	(optional) if True, will run obj_row_sums through curve_fit with another_box() !! doesnt do anything yet !!
 
 RETURNS
@@ -161,7 +161,7 @@ r : list
 		returns [fluxes[array(dtype=float)], uncertainties[array(dtype=float)], average sky measurement[float]]
 	without uncertainties, returns: [ fluxes : array(dtype=float) ]
 '''
-def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=0, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=1, sky_width=4, autotrim=False):
+def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correction=0, display=False, err=False, binning=None, gain=1.6, rd_noise=3, obj_width=2, sky_width=4, autotrim=False):
 	obj_width = obj_width*fwhm
 	sky_width = sky_width*fwhm
 
@@ -506,9 +506,9 @@ def trail_view(img, s, L, a, b, x_0, y_0, width=1, height=1):
 	obj_rect   = img[int(y_0 - obj_height/2 + .5) : int(y_0 + obj_height/2 + .5), int(x_0 - obj_width + .5) : int(x_0 + obj_width + .5) ]
 	return obj_rect
 
-def trail_view(img, x_0, y_0, width=20, height=100):
-	obj_rect = img[int(y_0 - height/2 + .5) : int(y_0 + height/2 + .5), int(x_0 - width + .5) : int(x_0 + width + .5) ]
-	return obj_rect
+# def trail_view(img, x_0, y_0, width=20, height=100):
+# 	obj_rect = img[int(y_0 - height/2 + .5) : int(y_0 + height/2 + .5), int(x_0 - width + .5) : int(x_0 + width + .5) ]
+# 	return obj_rect
 
 
 '''
@@ -785,25 +785,24 @@ if __name__ == '__main__':
 
 			ast_fwhm			  = ast_param[0] * 2.355
 			ast_trail_length	  = ast_param[1]
-			# ast_height_correction = ast_trail_length * 0
-			ast_height_correction = - int( ast_fwhm ) - 5
-			# ast_height_correction = - ast_fwhm
+
+			ast_height_correction = - int( ast_fwhm )
 			
 			trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
 
 			ast_trail_start = np.array([trail_centroid[0] , trail_centroid[1] - ast_trail_length/2 ])
 			ast_trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + ast_trail_length/2 ])
 
-			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
+			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, obj_width=2, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
 			
 			print( 'asteroid trail length: ', len(obj_minus_sky) )
 
-			dt = 60 * ast_height_correction / ast_trail_length
+			# dt = 60 * ast_height_correction / ast_trail_length
 
-			x = np.linspace(start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(obj_minus_sky))
+			x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(obj_minus_sky))
 			to_write = np.array ( [x , obj_minus_sky , sigma_row] )
 			np.savetxt(f'{output_for_bryce}lightcurve_uncorrected_asteroid.dat' , to_write )
-			if True: continue
+			# if True: continue
 
 
 			# source extractor !!
@@ -916,7 +915,7 @@ if __name__ == '__main__':
 
 
 				fwhm = s * 2.355
-				st_height_correction = int(ast_height_correction * L/ast_trail_length ) - 1
+				st_height_correction = int(ast_height_correction * L/ast_trail_length ) 
 				# st_height_correction = - int(fwhm/2) - 1
  
 				if not rebin:  # star lightcurve longer than asteroid
@@ -939,9 +938,9 @@ if __name__ == '__main__':
 
 				# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
 
-				# to_write = np.array ( [ np.linspace( start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
+				to_write = np.array ( [ np.linspace( start_time , start_time + exp_time/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
 
-				# np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
+				np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
 
 				print(' ')
 				i+=1
@@ -991,8 +990,7 @@ if __name__ == '__main__':
 				lc_flux = row_flux[ii] * n
 				lc_errs = row_errs[ii] * n
 
-				dT = dt[ii]
-				T  = np.linspace( start_time + dT/(60*60*24) , start_time + exp_time/(60*60*24) - dT/(60*60*24) , len(lc_flux))
+				T  = np.linspace( start_time  , start_time + exp_time/(60*60*24) , len(lc_flux))
 				to_write = np.array ( [T , lc_flux , lc_errs ] ).T
 
 				np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write , header='jd flux flux_err' )
@@ -1008,9 +1006,9 @@ if __name__ == '__main__':
 			
 
 			ra_dec = utils.pixel_to_skycoord ( centroids[:,0] , centroids[:,1] , w )
-			to_write = np.hstack([ np.array([np.arange(len(centroids)) , ra_dec.ra.deg , ra_dec.dec.deg]).T , stars ])
+			to_write = np.hstack([ np.array([np.arange(len(centroids)) , ra_dec.ra.deg , ra_dec.dec.deg]).T , stars , centroids ])
 			print(to_write.shape)
-			header = 'id ra dec s L A b x y a flux'
+			header = 'id ra dec s L A b x y a flux x_0 y_0'
 			np.savetxt(f'{output_for_bryce}star_params.dat' , to_write , header=header)
 
 			# row_flux = row_flux[res_filter][:10]
@@ -1028,7 +1026,7 @@ if __name__ == '__main__':
 			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
 
 			if rebin:
-				obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise) 
+				obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise) 
 
 
 			sky_corrected_lightcurve = obj_minus_sky / row_avgs
@@ -1038,7 +1036,7 @@ if __name__ == '__main__':
 
 			dt = 60 * ast_height_correction / ast_trail_length
 
-			x = np.linspace(start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) , len(sky_corrected_lightcurve))
+			x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(sky_corrected_lightcurve))
 
 			directory_name = d.split('/')[1]
 

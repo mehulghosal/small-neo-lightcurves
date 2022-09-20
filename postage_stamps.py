@@ -76,7 +76,7 @@ for d in dir_names:
 
 			for i in range( len(star_id) ):
 				plt.figure()
-				trail = trail_view ( img_rotated , s[i]*1.2 , L[i]*1.2 , A[i] , b[i] , x[i] , y[i] )
+				trail = trail_view ( img_rotated , s[i] , L[i] , A[i] , b[i] , x[i] , y[i] )
 				plt.imshow( trail , )
 				plt.title(f'star #{i}, s={s[i]:.1f}, L={L[i]:.1f} , x={x[i]:.1f} , y={y[i]:.1f}')
 				plt.tight_layout()
