@@ -15,6 +15,10 @@ def line( x , m , b): return m * x + b
 
 def line_one ( x , b): return x + b
 
+def quadratic ( x , a , b , c) : return a * x ** 2 + b * x + c
+
+def exponential ( x , A , b , c): return A * np.exp(x * b) + c
+
 # to get absolute mag and orbital information
 from astroquery.jplhorizons import Horizons
 
@@ -50,18 +54,18 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not 'GE1' in f: continue
+			if not ('EV84' in f and 'o22' in f): continue
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 
 
 			try:
 				fits_file = fits.open(fits_name)
-				print(fits_name.split('/')[-1])
+				print(fits_name)
 			except Exception as e:
 				print(f'NO FITS FILE FOUND: {fits_name}')
 				continue
-			if True: break
+
 			hdr = fits_file[0].header
 			img = fits_file[0].data
 
@@ -117,16 +121,38 @@ for d in dir_names:
 			# print(binsd)
 
 			bins_mode = mode ( binsd  )[0]
-			mode_err  = (bins_mode ** .5 )
+			mode_err  = 2
 			print(f'Mode offset: {bins_mode[0]} +/- {mode_err}')
 			
 			# now we constrain the offsets by +/- 1" around mode offset
 			dist_filter = np.where ( (d2d.arcsec <= bins_mode + mode_err) & (d2d.arcsec >= bins_mode - mode_err)  )
-			print(f'+/- 1 sigma from mode offsets in arcsec: {d2d.arcsec[dist_filter]}')
+			print(f'+/- 2" from mode offsets in arcsec: {d2d.arcsec[dist_filter]}')
 
 			matches = ref_ra_dec[idx[dist_filter]]
 
 			ref_x , ref_y = utils.skycoord_to_pixel(matches , w)
+
+
+			fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
+			ax_angle.hist ( d3d.value,  bins=np.linspace(0 , 1e-3 , 51) )
+
+			# angle = np.arctan2 ( ref_y-y_0 , ref_x-x_0 ) # arctan2(x , y) --> atan(x/y)
+			# fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
+			# ax_angle.hist ( angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
+			# histA , binsA  = np.histogram(angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
+
+			# binsA = bins[np.digitize ( angle*180/np.pi , bins , right=True )-1 ] 
+			# # print(binsA)
+
+			# binsA_mode = mode ( binsA  )[0]
+			# modeA_err  = 3
+			# print(f'Mode offset: {binsA_mode[0]} +/- {modeA_err}')
+			
+			# angle_filter = np.where( (angle <= binsA_mode + modeA_err) & (angle >= binsA_mode - modeA_err) )
+			# print()
+			# print(matches)
+			# print()
+			# print(ref_ra_dec[idx[dist_filter] [angle_filter]])
 
 			ax.scatter ( ref_x , ref_y , label='ref matches'  )
 			ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
@@ -134,21 +160,28 @@ for d in dir_names:
 
 			# ax.scatter ( x_0[idx_[dist_filter_]] , y_0[idx_[dist_filter_]] , label='My stars')
 
-			g_mag = refcat[idx[dist_filter]] [ :, 2 ]
-			r_mag = refcat[idx[dist_filter]] [ :, 3 ]
-			i_mag = refcat[idx[dist_filter]] [ :, 4 ]
+			g_mag = refcat[idx[dist_filter]] [ :, 21 ]
+			r_mag = refcat[idx[dist_filter]] [ :, 25 ]
+			i_mag = refcat[idx[dist_filter]] [ :, 29 ]
 
-			print( 'g-r colors: ' , g_mag-r_mag )
-			print( 'r-i colors: ' , r_mag-i_mag )
+			g_r = g_mag-r_mag
+			r_i = r_mag-i_mag
+
+
+			# dont implement this fully just yet! i need more solar analogs lmfao
+			color_filter = np.where( (g_r >= .35) & (g_r <= .5) & (r_i >= .05) & (r_i <= .15) )
+
+			print( 'g-r colors: ' , g_r[color_filter] )
+			print( 'r-i colors: ' , r_i[color_filter] )
 
 
 			instrumental_mag = -2.5*np.log10(flux)
-			# instrumental_err = 1.08574 * 
+			instrumental_err = 1.08574 * (flux ** -.5)
 			ref_mag =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]]
 			ref_err =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]+1]
 
 			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
-			ax_cal .errorbar ( instrumental_mag[dist_filter] , ref_mag , ref_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
+			ax_cal .errorbar ( instrumental_mag[dist_filter] , ref_mag , ref_err , instrumental_err[dist_filter] , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
 
 			param , param_cov = curve_fit ( line , instrumental_mag[dist_filter] , ref_mag, sigma=ref_err , absolute_sigma=True )
 			print('general line: ', param , np.diag(param_cov)**.5)
@@ -157,6 +190,11 @@ for d in dir_names:
 			param_one , one_cov = curve_fit ( line_one , instrumental_mag[dist_filter] , ref_mag , sigma=ref_err , absolute_sigma=True  )
 			print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
 			ax_cal.plot (instrumental_mag[dist_filter] , line_one(instrumental_mag[dist_filter] , *param_one) , label=f'y=x + {param_one[0]:.1f}')
+
+			param_quad , cov_quad = curve_fit ( quadratic , instrumental_mag[dist_filter] , ref_mag , sigma=ref_err , absolute_sigma=True  )
+			print( 'quadratic params and uncertainties ',  param_quad , np.diag(cov_quad)**.5)
+			ax_cal.plot (np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() ,50 ) , quadratic(np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() , 50 ), *param_quad) )
+
 
 			print('image filter: ', hdr['FILTER'][0])
 
@@ -167,7 +205,7 @@ for d in dir_names:
 
 
 
-	plt.show()
+		plt.show()
 
 
 		# if True: break
