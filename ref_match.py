@@ -131,30 +131,37 @@ for d in dir_names:
 			matches = ref_ra_dec[idx[dist_filter]]
 
 			ref_x , ref_y = utils.skycoord_to_pixel(matches , w)
+			x_0_matches = x_0[dist_filter]
+			y_0_matches = y_0[dist_filter]
 
 
 			fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			ax_angle.hist ( d3d.value,  bins=np.linspace(0 , 1e-3 , 51) )
 
-			# angle = np.arctan2 ( ref_y-y_0 , ref_x-x_0 ) # arctan2(x , y) --> atan(x/y)
+			angle = np.arctan2 ( ref_y-y_0_matches , ref_x-x_0_matches ) # arctan2(x , y) --> atan(x/y)
+			print(angle*180/np.pi)
 			# fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
-			# ax_angle.hist ( angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
-			# histA , binsA  = np.histogram(angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
+			ax_angle.hist ( angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
+			histA , bins_A  = np.histogram(angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
 
-			# binsA = bins[np.digitize ( angle*180/np.pi , bins , right=True )-1 ] 
-			# # print(binsA)
+			binsA = bins_A[np.digitize ( angle*180/np.pi , bins_A , right=True ) ] 
+			print(binsA)
 
-			# binsA_mode = mode ( binsA  )[0]
-			# modeA_err  = 3
-			# print(f'Mode offset: {binsA_mode[0]} +/- {modeA_err}')
+			binsA_mode = mode ( binsA  )[0]
+			modeA_err  = 3
+			print(f'Mode offset: {binsA_mode[0]} +/- {modeA_err}')
 			
-			# angle_filter = np.where( (angle <= binsA_mode + modeA_err) & (angle >= binsA_mode - modeA_err) )
+			angle_filter = np.where( (angle <= binsA_mode + modeA_err) & (angle >= binsA_mode - modeA_err) )
+
+			print(angle[angle_filter])
+
+			ax.hist ( angle[angle_filter] , label='filtered' )
 			# print()
 			# print(matches)
 			# print()
 			# print(ref_ra_dec[idx[dist_filter] [angle_filter]])
 
-			ax.scatter ( ref_x , ref_y , label='ref matches'  )
+			ax.scatter ( ref_x  , ref_y , label='ref matches'  )
 			ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
 			# ax.scatter ( x_0, y_0 , label='All my stars')
 
@@ -175,25 +182,36 @@ for d in dir_names:
 			print( 'r-i colors: ' , r_i[color_filter] )
 
 
-			instrumental_mag = -2.5*np.log10(flux)
-			instrumental_err = 1.08574 * (flux ** -.5)
+			instrumental_mag = -2.5*np.log10(flux)     [dist_filter] [ color_filter ]
+			instrumental_err = 1.08574 * (flux ** -.5) [dist_filter] [ color_filter ]
 			ref_mag =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]]
 			ref_err =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]+1]
 
+			ref_mag = ref_mag[ color_filter ]
+			ref_err = ref_err[ color_filter ]
+
+			print(instrumental_mag.shape , ref_mag.shape)
+
+			# instrumental_mag = -2.5*np.log10(flux)
+			# instrumental_err = 1.08574 * (flux ** -.5)
+			# ref_mag =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]]
+			# ref_err =  refcat[idx[dist_filter]] [:,filt_ind[hdr['FILTER'][0]]+1]
+
 			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
-			ax_cal .errorbar ( instrumental_mag[dist_filter] , ref_mag , ref_err , instrumental_err[dist_filter] , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
+			ax_cal .errorbar ( instrumental_mag , ref_mag , ref_err , instrumental_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
+			plt.show()
 
-			param , param_cov = curve_fit ( line , instrumental_mag[dist_filter] , ref_mag, sigma=ref_err , absolute_sigma=True )
+			param , param_cov = curve_fit ( line , instrumental_mag , ref_mag, sigma=ref_err , absolute_sigma=True )
 			print('general line: ', param , np.diag(param_cov)**.5)
-			ax_cal.plot (instrumental_mag[dist_filter] , line(instrumental_mag[dist_filter] , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
+			ax_cal.plot (instrumental_mag , line(instrumental_mag , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
 
-			param_one , one_cov = curve_fit ( line_one , instrumental_mag[dist_filter] , ref_mag , sigma=ref_err , absolute_sigma=True  )
+			param_one , one_cov = curve_fit ( line_one , instrumental_mag , ref_mag , sigma=ref_err , absolute_sigma=True  )
 			print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
-			ax_cal.plot (instrumental_mag[dist_filter] , line_one(instrumental_mag[dist_filter] , *param_one) , label=f'y=x + {param_one[0]:.1f}')
+			ax_cal.plot (instrumental_mag , line_one(instrumental_mag , *param_one) , label=f'y=x + {param_one[0]:.1f}')
 
 			param_quad , cov_quad = curve_fit ( quadratic , instrumental_mag[dist_filter] , ref_mag , sigma=ref_err , absolute_sigma=True  )
 			print( 'quadratic params and uncertainties ',  param_quad , np.diag(cov_quad)**.5)
-			ax_cal.plot (np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() ,50 ) , quadratic(np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() , 50 ), *param_quad) )
+			# ax_cal.plot (np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() ,50 ) , quadratic(np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() , 50 ), *param_quad) )
 
 
 			print('image filter: ', hdr['FILTER'][0])

@@ -64,7 +64,7 @@ for d in dir_names:
 			gain       = float(hdr['GAIN'])
 			rd_noise   = float(hdr['RDNOISE']) 
 
-			star_id , ra , dec , s , L , A , b , x , y , a , flux = np.loadtxt ( f , skiprows=1 , unpack=True )
+			star_id , ra , dec , s , L , A , b , x , y , a , flux , x_0 , y_0 = np.loadtxt ( f , skiprows=1 , unpack=True )
 
 
 			img_rotated = rotate(img , a[0])
