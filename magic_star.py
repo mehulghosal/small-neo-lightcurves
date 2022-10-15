@@ -1,14 +1,11 @@
 import warnings, subprocess, sys
 import numpy as np
 import astropy as ap
-#import exoplanet as xo
 
-# import matplotlib.pyplot as plt
 from astropy.time import Time
 from astropy.table import Table
 from astropy.timeseries import LombScargle
 from astropy.timeseries import TimeSeries
-# from matplotlib import colors
 from astropy.io import fits
 from scipy.ndimage import rotate
 from scipy.special import erf
