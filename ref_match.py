@@ -54,9 +54,10 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('EV84' in f and 'o22' in f): continue
+			if not ('EV84' in f and '13on15' in f): continue
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
+			if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
 
 
 			try:
@@ -69,11 +70,12 @@ for d in dir_names:
 			hdr = fits_file[0].header
 			img = fits_file[0].data
 
-			exp_time   = float(hdr['EXPMEAS'])
-			gain       = float(hdr['GAIN'])
-			rd_noise   = float(hdr['RDNOISE']) 
+			# exp_time   = float(hdr['EXPMEAS'])
+			# gain       = float(hdr['GAIN'])
+			# rd_noise   = float(hdr['RDNOISE']) 
 
-			star_id , ra , dec , s , L , A , b , x , y , a , flux = np.loadtxt ( f , skiprows=1 , unpack=True )
+			print( )
+			star_id , ra , dec , s , L , A , b , x , y , a , flux , X_0 , Y_0 = np.loadtxt ( f , skiprows=1 , unpack=True )
 
 			fig , ax = plt.subplots()
 			ax.set_title(fits_name)
@@ -95,13 +97,16 @@ for d in dir_names:
 
 			refcat = []
 
-			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/ -all'
+			# args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/ -all'
+			# 1.554579469893714077e+02 5.803648468633650026e+00
+			args_str = f'./refcat {155.457} {5.803648} -rad 4 -dir 00_m_16/ -all'
 			print ( 'refcat call to terminal: ' , args_str )
 			ref_stars = np.array(os.popen(args_str).read().split('\n')[1:-1])
+			print(ref_stars)
 			for j in ref_stars:
 				refcat.append(np.array(j.split(), dtype=float))
 			refcat = np.array(refcat)
-			# print(refcat.shape)
+			print(refcat.shape)
 			# end refcat magic
 
 			# if True: break
@@ -110,10 +115,15 @@ for d in dir_names:
 
 			idx , d2d , d3d = ra_dec.match_to_catalog_sky (ref_ra_dec , nthneighbor=1)
 
+			print(idx.shape)
+
 			fig_1 , ax1 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			ax1.hist ( d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200] )
 			hist , bins  = np.histogram(d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200])
 			# ax1.set_xlabel('offset in arcsec')
+
+			# ax.scatter ()
+
 
 			# basically converting bins --> integers so we find the mode. digitize gives me the index of which bin each d2d goes into
 			# to be fair this is from stack overflow and it might be sketchy and untested
@@ -134,35 +144,39 @@ for d in dir_names:
 			x_0_matches = x_0[dist_filter]
 			y_0_matches = y_0[dist_filter]
 
+			ax.scatter ( ref_x  , ref_y , label='ref matches'  )
+			ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
 
-			fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
-			ax_angle.hist ( d3d.value,  bins=np.linspace(0 , 1e-3 , 51) )
+			plt.show()
 
-			angle = np.arctan2 ( ref_y-y_0_matches , ref_x-x_0_matches ) # arctan2(x , y) --> atan(x/y)
-			print(angle*180/np.pi)
 			# fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
-			ax_angle.hist ( angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
-			histA , bins_A  = np.histogram(angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
+			# ax_angle.hist ( d3d.value,  bins=np.linspace(0 , 1e-3 , 51) )
 
-			binsA = bins_A[np.digitize ( angle*180/np.pi , bins_A , right=True ) ] 
-			print(binsA)
+			# angle = np.arctan2 ( ref_y-y_0_matches , ref_x-x_0_matches ) # arctan2(x , y) --> atan(x/y)
+			# print(angle*180/np.pi)
+			# # fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
+			# ax_angle.hist ( angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
+			# histA , bins_A  = np.histogram(angle*180/np.pi , bins=np.linspace(0 , 90 , 91) )
 
-			binsA_mode = mode ( binsA  )[0]
-			modeA_err  = 3
-			print(f'Mode offset: {binsA_mode[0]} +/- {modeA_err}')
+			# binsA = bins_A[np.digitize ( angle*180/np.pi , bins_A , right=True ) ] 
+			# print(binsA)
+
+			# binsA_mode = mode ( binsA  )[0]
+			# modeA_err  = 3
+			# print(f'Mode offset: {binsA_mode[0]} +/- {modeA_err}')
 			
-			angle_filter = np.where( (angle <= binsA_mode + modeA_err) & (angle >= binsA_mode - modeA_err) )
+			# angle_filter = np.where( (angle <= binsA_mode + modeA_err) & (angle >= binsA_mode - modeA_err) )
 
-			print(angle[angle_filter])
+			# print(angle[angle_filter])
 
-			ax.hist ( angle[angle_filter] , label='filtered' )
-			# print()
+			# ax.hist ( angle[angle_filter] , label='filtered' )
+			
+
+
 			# print(matches)
 			# print()
 			# print(ref_ra_dec[idx[dist_filter] [angle_filter]])
 
-			ax.scatter ( ref_x  , ref_y , label='ref matches'  )
-			ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
 			# ax.scatter ( x_0, y_0 , label='All my stars')
 
 			# ax.scatter ( x_0[idx_[dist_filter_]] , y_0[idx_[dist_filter_]] , label='My stars')
