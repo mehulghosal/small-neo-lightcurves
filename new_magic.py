@@ -671,13 +671,14 @@ if __name__ == '__main__':
 		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
 		yea = False
 
-		if not f_name in d: continue
 
 		start_times = []
 		lightcurves = []
 		errors      = []
 
 		for f in file_names:
+			if not f_name in d: continue
+
 			# if '06o13' not in f: continue
 			try:
 				file = fits.open(f)
