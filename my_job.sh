@@ -8,5 +8,5 @@
 input="commands.txt"
 while read -r line
 do
-	sbatch ./my_python_executor.slurm line
+	sbatch ./my_python_executor.slurm $line
 done
