@@ -6,7 +6,7 @@
 
 
 #SBATCH --cpus-per-task=1
-#SBATCH --mem6G ## max amount of memory per node you require
+#SBATCH --mem=6G ## max amount of memory per node you require
 ##SBATCH --core-spec=0 ## Uncomment to allow jobs to request all cores on a node    
 
 #SBATCH --error=hello-%A.err ## %A - filled with jobid
@@ -22,4 +22,5 @@
 
 ##python3 ./my_python_script $1 $2 $3 $4 $5
 
-#python3 ./new_magic.py $1
+python3 ./new_magic.py $1
+##echo $1
