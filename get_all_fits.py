@@ -16,12 +16,12 @@ if __name__ == '__main__':
 
 	star_params = np.loadtxt ('star_parameters.csv', skiprows=1 , dtype=str, delimiter=',')
 	# print(star_params[:,0])
-
+	cmd_list = []
 	for d in dir_names : 
 		if '00_m_16' in d : continue
 
 		file_names = [d + f for f in os.listdir(d) if isfile(join(d,f))]
-		cmd_list = []
+		
 
 		for f in file_names:
 			# only working on new files around asteroid chip
