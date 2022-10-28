@@ -70,7 +70,7 @@ for f in file_names:
 	elif chip_id=='22' : chips_i_want = [13,15,22,24,31,32,33]
 	elif chip_id=='31' : chips_i_want = [22,23,24,31,33]
 
-	fits_header = file[0].header
+	# fits_header = file[0].header
 	primary_hdu = file[0]
 
 	try:
@@ -87,7 +87,7 @@ for f in file_names:
 		save_to = dir_names[dir_ind] + input_file [ ind , 9 ] + 'on' + str(c) + '.fits'
 		print(save_to)
 
-		fits.writeto ( save_to , image , header=fits_header  )
+		fits.writeto ( save_to , image , header=file[i+1].header , overwrite=True  )
 	# print( i.shape for i in fits_images )
 
 

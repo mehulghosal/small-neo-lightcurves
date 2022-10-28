@@ -608,7 +608,7 @@ def trail_model(x, y, s, L, a, b_1, x_0, y_0):
 	trail_actual = img_rot[int(y_0 - L/2):int(y_0 + L/2+1) , int(x_0 - s*2.355 + .5):int(x_0 + s*2.355 + .5)]
 
 	# todo: ask if this should be sum(trail) or sum(trail_actual)
-	flux   = np.sum(trail)
+	flux   = np.sum(trail) - background * trail.size
 	a      = (a) * np.pi/180
 	cosine = np.cos(a)
 	sine   = np.sin(a)
@@ -677,7 +677,7 @@ if __name__ == '__main__':
 		errors      = []
 
 		for f in file_names:
-			if not f_name in d: continue
+			if not f_name in f: continue
 
 			# if '06o13' not in f: continue
 			try:

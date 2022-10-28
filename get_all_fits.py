@@ -44,11 +44,11 @@ if __name__ == '__main__':
 					a = star_params[i,2]
 					break
 
-			command = f'\n{f[1:]} {L} {a} True'
+			command = f'\n{f[1:]}'
 			cmd_list.append(command)
 	
 	# for i in cmd_list: print(i)
-	output = open('commands.txt', 'w+')
+	output = open('fits_files.txt', 'w+')
 	output.writelines( cmd_list )
 
 
