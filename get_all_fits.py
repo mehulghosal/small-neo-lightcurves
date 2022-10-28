@@ -18,14 +18,14 @@ if __name__ == '__main__':
 	# print(star_params[:,0])
 	cmd_list = []
 	for d in dir_names : 
-		if '00_m_16' in d : continue
+		if '00_m_16' in d or 'small_asteroid_lightcurve_CFHT_data' in d: continue
 
 		file_names = [d + f for f in os.listdir(d) if isfile(join(d,f))]
 		
 
 		for f in file_names:
 			# only working on new files around asteroid chip
-			if 'on' not in f: continue
+			if 'on' in f: continue
 
 			try:
 				file = fits.open (f)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 			cmd_list.append(command)
 	
 	# for i in cmd_list: print(i)
-	output = open('fits_files.txt', 'w+')
+	output = open('ast_files.txt', 'w+')
 	output.writelines( cmd_list )
 
 

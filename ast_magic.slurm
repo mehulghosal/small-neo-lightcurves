@@ -1,0 +1,26 @@
+#!/bin/bash
+#SBATCH --job-name="$1"
+#SBATCH --partition=shared
+## 3 day max run time for public partitions, except 4 hour max runtime for the sandbox partition
+#SBATCH --time=00-08:00:00 ## time format is DD-HH:MM:SS
+
+
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=6G ## max amount of memory per node you require
+##SBATCH --core-spec=0 ## Uncomment to allow jobs to request all cores on a node    
+
+##SBATCH --error=hello-%A.err ## %A - filled with jobid
+##SBATCH --output=hello-%A.out ## %A - filled with jobid
+
+## Useful for remote notification
+##SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT_80
+
+#SBATCH --mail-type=BEGIN,END
+#SBATCH --mail-user=mehul@hawaii.edu
+
+## All options and environment variables found on schedMD site: http://slurm.schedmd.com/sbatch.html
+
+##python3 ./my_python_script $1 $2 $3 $4 $5
+
+python3 ./magic_star.py $1
+##echo $1
