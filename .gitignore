@@ -3,3 +3,5 @@
 /__pycache__/*
 /2016_GE1_CFHT_data/*
 /small_asteroid_lightcurve_CFHT_data/*
+*.out
+*.err
