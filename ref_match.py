@@ -54,7 +54,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('EV84' in f and '13on15' in f): continue
+			if not ('GE1' in f and '66on22' in f): continue
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 			if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
@@ -97,9 +97,9 @@ for d in dir_names:
 
 			refcat = []
 
-			# args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/ -all'
+			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/ -all'
 			# 1.554579469893714077e+02 5.803648468633650026e+00
-			args_str = f'./refcat {155.457} {5.803648} -rad 4 -dir 00_m_16/ -all'
+			# args_str = f'./refcat {155.457} {5.803648} -rad 2 -dir 00_m_16/ -all'
 			print ( 'refcat call to terminal: ' , args_str )
 			ref_stars = np.array(os.popen(args_str).read().split('\n')[1:-1])
 			print(ref_stars)
@@ -146,6 +146,7 @@ for d in dir_names:
 
 			ax.scatter ( ref_x  , ref_y , label='ref matches'  )
 			ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
+			# ax.scatter ( x_0, y_0, label='My stars matches')
 
 			plt.show()
 

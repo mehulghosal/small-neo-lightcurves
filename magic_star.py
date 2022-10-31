@@ -16,20 +16,6 @@ from astropy import units as u
 
 from astropy.utils.exceptions import AstropyWarning
 
-try:
-	f_name 		 = sys.argv[1]
-	# l_from_input = sys.argv[2]
-	# a_from_input = sys.argv[3]
-	write_output = True
-except Exception as e:
-	print(e)
-
-star_parameters = np.loadtxt( 'star_parameters.csv' , delimiter=',' , skiprows=1 , dtype=str )
-for i in range(len(star_parameters)):
-	if f_name.split('_')[1] in star_parameters[i,0]:
-		l_from_input = star_parameters[i,1]
-		a_from_input = star_parameters[i,2]
-
 # plt.rcParams.update({'figure.max_open_warning': 0})
 warnings.simplefilter('ignore', AstropyWarning)
 
@@ -673,6 +659,21 @@ I guess this is where the shitshow begins i guess
 '''
 
 if __name__ == '__main__':
+	
+	try:
+		f_name 		 = sys.argv[1]
+		# l_from_input = sys.argv[2]
+		# a_from_input = sys.argv[3]
+		write_output = True
+	except Exception as e:
+		print(e)
+
+	star_parameters = np.loadtxt( 'star_parameters.csv' , delimiter=',' , skiprows=1 , dtype=str )
+	for i in range(len(star_parameters)):
+		if f_name.split('_')[1] in star_parameters[i,0]:
+			l_from_input = star_parameters[i,1]
+			a_from_input = star_parameters[i,2]
+
 	
 	for d in dir_names:
 		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
