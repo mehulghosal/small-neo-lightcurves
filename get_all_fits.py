@@ -44,7 +44,8 @@ if __name__ == '__main__':
 					a = star_params[i,2]
 					break
 
-			command = f'\n{f[1:]}'
+			command = f'\n{f[:]}'
+			print(command)
 			cmd_list.append(command)
 	
 	# for i in cmd_list: print(i)
