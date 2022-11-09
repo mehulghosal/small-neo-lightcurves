@@ -8,6 +8,6 @@
 input="fits_files.txt"
 while read -r line
 do
-	# echo "$line"0
+	echo "$line"0
 	sbatch ./new_magic.slurm $line
 done <fits_files.txt
