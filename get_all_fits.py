@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
 		for f in file_names:
 			# only working on new files around asteroid chip
-			if 'on' in f: continue
+			if not 'on' in f: continue
 
 			try:
 				file = fits.open (f)
@@ -48,7 +48,8 @@ if __name__ == '__main__':
 			cmd_list.append(command)
 	
 	# for i in cmd_list: print(i)
-	output = open('ast_files.txt', 'w+')
+	# output = open('ast_files.txt', 'w+')
+	output = open('fits_files.txt', 'w+')
 	output.writelines( cmd_list )
 
 
