@@ -717,7 +717,6 @@ if __name__ == '__main__':
 
 	sex_output = np.loadtxt ( output_for_bryce + 'sex.cat' )
 
-	
 	star_x = sex_output[:,5]
 	star_y = sex_output[:,6]
 
@@ -756,7 +755,7 @@ if __name__ == '__main__':
 
 	while True:
 
-		if i >= len(star_x) or i == 50: break
+		if i >= len(star_x) or i == 30: break
 		# if i == 3: break
 
 		
