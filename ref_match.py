@@ -54,7 +54,8 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('GE1' in f and '66on22' in f): continue
+			# if not ('GE1' in f and '71on4' in f): continue
+			if not 'GE1' in f: continue
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 			if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
@@ -97,58 +98,55 @@ for d in dir_names:
 
 			refcat = []
 
-			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad 1 -dir 00_m_16/ -all'
+			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir 00_m_16/ -all'
 			# 1.554579469893714077e+02 5.803648468633650026e+00
 			# args_str = f'./refcat {155.457} {5.803648} -rad 2 -dir 00_m_16/ -all'
 			print ( 'refcat call to terminal: ' , args_str )
 			ref_stars = np.array(os.popen(args_str).read().split('\n')[1:-1])
-			print(ref_stars)
+			# print(ref_stars)
 			for j in ref_stars:
 				refcat.append(np.array(j.split(), dtype=float))
 			refcat = np.array(refcat)
-			print(refcat.shape)
+			print( f'Queried {len(refcat)} stars')
 			# end refcat magic
-
-			# if True: break
 
 			ref_ra_dec = SkyCoord ( ra=refcat[:,0]*u.degree , dec=refcat[:,1]*u.degree)
 
 			idx , d2d , d3d = ra_dec.match_to_catalog_sky (ref_ra_dec , nthneighbor=1)
 
-			print(idx.shape)
+			print('Initial matches: ', idx.shape)
 
 			fig_1 , ax1 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			ax1.hist ( d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200] )
 			hist , bins  = np.histogram(d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200])
-			# ax1.set_xlabel('offset in arcsec')
+			ax1.set_xlabel('offset in arcsec')
 
-			# ax.scatter ()
-
-
+			
 			# basically converting bins --> integers so we find the mode. digitize gives me the index of which bin each d2d goes into
 			# to be fair this is from stack overflow and it might be sketchy and untested
-			binsd = bins[np.digitize ( d2d.arcsec , bins , right=False )-1] 
+			print(d2d.arcsec , bins)
+			binsd = bins[np.digitize ( d2d.arcsec , bins , right=True )] 
 			# print(binsd)
 
 			bins_mode = mode ( binsd  )[0]
-			mode_err  = 2
+			mode_err  = 3
 			print(f'Mode offset: {bins_mode[0]} +/- {mode_err}')
 			
 			# now we constrain the offsets by +/- 1" around mode offset
 			dist_filter = np.where ( (d2d.arcsec <= bins_mode + mode_err) & (d2d.arcsec >= bins_mode - mode_err)  )
-			print(f'+/- 2" from mode offsets in arcsec: {d2d.arcsec[dist_filter]}')
+			print(f'+/- {mode_err}" from mode offsets in arcsec: {d2d[dist_filter].arcsec}')
 
-			matches = ref_ra_dec[idx[dist_filter]]
+			# matches = ref_ra_dec[idx[dist_filter]]
+			matches = ref_ra_dec[idx]
 
 			ref_x , ref_y = utils.skycoord_to_pixel(matches , w)
+
 			x_0_matches = x_0[dist_filter]
 			y_0_matches = y_0[dist_filter]
 
-			ax.scatter ( ref_x  , ref_y , label='ref matches'  )
-			ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
-			# ax.scatter ( x_0, y_0, label='My stars matches')
-
-			plt.show()
+			ax.scatter ( ref_x[dist_filter]  , ref_y[dist_filter] , label='ref matches'  )
+			# ax.scatter ( x_0[dist_filter], y_0[dist_filter] , label='My stars matches')
+			ax.scatter ( x_0_matches, y_0_matches, label='My stars matches')
 
 			# fig_angle, ax_angle = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			# ax_angle.hist ( d3d.value,  bins=np.linspace(0 , 1e-3 , 51) )
@@ -214,20 +212,14 @@ for d in dir_names:
 
 			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			ax_cal .errorbar ( instrumental_mag , ref_mag , ref_err , instrumental_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
-			plt.show()
 
-			param , param_cov = curve_fit ( line , instrumental_mag , ref_mag, sigma=ref_err , absolute_sigma=True )
-			print('general line: ', param , np.diag(param_cov)**.5)
-			ax_cal.plot (instrumental_mag , line(instrumental_mag , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
+			# param , param_cov = curve_fit ( line , instrumental_mag , ref_mag, sigma=ref_err , absolute_sigma=True )
+			# print('general line: ', param , np.diag(param_cov)**.5)
+			# ax_cal.plot (instrumental_mag , line(instrumental_mag , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
 
-			param_one , one_cov = curve_fit ( line_one , instrumental_mag , ref_mag , sigma=ref_err , absolute_sigma=True  )
-			print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
-			ax_cal.plot (instrumental_mag , line_one(instrumental_mag , *param_one) , label=f'y=x + {param_one[0]:.1f}')
-
-			param_quad , cov_quad = curve_fit ( quadratic , instrumental_mag[dist_filter] , ref_mag , sigma=ref_err , absolute_sigma=True  )
-			print( 'quadratic params and uncertainties ',  param_quad , np.diag(cov_quad)**.5)
-			# ax_cal.plot (np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() ,50 ) , quadratic(np.linspace(instrumental_mag[dist_filter].min() , instrumental_mag[dist_filter].max() , 50 ), *param_quad) )
-
+			# param_one , one_cov = curve_fit ( line_one , instrumental_mag , ref_mag , sigma=ref_err , absolute_sigma=True  )
+			# print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
+			# ax_cal.plot (instrumental_mag , line_one(instrumental_mag , *param_one) , label=f'y=x + {param_one[0]:.1f}')
 
 			print('image filter: ', hdr['FILTER'][0])
 
