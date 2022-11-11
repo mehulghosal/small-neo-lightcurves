@@ -39,23 +39,26 @@ dir_names = [directory+f+'/' for f in os.listdir(directory) if isdir(join(direct
 filt_ind = {'g':21, 'r': 25, 'i': 29}
 mins = {'g':100, 'r': 150, 'i': 250}
 
-
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
+	if not 'GE1' in d: continue
+
 
 	for ld in lc_dirs :
 
 		if 'data/LCLIST' in ld or 'git' in ld: continue
+
 		# print(ld)
 
 		lc_files = [join(ld,f) for f in os.listdir(ld) if isfile(join(ld,f))]
-		# print(os.listdir(ld))
+
 		# print( lc_files )
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			# if not ('GE1' in f and '71on4' in f): continue
-			if not 'GE1' in f: continue
+			# if not ('GE1' in f and '66' in f): continue
+			if not '66o' in f: continue
+
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 			if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
@@ -124,12 +127,16 @@ for d in dir_names:
 			
 			# basically converting bins --> integers so we find the mode. digitize gives me the index of which bin each d2d goes into
 			# to be fair this is from stack overflow and it might be sketchy and untested
-			print(d2d.arcsec , bins)
-			binsd = bins[np.digitize ( d2d.arcsec , bins , right=True )] 
+			# print(d2d.arcsec , bins)
+			try:
+				binsd = bins[np.digitize ( d2d.arcsec , bins , right=True )] 
+			except:
+				print('separations: ' , d2d.arcsec )
+				continue
 			# print(binsd)
 
 			bins_mode = mode ( binsd  )[0]
-			mode_err  = 3
+			mode_err  = 2
 			print(f'Mode offset: {bins_mode[0]} +/- {mode_err}')
 			
 			# now we constrain the offsets by +/- 1" around mode offset
@@ -189,7 +196,10 @@ for d in dir_names:
 
 
 			# dont implement this fully just yet! i need more solar analogs lmfao
-			color_filter = np.where( (g_r >= .35) & (g_r <= .5) & (r_i >= .05) & (r_i <= .15) )
+			# color_filter = np.where( (g_r >= .35) & (g_r <= .5) & (r_i >= .05) & (r_i <= .15) )
+
+			# f7-->g7
+			color_filter = np.where( (g_r >= .35) & (g_r <= .55) )
 
 			print( 'g-r colors: ' , g_r[color_filter] )
 			print( 'r-i colors: ' , r_i[color_filter] )
@@ -230,8 +240,10 @@ for d in dir_names:
 
 
 
-		plt.show()
 
 
-		# if True: break
+	plt.show()
+
+
+	if True: break
 

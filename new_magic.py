@@ -686,7 +686,7 @@ if __name__ == '__main__':
 	# 		if not f_name in f: continue
 
 	# if '06o13' not in f: continue
-	f = "."+f_name
+	f = f_name
 	try:
 		file = fits.open(f)
 		print(f)
@@ -755,7 +755,7 @@ if __name__ == '__main__':
 
 	while True:
 
-		if i >= len(star_x) or i == 30: break
+		if i >= len(star_x) or i == 50: break
 		# if i == 3: break
 
 		
@@ -777,6 +777,8 @@ if __name__ == '__main__':
 			print(e , f' LOL star fit failed , skipping trail number {i} for filname : {f}  ')
 			failed_log.append(str_p0)
 			continue
+
+		if np.any( np.sqrt(np.diag(star_param_cov)) / str_param > .5 ): continue
 
 		residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
 
@@ -825,9 +827,9 @@ if __name__ == '__main__':
 
 		# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
 
-		to_write = np.array ( [ np.linspace( start_time , start_time + exp_time/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
+		# to_write = np.array ( [ np.linspace( start_time , start_time + exp_time/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
 
-		np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
+		# np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
 
 		print(' ')
 		i+=1
