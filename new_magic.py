@@ -13,6 +13,7 @@ from astropy.wcs import WCS
 from astropy.wcs import utils
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+import time as pytime
 
 from astropy.utils.exceptions import AstropyWarning
 
@@ -715,23 +716,34 @@ if __name__ == '__main__':
 	rd_noise = 3
 	# obs_filter = float(hdr['FILTE'])
 
-	sex_output = np.loadtxt ( output_for_bryce + 'sex.cat' )
+	print(output_for_bryce + 'sex.cat' )
+
+	sex_output = np.loadtxt ( output_for_bryce + 'sex.cat'  , skiprows=9 )
+	# print(sex_output)
 
 	star_x = sex_output[:,5]
 	star_y = sex_output[:,6]
 
-	ast_trail_length = 100
-
-	# filtering bad stars from sextractor
-	bad_stars = np.where((star_x < ast_trail_length) | (star_x > img.shape[1] - ast_trail_length) | (star_y < ast_trail_length) | (star_y > img.shape[0]-ast_trail_length)) # too close to edge
-	if 'on' not in f: bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too, only on files with asteroid
-	# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
-	print('filter on sextractor', len(bad_stars))
-	star_x = np.delete(star_x, bad_stars, 0)
-	star_y = np.delete(star_y, bad_stars, 0)
-	
+	# ast_trail_length = 100
 	l = float(l_from_input)
 	a = float(a_from_input)
+
+	# filtering bad stars from sextractor
+	bad_stars = np.where((star_x < l) | (star_x > img.shape[1] - l) | (star_y < l) | (star_y > img.shape[0]-l)) # too close to edge
+	
+	# if 'on' not in f: bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too, only on files with asteroid
+	# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
+	
+	print('filter on sextractor', len(bad_stars[0]) , bad_stars[0])
+	star_x = np.delete(star_x, bad_stars, 0)
+	star_y = np.delete(star_y, bad_stars, 0)
+
+	# print(sex_output)
+
+	# print(star_x)
+	# print(star_y)
+	print()
+	
 
 	stars        = []
 	trail_starts = []
@@ -747,7 +759,7 @@ if __name__ == '__main__':
 
 	rebin = False
 
-	i = 0
+	i = -1
 
 	img_star_rotated = rotate(img, a)
 
@@ -755,6 +767,8 @@ if __name__ == '__main__':
 
 	while True:
 
+		loop_t0 = pytime.time()
+		i+=1
 		if i >= len(star_x) or i == 50: break
 		# if i == 3: break
 
@@ -768,6 +782,7 @@ if __name__ == '__main__':
 		centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
 
 		str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
+		print('initial params: ' , str_p0 )
 		param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
 		# print(str_param)
 		
@@ -778,7 +793,10 @@ if __name__ == '__main__':
 			failed_log.append(str_p0)
 			continue
 
-		if np.any( np.sqrt(np.diag(star_param_cov)) / str_param > .5 ): continue
+		# if np.any( np.sqrt(np.diag(star_param_cov)) / str_param > .5 ): continue
+		if str_param[0] > 15 or str_param[1] > 1000 : 
+			print('skiped because funky params: ' , str_param)
+			continue
 
 		residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
 
@@ -804,45 +822,45 @@ if __name__ == '__main__':
 
 
 		fwhm = s * 2.355
-		st_height_correction = int(fwhm * L/ast_trail_length ) 
+		# st_height_correction = int(fwhm * L/ast_trail_length ) 
 		# st_height_correction = - int(fwhm/2) - 1
 
 		# if not rebin:  # star lightcurve longer than asteroid
-		str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=L)
+		# str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=L)
 		# else:     # star lightcurve shorter than asteroid -- no binning step here, we will rebin the asteroid lightcurve 
 		# 	str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction)
 
-		norm = np.median(str_minus_sky)
+		# norm = np.median(str_minus_sky)
 
 		centroids   .append(reverse_rotation ( x_0_ , y_0_ , angle_from_initial , img ) )
-		norms       .append(norm)
-		row_flux    .append(str_minus_sky /norm)
-		row_errs    .append(sigma_row_star/norm)
+		# norms       .append(norm)
+		# row_flux    .append(str_minus_sky /norm)
+		# row_errs    .append(sigma_row_star/norm)
 		trail_starts.append(star_trail_start)
 		trail_ends  .append(star_trail_end  )
 		residuals   .append(residual)
 		stars       .append(np.hstack((str_param, a, flux)))
 
-		dt          .append(60 * st_height_correction / L)
+		# dt          .append(60 * st_height_correction / L)
 
 		# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
 
 		# to_write = np.array ( [ np.linspace( start_time , start_time + exp_time/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
 
 		# np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
-
+		print(f'time elapsed: {pytime.time() - loop_t0 :.2f}s')
 		print(' ')
-		i+=1
 		
-	row_flux = np.array(row_flux)
-	row_errs = np.array(row_errs)
+		
+	# row_flux = np.array(row_flux)
+	# row_errs = np.array(row_errs)
 
 	stars 		 = np.array(stars)
 	residuals    = np.array(residuals)
 	trail_starts = np.array(trail_starts)
 	trail_ends   = np.array(trail_ends)
-	norms 		 = np.array(norms)
-	dt 			 = np.array(dt)
+	# norms 		 = np.array(norms)
+	# dt 			 = np.array(dt)
 	centroids    = np.array(centroids)
 
 	print('initially, ', stars.shape[0])
@@ -865,12 +883,12 @@ if __name__ == '__main__':
 	trail_ends   = trail_ends  [star_filter]
 	residuals    = residuals   [star_filter]
 	# total_flux   = total_flux  [star_filter]
-	norms        = norms 	   [star_filter]
+	# norms        = norms 	   [star_filter]
 	centroids    = centroids   [star_filter]
 
-	row_flux = row_flux[star_filter]
-	row_errs = row_errs[star_filter]
-	dt 		 = dt 	   [star_filter]
+	# row_flux = row_flux[star_filter]
+	# row_errs = row_errs[star_filter]
+	# dt 		 = dt 	   [star_filter]
 
 	print('filtering: ', stars.shape[0])
 
