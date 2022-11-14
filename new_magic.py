@@ -810,6 +810,9 @@ if __name__ == '__main__':
 
 		# capturing that global variable after the trail fit has converged
 		str_flux = flux
+		if flux < 0 : 
+			print( 'skipped because flux<0??')
+			continue
 
 		img_star_rotated = rotate(img, angle_from_initial)
 		x_0_ , y_0_ = point_rotation(x_0_ , y_0_ , angle_from_initial , img , img_star_rotated )

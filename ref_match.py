@@ -118,6 +118,7 @@ for d in dir_names:
 			idx , d2d , d3d = ra_dec.match_to_catalog_sky (ref_ra_dec , nthneighbor=1)
 
 			print('Initial matches: ', idx.shape)
+			print('Offsets in arcsec: ' , d2d.arcsec)
 
 			fig_1 , ax1 = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			ax1.hist ( d2d.arcsec , bins=np.linspace(0 , 200 , 51) , range=[0,200] )
@@ -129,14 +130,14 @@ for d in dir_names:
 			# to be fair this is from stack overflow and it might be sketchy and untested
 			# print(d2d.arcsec , bins)
 			try:
-				binsd = bins[np.digitize ( d2d.arcsec , bins , right=True )] 
+				binsd = bins[np.digitize ( d2d.arcsec , bins , right=True )-1] 
 			except:
 				print('separations: ' , d2d.arcsec )
 				continue
 			# print(binsd)
 
 			bins_mode = mode ( binsd  )[0]
-			mode_err  = 2
+			mode_err  = 4
 			print(f'Mode offset: {bins_mode[0]} +/- {mode_err}')
 			
 			# now we constrain the offsets by +/- 1" around mode offset
