@@ -41,7 +41,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'GE1' in d: continue
+	# if not 'GE1' in d: continue
 
 
 	for ld in lc_dirs :
@@ -57,7 +57,7 @@ for d in dir_names:
 		for f in lc_files :
 			if not 'star_params' in f: continue
 			# if not ('GE1' in f and '66' in f): continue
-			if not '66o' in f: continue
+			# if not '66o' in f: continue
 
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
@@ -80,6 +80,8 @@ for d in dir_names:
 
 			print( )
 			star_id , ra , dec , s , L , A , b , x , y , a , flux , X_0 , Y_0 = np.loadtxt ( f , skiprows=1 , unpack=True )
+			try: print(f'{len(star_id)} stars ')
+			except Exception as e: continue
 
 			fig , ax = plt.subplots()
 			ax.set_title(fits_name)
@@ -108,7 +110,9 @@ for d in dir_names:
 			ref_stars = np.array(os.popen(args_str).read().split('\n')[1:-1])
 			# print(ref_stars)
 			for j in ref_stars:
-				refcat.append(np.array(j.split(), dtype=float))
+				try: refcat.append(np.array(j.split(), dtype=float))
+				except Exception as e:
+					continue
 			refcat = np.array(refcat)
 			print( f'Queried {len(refcat)} stars')
 			# end refcat magic
@@ -188,14 +192,20 @@ for d in dir_names:
 
 			# ax.scatter ( x_0[idx_[dist_filter_]] , y_0[idx_[dist_filter_]] , label='My stars')
 
-			g_mag = refcat[idx[dist_filter]] [ :, 21 ]
-			r_mag = refcat[idx[dist_filter]] [ :, 25 ]
-			i_mag = refcat[idx[dist_filter]] [ :, 29 ]
+			g_mag = refcat[idx[dist_filter]] [ :, filt_ind['g'] ]
+			g_err = refcat[idx[dist_filter]] [ :, filt_ind['g'] + 1 ]
+			
+			r_mag = refcat[idx[dist_filter]] [ :, filt_ind['r'] ]
+			r_err = refcat[idx[dist_filter]] [ :, filt_ind['r'] + 1 ]
+			
+			i_mag = refcat[idx[dist_filter]] [ :, filt_ind['i'] ]
+			i_err = refcat[idx[dist_filter]] [ :, filt_ind['i'] + 1 ]
 
 			g_r = g_mag-r_mag
 			r_i = r_mag-i_mag
 
-
+			g_r_err = (g_err**2 + r_err**2) **.5
+			r_i_err = (i_err**2 + r_err**2) **.5
 			# dont implement this fully just yet! i need more solar analogs lmfao
 			# color_filter = np.where( (g_r >= .35) & (g_r <= .5) & (r_i >= .05) & (r_i <= .15) )
 
@@ -224,13 +234,19 @@ for d in dir_names:
 			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 			ax_cal .errorbar ( instrumental_mag , ref_mag , ref_err , instrumental_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
 
-			# param , param_cov = curve_fit ( line , instrumental_mag , ref_mag, sigma=ref_err , absolute_sigma=True )
-			# print('general line: ', param , np.diag(param_cov)**.5)
-			# ax_cal.plot (instrumental_mag , line(instrumental_mag , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
+			zp, zp_err = 0 , 0
+			try:				
+				param , param_cov = curve_fit ( line , instrumental_mag , ref_mag, sigma=ref_err , absolute_sigma=True )
+				print('general line: ', param , np.diag(param_cov)**.5)
+				ax_cal.plot (instrumental_mag , line(instrumental_mag , *param) , label=f'y={param[0]:.1f}x + {param[1]:.1f}')
 
-			# param_one , one_cov = curve_fit ( line_one , instrumental_mag , ref_mag , sigma=ref_err , absolute_sigma=True  )
-			# print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
-			# ax_cal.plot (instrumental_mag , line_one(instrumental_mag , *param_one) , label=f'y=x + {param_one[0]:.1f}')
+				param_one , one_cov = curve_fit ( line_one , instrumental_mag , ref_mag , sigma=ref_err , absolute_sigma=True  )
+				print( 'line slope one: ',  param_one[0] , np.diag(one_cov)[0]**.5)
+				ax_cal.plot (instrumental_mag , line_one(instrumental_mag , *param_one) , label=f'y=x + {param_one[0]:.1f}')
+				zp = param_one[0]
+				zp_err = np.diag(one_cov)[0]**.5
+			except Exception as e:
+				print('no zero point found')
 
 			print('image filter: ', hdr['FILTER'][0])
 
@@ -239,12 +255,22 @@ for d in dir_names:
 			plt.tight_layout()
 			print()
 
+			output_name = '/'.join(f.split('/')[:-1]) + '/ref.cat'
+			header = f'id mag dmag g dg r dr i di //filter={hdr["FILTER"][0]} //zp={zp:.2f} +/- {zp_err:.2f}'
+
+			to_write = np.vstack([star_id[dist_filter] [ color_filter ] , instrumental_mag , instrumental_err , g_mag[color_filter] , g_err[color_filter] , r_mag[color_filter] , r_err[color_filter] , i_mag[color_filter] , i_err[color_filter] , ]).T
+			# print(to_write)
+
+			np.savetxt (output_name , to_write , header=header , comments='')
 
 
 
 
-	plt.show()
 
 
-	if True: break
+
+	# plt.show()
+
+
+	# if True: break
 
