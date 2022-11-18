@@ -8,6 +8,6 @@
 input="ast_files.txt"
 while read -r line
 do
-	# echo "$line"0
+	echo "$line"
 	sbatch ./ast_magic.slurm $line
 done <ast_files.txt

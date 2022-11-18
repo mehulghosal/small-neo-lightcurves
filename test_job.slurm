@@ -21,5 +21,5 @@
 
 ##python3 ./my_python_script $1 $2 $3 $4 $5
 
-python3 ./new_magic.py $1
+python3 ./new_magic.py ./2016_CW30_2016_02_11_UTC/1893342on12.fits
 ##echo $1
