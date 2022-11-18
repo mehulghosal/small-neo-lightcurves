@@ -8,8 +8,8 @@
 #SBATCH --mem=6G ## max amount of memory per node you require
 ##SBATCH --core-spec=0 ## Uncomment to allow jobs to request all cores on a node    
 
-#SBATCH --error=./errors/$1.err
-#SBATCH --output=./output/$1.out
+#SBATCH --error=test.err
+#SBATCH --output=test.out
 
 ## Useful for remote notification
 ##SBATCH --mail-type=BEGIN,END,FAIL,REQUEUE,TIME_LIMIT_80
