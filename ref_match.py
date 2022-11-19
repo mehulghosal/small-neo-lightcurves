@@ -62,6 +62,7 @@ for d in dir_names:
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 			if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
+			else: continue
 
 
 			try:
