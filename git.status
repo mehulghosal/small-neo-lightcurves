@@ -1,88 +1,400 @@
-On branch master
-Your branch is up to date with 'origin/master'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   git.status
-	modified:   ref_match.py
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	2015_XN55_12_07/1851142on12/ref.cat
-	2015_XN55_12_07/1851142on14/ref.cat
-	2015_XN55_12_07/1851142on21/ref.cat
-	2015_XN55_12_07/1851142on22/ref.cat
-	2015_XN55_12_07/1851142on23/ref.cat
-	2015_XN55_12_07/1851142on3/ref.cat
-	2015_XN55_12_07/1851142on4/ref.cat
-	2015_XN55_12_07/1851142on5/ref.cat
-	2015_XN55_12_07/1851143on12/ref.cat
-	2015_XN55_12_07/1851143on14/ref.cat
-	2015_XN55_12_07/1851143on21/ref.cat
-	2015_XN55_12_07/1851143on22/ref.cat
-	2015_XN55_12_07/1851143on23/ref.cat
-	2015_XN55_12_07/1851143on3/ref.cat
-	2015_XN55_12_07/1851143on4/ref.cat
-	2015_XN55_12_07/1851143on5/ref.cat
-	2015_XN55_12_07/1851144on12/ref.cat
-	2015_XN55_12_07/1851144on14/ref.cat
-	2015_XN55_12_07/1851144on21/ref.cat
-	2015_XN55_12_07/1851144on22/ref.cat
-	2015_XN55_12_07/1851144on23/ref.cat
-	2015_XN55_12_07/1851144on3/ref.cat
-	2015_XN55_12_07/1851144on4/ref.cat
-	2015_XN55_12_07/1851144on5/ref.cat
-	2015_XN55_12_07/1851145on12/ref.cat
-	2015_XN55_12_07/1851145on14/ref.cat
-	2015_XN55_12_07/1851145on21/ref.cat
-	2015_XN55_12_07/1851145on22/ref.cat
-	2015_XN55_12_07/1851145on23/ref.cat
-	2015_XN55_12_07/1851145on3/ref.cat
-	2015_XN55_12_07/1851145on4/ref.cat
-	2015_XN55_12_07/1851145on5/ref.cat
-	2015_XN55_12_07/1851146on12/ref.cat
-	2015_XN55_12_07/1851146on14/ref.cat
-	2015_XN55_12_07/1851146on21/ref.cat
-	2015_XN55_12_07/1851146on22/ref.cat
-	2015_XN55_12_07/1851146on23/ref.cat
-	2015_XN55_12_07/1851146on3/ref.cat
-	2015_XN55_12_07/1851146on4/ref.cat
-	2015_XN55_12_07/1851146on5/ref.cat
-	2015_XN55_12_07/1851147on12/ref.cat
-	2015_XN55_12_07/1851147on14/ref.cat
-	2015_XN55_12_07/1851147on21/ref.cat
-	2015_XN55_12_07/1851147on22/ref.cat
-	2015_XN55_12_07/1851147on23/ref.cat
-	2015_XN55_12_07/1851147on3/ref.cat
-	2015_XN55_12_07/1851147on4/ref.cat
-	2015_XN55_12_07/1851147on5/ref.cat
-	2016_EL157_2016_03_16_2016_UTC/1910101on23/ref.cat
-	2016_EL157_2016_03_16_2016_UTC/1910105on12/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066o13/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on12/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on14/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on21/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on22/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on23/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on3/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on4/ref.cat
-	2016_GE1_2016_04_04_UTC/1917066on5/ref.cat
-	2016_GE1_2016_04_04_UTC/1917067on23/ref.cat
-	2016_GE1_2016_04_04_UTC/1917068on22/ref.cat
-	2016_GE1_2016_04_04_UTC/1917071on14/ref.cat
-	2016_GE1_2016_04_04_UTC/1917071on22/ref.cat
-	2016_NM15_2016_07_08_UTC/1943986on12/ref.cat
-	2016_NM15_2016_07_08_UTC/1943986on3/ref.cat
-	2016_NM15_2016_07_08_UTC/1943986on5/ref.cat
-	2016_NM15_2016_07_08_UTC/1943987on13/ref.cat
-	2016_NM15_2016_07_08_UTC/1943987on3/ref.cat
-	2016_NM15_2016_07_08_UTC/1943987on5/ref.cat
-	2016_NM15_2016_07_08_UTC/1943988on12/ref.cat
-	2016_NM15_2016_07_08_UTC/1943988on5/ref.cat
-	2016_NM15_2016_07_08_UTC/1943989on12/ref.cat
-	2016_NM15_2016_07_08_UTC/1943990on3/ref.cat
-	2016_NM15_2016_07_08_UTC/1943991on12/ref.cat
-	2016_NM15_2016_07_08_UTC/1943991on5/ref.cat
-
+# On branch master
+# Your branch is ahead of 'origin/master' by 1 commit.
+#   (use "git push" to publish your local commits)
+#
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	modified:   2015_TG24_2015_10_13/1837291on30/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837291on32/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837292on21/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837292on22/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837292on30/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837293on22/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837293on32/star_params.dat
+#	modified:   2015_TG24_2015_10_13/1837294on22/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845926on12/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845926on14/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845926on21/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845926on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845926on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845926on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845927on21/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845927on22/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845927on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845927on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845927on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845928on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845928on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845928on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845929on21/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845929on22/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845929on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845929on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845930on21/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845930on22/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845930on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845930on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845931on22/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845931on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845931on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1845931on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846208on12/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846208on14/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846208on21/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846208on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846208on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846209on12/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846209on14/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846209on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846209on31/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846210on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846211on14/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846211on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846211on30/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846211on31/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846211on32/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846212on14/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846212on23/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846212on31/star_params.dat
+#	modified:   2015_VH1_2015_11_06/1846212on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846763on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846764on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846765on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846766on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846767on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846768on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846769on12/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846769on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846769on21/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846769on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846769on30/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846769on32/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846770on14/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846770on23/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846770on31/star_params.dat
+#	modified:   2015_VR64_2015_11_13/1846770on32/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on12/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on14/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on21/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on22/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on23/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on3/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on4/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852192on5/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852193on14/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852193on23/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852193on3/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852193on4/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852193on5/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852194on14/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852194on21/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852194on22/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852194on23/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852194on3/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852194on5/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852195on14/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852195on3/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852197on23/star_params.dat
+#	modified:   2015_XA169_2015_12_11/1852197on3/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893849on12/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893849on14/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893849on5/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893850on13/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893850on3/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893852on12/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893852on13/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893852on3/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893852on5/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893853on12/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893853on13/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893853on14/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893853on3/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893853on5/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893854on12/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893854on13/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893854on14/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893854on3/star_params.dat
+#	modified:   2016_CE194_2016_02_13_UTC/1893854on5/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894001on12/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894001on13/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894001on14/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894001on3/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894001on5/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894002on12/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894002on13/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894002on14/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894002on3/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894002on5/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894004on12/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894004on13/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894004on14/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894004on3/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894004on5/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894005on12/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894005on13/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894005on14/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894005on3/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894005on5/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894006on12/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894006on13/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894006on14/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894006on3/star_params.dat
+#	modified:   2016_CK31_2016_02_14_UTC/1894006on5/star_params.dat
+#	modified:   2016_CW30_2016_02_11_UTC/1893342on12/star_params.dat
+#	modified:   2016_EV84_2016_03_12_2016_UTC/1909611on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on21/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917066on5/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on21/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917067on5/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on21/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on3/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917068on5/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on3/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917069on5/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on21/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on3/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917070on5/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on21/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on3/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917071on5/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on12/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on14/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on21/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on22/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on23/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on3/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on4/star_params.dat
+#	modified:   2016_GE1_2016_04_04_UTC/1917072on5/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917123on21/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917123on23/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917123on3/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917123on4/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917124on12/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917124on22/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917124on5/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917125on12/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917125on4/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917126on14/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917127on21/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917127on22/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917128on12/star_params.dat
+#	modified:   2016_GG1_2016_04_04_UTC/1917128on23/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938057on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938057on13/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938057on3/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938057on5/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938058on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938058on13/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938058on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938058on3/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938058on5/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938059on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938059on13/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938059on5/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938060on13/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938060on3/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938060on5/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938061on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938061on13/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938061on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938061on3/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938061on5/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938062on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938062on13/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938062on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938062on3/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938062on5/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on21/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on23/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on30/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on31/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938231on32/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on21/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on23/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on30/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on31/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938232on32/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on21/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on23/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on30/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on31/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938233on32/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on21/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on23/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on30/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on31/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938234on32/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938235on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938235on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938235on21/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938235on30/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938235on31/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938235on32/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938236on12/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938236on14/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938236on21/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938236on23/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938236on30/star_params.dat
+#	modified:   2016_LT1_2016_06_07_UTC/1938236on31/star_params.dat
+#	modified:   2016_NM15_2016_07_08_UTC/1943986on5/star_params.dat
+#	modified:   2016_NM15_2016_07_08_UTC/1943987on5/star_params.dat
+#	modified:   2016_NM15_2016_07_08_UTC/1943988on5/star_params.dat
+#	modified:   git.status
+#	modified:   job_submitter.sh
+#
+# Untracked files:
+#   (use "git add <file>..." to include in what will be committed)
+#
+#	2015_VH1_2015_11_06/1846210on12/star_params.dat
+#	2015_VH1_2015_11_06/1846210on31/star_params.dat
+#	2015_VH1_2015_11_06/1846211on12/star_params.dat
+#	2015_VH1_2015_11_06/1846211on21/star_params.dat
+#	2015_VH1_2015_11_06/1846212on21/star_params.dat
+#	2015_VH1_2015_11_06/1846212on30/star_params.dat
+#	2015_XA169_2015_12_11/1852193on12/star_params.dat
+#	2015_XA169_2015_12_11/1852197on5/star_params.dat
+#	2016_EL157_2016_03_16_2016_UTC/1910102on3/star_params.dat
+#	2016_EL157_2016_03_16_2016_UTC/1910105on22/star_params.dat
+#	2016_EL157_2016_03_16_2016_UTC/1910105on3/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916803on12/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916803on22/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916803on3/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916803on5/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916804on14/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916804on22/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916804on4/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916805on14/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916805on21/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916805on22/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916806on14/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916806on21/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916806on3/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916807on12/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916807on3/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916807on5/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916808on12/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916808on22/star_params.dat
+#	2016_FF14_2016_04_02_UTC/1916808on5/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917123on12/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917123on14/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917123on22/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917123on5/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917124on14/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917124on21/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917124on23/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917124on3/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917124on4/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917125on14/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917125on21/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917125on22/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917125on23/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917125on3/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917125on5/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on12/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on21/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on22/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on23/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on3/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on4/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917126on5/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917127on14/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917127on23/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917127on3/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917127on4/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917127on5/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917128on21/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917128on22/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917128on3/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917128on4/star_params.dat
+#	2016_GG1_2016_04_04_UTC/1917128on5/star_params.dat
+#	2016_LT1_2016_06_07_UTC/1938059on3/star_params.dat
+#	2016_LT1_2016_06_07_UTC/1938060on12/star_params.dat
+#	2016_LT1_2016_06_07_UTC/1938235on23/star_params.dat
+#	2016_LT1_2016_06_07_UTC/1938236on32/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943986on13/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943986on14/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943987on12/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943988on14/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943988on3/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943989on13/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943990on12/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943990on13/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943990on5/star_params.dat
+#	2016_NM15_2016_07_08_UTC/1943991on13/star_params.dat
 no changes added to commit (use "git add" and/or "git commit -a")
