@@ -56,13 +56,13 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			# if not ('GE1' in f and '66' in f): continue
+			if not ('FF14' in f and '04o' in f): continue
 			# if not '66o' in f: continue
 
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 			if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
-			else: continue
+			# else: continue
 
 
 			try:
@@ -270,7 +270,7 @@ for d in dir_names:
 
 
 
-	# plt.show()
+		# plt.show()
 
 
 	# if True: break
