@@ -661,7 +661,7 @@ I guess this is where the shitshow begins i guess
 if __name__ == '__main__':
 	
 	try:
-		f_name 		 = sys.argv[1]
+		f_name 		 = '.'+sys.argv[1]
 		# l_from_input = sys.argv[2]
 		# a_from_input = sys.argv[3]
 		write_output = True
@@ -674,384 +674,373 @@ if __name__ == '__main__':
 			l_from_input = star_parameters[i,1]
 			a_from_input = star_parameters[i,2]
 
+	f = f_name
+
+	try:
+		file = fits.open(f)
+		print(f)
+	except Exception as e:
+		print(e,f)
+		sys.exit()
+
+	# if  ('1938060o04.flt' not in f and '1938061o04.flt' not in f) : continue
+
+	output_for_bryce = f'{f[:-4]}/'
+	if not isdir(output_for_bryce):
+		os.mkdir(output_for_bryce)
+
+
+	hdr = file[0].header
+	img = file[0].data
+
+	exp_time   = float(hdr['EXPMEAS'])
+	gain       = float(hdr['GAIN'])
+	rd_noise   = float(hdr['RDNOISE'])
+	# obs_filter = float(hdr['FILTE'])
+
+	# object id from directory name --> string splicing
+	obj_id = f.split('_')
+	obj_id = obj_id[0][2:] + ' ' + obj_id[1]
+
+	obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
 	
-	for d in dir_names:
-		file_names = [d+f for f in os.listdir(d) if isfile(join(d,f))]
-		yea = False
+	try:
+		obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
+		trail_start = np.array(obj[-4:-2], dtype=int)
+		trail_end	= np.array(obj[-2:], dtype=int)
+		start_time  = float(obj[6])
+	except Exception as e:
+		# print(f,obj[-4:-2],obj[-2:])
+		# plt.close()
+		sys.exit()
 
-		if not f_name in d: continue
+	# global variable flux to capture the total flux of the trail
+	flux = 0
 
-		start_times = []
-		lightcurves = []
-		errors      = []
+	# NEGATIVE ANGLE OF ASTEROID TRAIL WRT HOME FRAME			
+	angle       = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
+	# IMG ROTATED TO ASTEROID TRAIL IS VERTICAL
+	img_rotated = rotate(img, angle)
 
-		for f in file_names:
-			# if '06o13' not in f: continue
-			try:
-				file = fits.open(f)
-				print(f)
-			except Exception as e:
-				print(f)
-				continue
+	ast_trail_start  = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
+	ast_trail_end	 = np.array(point_rotation(trail_end  [0], trail_end  [1], angle, img, img_rotated), dtype=int)
+	ast_trail_length = ast_trail_end[1] - ast_trail_start[1]
 
-			# if  ('1938060o04.flt' not in f and '1938061o04.flt' not in f) : continue
+	# DOING TRAIL SPREAD TO GET FIRST APPROX FOR FWHM
+	trail_spread, trail_spread_covs, trail_width = trail_spread_function(img_rotated, ast_trail_start, ast_trail_end, display=False)
+	fwhm = int(trail_spread[0] * 2.355 + .5)
+	# correcting trail start/end
+	centroid_deviation  = trail_spread[1] - trail_width # if negative, trail is to the left, if positive, trail to right
+	ast_trail_start[0] += int(centroid_deviation+.5)
+	ast_trail_end  [0] += int(centroid_deviation+.5)
 
-			output_for_bryce = f'{f[:-4]}/'
-			if not isdir(output_for_bryce):
-				os.mkdir(output_for_bryce)
+	trail_centroid = np.array([ast_trail_start[0], np.mean([ast_trail_start[1], ast_trail_end[1]])])
 
+	# ASTEROID TRAIL FITTING
+	img_rot     = img_rotated
+	centroid    = trail_centroid
+	# box_x_width = 30
+	# box_y_width = ast_trail_length * 2
+
+	p0           = np.array([trail_spread[0], ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
+
+	# TRAIL FITTING ATTEMPT WITH scipy.optimize.least_squares()
+	# fit          = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
+
+	# img_slice = img_rotated[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
+
+	# TRAIL FITTING WITH scipy.optimize.curve_fit()
+	# ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rotated, img_slice.flatten(), p0=p0)	
+	#  display_streak(img_rot, 10, 300, 90, b, x_0, y_0, width=2)
+
+
+	# img_view = trail_view( img_rot, *p0 )
+
+	# img_view = 
+
+
+
+	ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rot, img_rot.flatten(), p0=p0)	
+
+	ast_flux = flux
+	
+	print('asteroid p0[  s , L , a , b , x_0 , y_0 ]: '            , p0)
+	print('asteroid fit parameters [ s , L , a , b , x_0 , y_0 ]: ', ast_param)
+	print('parameter uncertainties: '                              , np.sqrt(np.diag(ast_param_cov)))
 
-			hdr = file[0].header
-			img = file[0].data
+	w = WCS ( hdr )
+	# ast_ra_dec = utils.pixel_to_skycoord ( ast_param[-2] , ast_param[-1] , w )
 
-			exp_time   = float(hdr['EXPMEAS'])
-			gain       = float(hdr['GAIN'])
-			rd_noise   = float(hdr['RDNOISE'])
-			# obs_filter = float(hdr['FILTE'])
+	# header = 'id ra dec s L A b x y a flux'
+	# to_write = np.array ( [0 , ast_ra_dec.ra.deg , ast_ra_dec.dec.deg , ast_param[0] , ast_param[1] , ast_param[2] , ast_param[3] , ast_param[4] , ast_param[5] , angle , ast_flux ] )
+	# np.savetxt(f'{output_for_bryce}target_params.dat' , to_write , header=header)
+	# if True: continue
 
-			# object id from directory name --> string splicing
-			obj_id = f.split('_')
-			obj_id = obj_id[0][2:] + ' ' + obj_id[1]
+	ast_fwhm			  = ast_param[0] * 2.355
+	ast_trail_length	  = ast_param[1]
 
-			obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
-			
-			try:
-				obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
-				trail_start = np.array(obj[-4:-2], dtype=int)
-				trail_end	= np.array(obj[-2:], dtype=int)
-				start_time  = float(obj[6])
-			except Exception as e:
-				# print(f,obj[-4:-2],obj[-2:])
-				# plt.close()
-				continue
+	ast_height_correction = - int( ast_fwhm )
+	
+	trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
 
-			# global variable flux to capture the total flux of the trail
-			flux = 0
+	ast_trail_start = np.array([trail_centroid[0] , trail_centroid[1] - ast_trail_length/2 ])
+	ast_trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + ast_trail_length/2 ])
 
-			# NEGATIVE ANGLE OF ASTEROID TRAIL WRT HOME FRAME			
-			angle       = -1*np.arctan2(trail_end[0]-trail_start[0], trail_end[1]-trail_start[1]) * 180/np.pi
-			# IMG ROTATED TO ASTEROID TRAIL IS VERTICAL
-			img_rotated = rotate(img, angle)
+	obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, obj_width=2, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
+	
+	print( 'asteroid trail length: ', len(obj_minus_sky) )
 
-			ast_trail_start  = np.array(point_rotation(trail_start[0], trail_start[1], angle, img, img_rotated), dtype=int)
-			ast_trail_end	 = np.array(point_rotation(trail_end  [0], trail_end  [1], angle, img, img_rotated), dtype=int)
-			ast_trail_length = ast_trail_end[1] - ast_trail_start[1]
+	# dt = 60 * ast_height_correction / ast_trail_length
 
-			# DOING TRAIL SPREAD TO GET FIRST APPROX FOR FWHM
-			trail_spread, trail_spread_covs, trail_width = trail_spread_function(img_rotated, ast_trail_start, ast_trail_end, display=False)
-			fwhm = int(trail_spread[0] * 2.355 + .5)
-			# correcting trail start/end
-			centroid_deviation  = trail_spread[1] - trail_width # if negative, trail is to the left, if positive, trail to right
-			ast_trail_start[0] += int(centroid_deviation+.5)
-			ast_trail_end  [0] += int(centroid_deviation+.5)
+	x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(obj_minus_sky))
+	to_write = np.array ( [x , obj_minus_sky , sigma_row] )
+	np.savetxt(f'{output_for_bryce}lightcurve_uncorrected_asteroid.dat' , to_write )
+	# if True: continue
 
-			trail_centroid = np.array([ast_trail_start[0], np.mean([ast_trail_start[1], ast_trail_end[1]])])
 
-			# ASTEROID TRAIL FITTING
-			img_rot     = img_rotated
-			centroid    = trail_centroid
-			# box_x_width = 30
-			# box_y_width = ast_trail_length * 2
-
-			p0           = np.array([trail_spread[0], ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
-
-			# TRAIL FITTING ATTEMPT WITH scipy.optimize.least_squares()
-			# fit          = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
-
-			# img_slice = img_rotated[int(centroid[1] - box_y_width/2 + .5):int(centroid[1] + box_y_width/2 + .5) , int(centroid[0] - box_x_width/2 + .5):int(centroid[0] + box_x_width/2 + .5)]
-
-			# TRAIL FITTING WITH scipy.optimize.curve_fit()
-			# ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rotated, img_slice.flatten(), p0=p0)	
-			#  display_streak(img_rot, 10, 300, 90, b, x_0, y_0, width=2)
-
-
-			# img_view = trail_view( img_rot, *p0 )
-
-			# img_view = 
-
-
-
-			ast_param , ast_param_cov = curve_fit(trail_model_2d, img_rot, img_rot.flatten(), p0=p0)	
-
-			ast_flux = flux
-			
-			print('asteroid p0[  s , L , a , b , x_0 , y_0 ]: '            , p0)
-			print('asteroid fit parameters [ s , L , a , b , x_0 , y_0 ]: ', ast_param)
-			print('parameter uncertainties: '                              , np.sqrt(np.diag(ast_param_cov)))
-
-			w = WCS ( hdr )
-			# ast_ra_dec = utils.pixel_to_skycoord ( ast_param[-2] , ast_param[-1] , w )
-
-			# header = 'id ra dec s L A b x y a flux'
-			# to_write = np.array ( [0 , ast_ra_dec.ra.deg , ast_ra_dec.dec.deg , ast_param[0] , ast_param[1] , ast_param[2] , ast_param[3] , ast_param[4] , ast_param[5] , angle , ast_flux ] )
-			# np.savetxt(f'{output_for_bryce}target_params.dat' , to_write , header=header)
-			# if True: continue
-
-			ast_fwhm			  = ast_param[0] * 2.355
-			ast_trail_length	  = ast_param[1]
-
-			ast_height_correction = - int( ast_fwhm )
-			
-			trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
-
-			ast_trail_start = np.array([trail_centroid[0] , trail_centroid[1] - ast_trail_length/2 ])
-			ast_trail_end   = np.array([trail_centroid[0] , trail_centroid[1] + ast_trail_length/2 ])
-
-			obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, obj_width=2, fwhm=ast_fwhm, b=None, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise)
-			
-			print( 'asteroid trail length: ', len(obj_minus_sky) )
-
-			# dt = 60 * ast_height_correction / ast_trail_length
-
-			x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(obj_minus_sky))
-			to_write = np.array ( [x , obj_minus_sky , sigma_row] )
-			np.savetxt(f'{output_for_bryce}lightcurve_uncorrected_asteroid.dat' , to_write )
-			# if True: continue
-
-
-			# source extractor !!
-			# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-			try:
-				se_index = [x for x in se_files if (f.split('/')[1] in x and f.split("/")[2].split(".")[0] in x)][0]
-			except Exception as e:
-				print(e)
-				continue
-
-			sex_output = np.loadtxt(se_index, skiprows=9)
-			print('SExtractor found stars: ', sex_output.shape[0])
-			star_x = sex_output[:,5]
-			star_y = sex_output[:,6]
-
-			# dist_to_asteroid = []
-			dist_to_asteroid = ( (star_x - trail_centroid[0]) ** 2 + (star_y - trail_centroid[1]) **2 ) **.5 
-
-			dist_sorted = np.argsort(dist_to_asteroid)
-
-			star_x      = star_x[dist_sorted]
-			star_y      = star_y[dist_sorted]
-
-			# filtering bad stars from sextractor
-			bad_stars = np.where((star_x < ast_trail_length) | (star_x > img.shape[1] - ast_trail_length) | (star_y < ast_trail_length) | (star_y > img.shape[0]-ast_trail_length)) # too close to edge
-			bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too
-			# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
-			print('filter on sextractor', len(bad_stars))
-			star_x     = np.delete(star_x, bad_stars, 0)
-			star_y     = np.delete(star_y, bad_stars, 0)
-			
-			l = float(l_from_input)
-			a = float(a_from_input)
-
-			if len(obj_minus_sky) > l: 
-				rebin = True
-			
-			cheats_on = False
-
-			try:
-				# star parametsrs
-				cheat_codes = np.loadtxt(f'{f[:-4]}_params.txt')
-				cheats_on   = True
-			except Exception as e:
-				print('Invalid cheat code: ', e, cheats_on)
-			
-			stars        = []
-			trail_starts = []
-			trail_ends   = []
-			residuals    = []
-			row_errs     = []
-			row_flux     = []
-			centroids    = []
-
-			failed_log   = []
-			norms        = []
-			dt 			 = []
-
-			rebin = False
-
-			i = 0
-
-			img_star_rotated = rotate(img, a)
-
-			while True:
-
-				if i >= len(star_x) or i == 50: break
-				# if i == 3: break
-
-				
-				# img_star_rotated = img
-
-				# setting global variables for trail fitting
-				img_rot  = img_star_rotated 
-				# img_rot = img
-				centroid = star_x[i], star_y[i]
-				centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
-
-				str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
-				param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
-				
-				try:
-					str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
-				except Exception as e:
-					print(e , f' LOL star fit failed , skipping trail number {i} for filname : {f}  ')
-					failed_log.append(str_p0)
-					continue
-
-				residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
-
-				print('star parameters: '     , str_param)
-				print('param uncertainties:, ', np.sqrt(np.diag(star_param_cov)))
-					
-				s, L, A, b, x_0, y_0 = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
-
-				x_0_ , y_0_ = reverse_rotation(x_0 , y_0 , a , img)
-				angle_from_initial = a - (A-90)
-
-				# capturing that global variable after the trail fit has converged
-				str_flux = flux
-
-				img_star_rotated = rotate(img, angle_from_initial)
-				x_0_ , y_0_ = point_rotation(x_0_ , y_0_ , angle_from_initial , img , img_star_rotated )
-				
-				# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
-				# x_0, y_0 = point_rotation( x_0 , y_0 , A , img , img_star_rotated )
-
-				star_trail_start = np.array([x_0_, y_0_ - L/2 ])
-				star_trail_end   = np.array([x_0_, y_0_ + L/2 ])
-
-
-				fwhm = s * 2.355
-				st_height_correction = int(ast_height_correction * L/ast_trail_length ) 
-				# st_height_correction = - int(fwhm/2) - 1
- 
-				if not rebin:  # star lightcurve longer than asteroid
-					str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
-				else:     # star lightcurve shorter than asteroid -- no binning step here, we will rebin the asteroid lightcurve 
-					str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction)
-
-				norm = np.median(str_minus_sky)
-
-				centroids   .append(reverse_rotation ( x_0_ , y_0_ , angle_from_initial , img ) )
-				norms       .append(norm)
-				row_flux    .append(str_minus_sky /norm)
-				row_errs    .append(sigma_row_star/norm)
-				trail_starts.append(star_trail_start)
-				trail_ends  .append(star_trail_end  )
-				residuals   .append(residual)
-				stars       .append(np.hstack((str_param, a, flux)))
-
-				dt          .append(60 * st_height_correction / L)
-
-				# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
-
-				to_write = np.array ( [ np.linspace( start_time , start_time + exp_time/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
-
-				np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
-
-				print(' ')
-				i+=1
-				
-			row_flux = np.array(row_flux)
-			row_errs = np.array(row_errs)
-
-			stars 		 = np.array(stars)
-			residuals    = np.array(residuals)
-			trail_starts = np.array(trail_starts)
-			trail_ends   = np.array(trail_ends)
-			norms 		 = np.array(norms)
-			dt 			 = np.array(dt)
-			centroids    = np.array(centroids)
-
-			print('initially, ', stars.shape[0])
-
-			s_std        = np.std(stars[:,0])
-			length_std   = np.std(stars[:,1])
-			angle_std    = np.std(stars[:,2])
-
-			s_mean  	 = np.mean(stars[:,0])
-			length_mean  = np.mean(stars[:,1])
-			angle_mean   = np.mean(stars[:,2])
-
-			# throwing away outliers, ig. 
-			# TODO: fit more stars and increase threshold? 
-			threshold = 2 # sigmas
-
-			star_filter  = np.where( (stars[:,0]<=s_mean+threshold*s_std) & (stars[:,0]>=s_mean-threshold*s_std) & (stars[:,1]<=length_mean+threshold*length_std) & (stars[:,1]>=length_mean-threshold*length_std) & (stars[:,2]<=angle_mean+threshold*angle_std) & (stars[:,2]>=angle_mean-threshold*angle_std) )
-			stars        = stars       [star_filter]
-			trail_starts = trail_starts[star_filter]
-			trail_ends   = trail_ends  [star_filter]
-			residuals    = residuals   [star_filter]
-			# total_flux   = total_flux  [star_filter]
-			norms        = norms 	   [star_filter]
-			centroids    = centroids   [star_filter]
-
-			row_flux = row_flux[star_filter]
-			row_errs = row_errs[star_filter]
-			dt 		 = dt 	   [star_filter]
-
-			print('filtering: ', stars.shape[0])
-
-			for ii in range( len(row_flux) ):
-				n       = norms[ii]
-				lc_flux = row_flux[ii] * n
-				lc_errs = row_errs[ii] * n
-
-				T  = np.linspace( start_time  , start_time + exp_time/(60*60*24) , len(lc_flux))
-				to_write = np.array ( [T , lc_flux , lc_errs ] ).T
-
-				np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write , header='jd flux flux_err' )
-
-			# sorting by residuals from biiiig fit
-			# res_filter   = np.argsort(residuals)
-			# residuals    = residuals   [res_filter]
-			# stars        = stars       [res_filter]
-			# trail_starts = trail_starts[res_filter]
-			# trail_ends   = trail_ends  [res_filter]
-			# total_flux   = total_flux  [res_filter]
-
-			
-
-			ra_dec = utils.pixel_to_skycoord ( centroids[:,0] , centroids[:,1] , w )
-			to_write = np.hstack([ np.array([np.arange(len(centroids)) , ra_dec.ra.deg , ra_dec.dec.deg]).T , stars , centroids ])
-			print(to_write.shape)
-			header = 'id ra dec s L A b x y a flux x_0 y_0'
-			np.savetxt(f'{output_for_bryce}star_params.dat' , to_write , header=header)
-
-			# row_flux = row_flux[res_filter][:10]
-			row_flux = row_flux[:10]
-
-			print('row_sums_smooth shape: ', row_flux.shape)
-
-			row_avgs = np.nanmean(row_flux, axis=0)
-
-			avgs_err = np.sum(row_errs ** 2, axis=0) ** .5 * .1
+	# source extractor !!
+	# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	try:
+		se_index = [x for x in se_files if (f.split('/')[1] in x and f.split("/")[2].split(".")[0] in x)][0]
+	except Exception as e:
+		print(e)
+		sys.exit()
+
+	sex_output = np.loadtxt(se_index, skiprows=9)
+	print('SExtractor found stars: ', sex_output.shape[0])
+	star_x = sex_output[:,5]
+	star_y = sex_output[:,6]
+
+	# dist_to_asteroid = []
+	dist_to_asteroid = ( (star_x - trail_centroid[0]) ** 2 + (star_y - trail_centroid[1]) **2 ) **.5 
+
+	dist_sorted = np.argsort(dist_to_asteroid)
+
+	star_x      = star_x[dist_sorted]
+	star_y      = star_y[dist_sorted]
+
+	# filtering bad stars from sextractor
+	bad_stars = np.where((star_x < ast_trail_length) | (star_x > img.shape[1] - ast_trail_length) | (star_y < ast_trail_length) | (star_y > img.shape[0]-ast_trail_length)) # too close to edge
+	bad_stars = np.append(bad_stars, 0) # want to get rid of asteroid too
+	# bad_stars = np.append(bad_stars, np.where((star_x<trail_start[0]+fwhm) & (star_x>trail_start[0]-fwhm) & (star_y<trail_end[1]) & (star_y>trail_start[1]))) # want to get rid of asteroid too
+	print('filter on sextractor', len(bad_stars))
+	star_x     = np.delete(star_x, bad_stars, 0)
+	star_y     = np.delete(star_y, bad_stars, 0)
+	
+	l = float(l_from_input)
+	a = float(a_from_input)
+
+	if len(obj_minus_sky) > l: 
+		rebin = True
+	
+	cheats_on = False
+
+	try:
+		# star parametsrs
+		cheat_codes = np.loadtxt(f'{f[:-4]}_params.txt')
+		cheats_on   = True
+	except Exception as e:
+		print('Invalid cheat code: ', e, cheats_on)
+	
+	stars        = []
+	trail_starts = []
+	trail_ends   = []
+	residuals    = []
+	row_errs     = []
+	row_flux     = []
+	centroids    = []
+
+	failed_log   = []
+	norms        = []
+	dt 			 = []
+
+	rebin = False
+
+	i = 0
+
+	img_star_rotated = rotate(img, a)
+
+	while True:
+
+		if i >= len(star_x) or i == 50: break
+		# if i == 3: break
+
 		
-			# norm = np.nanmean(row_avgs)
-			# row_avgs/=norm
+		# img_star_rotated = img
 
-			#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
+		# setting global variables for trail fitting
+		img_rot  = img_star_rotated 
+		# img_rot = img
+		centroid = star_x[i], star_y[i]
+		centroid = point_rotation( centroid[0] , centroid[1] , a , img , img_star_rotated )
 
-			if rebin:
-				obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise) 
+		str_p0       = np.array([3, l, 90, np.mean(sky_row_avg), centroid[0], centroid[1]])
+		param_bounds = ([1, l/2, -180, 0, 0, 0], [10, l*5, 180, 2e3, img_star_rotated.shape[1], img_star_rotated.shape[0] ])
+		
+		try:
+			str_param, star_param_cov = curve_fit(trail_model_2d, img_star_rotated, img_star_rotated.flatten(), p0=str_p0)
+		except Exception as e:
+			print(e , f' LOL star fit failed , skipping trail number {i} for filname : {f}  ')
+			failed_log.append(str_p0)
+			continue
+
+		residual = np.sum(( trail_model_2d(0, *str_param) - img_star_rotated.flatten() ) ** 2 ) ** .5
+
+		print('star parameters: '     , str_param)
+		print('param uncertainties:, ', np.sqrt(np.diag(star_param_cov)))
+			
+		s, L, A, b, x_0, y_0 = str_param[0], str_param[1], str_param[2], str_param[3], str_param[4], str_param[5]
+
+		x_0_ , y_0_ = reverse_rotation(x_0 , y_0 , a , img)
+		angle_from_initial = a - (A-90)
+
+		# capturing that global variable after the trail fit has converged
+		str_flux = flux
+
+		img_star_rotated = rotate(img, angle_from_initial)
+		x_0_ , y_0_ = point_rotation(x_0_ , y_0_ , angle_from_initial , img , img_star_rotated )
+		
+		# keeping it rotated to star's reference, so don't actually need to go back to asteroid 
+		# x_0, y_0 = point_rotation( x_0 , y_0 , A , img , img_star_rotated )
+
+		star_trail_start = np.array([x_0_, y_0_ - L/2 ])
+		star_trail_end   = np.array([x_0_, y_0_ + L/2 ])
 
 
-			sky_corrected_lightcurve = obj_minus_sky / row_avgs
+		fwhm = s * 2.355
+		st_height_correction = int(ast_height_correction * L/ast_trail_length ) 
+		# st_height_correction = - int(fwhm/2) - 1
 
-			sky_corrected_errs = (sigma_row / row_avgs) ** 2 + (avgs_err * obj_minus_sky / row_avgs**2) ** 2
-			sky_corrected_errs = sky_corrected_errs ** .5
+		if not rebin:  # star lightcurve longer than asteroid
+			str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction, binning=len(obj_minus_sky))
+		else:     # star lightcurve shorter than asteroid -- no binning step here, we will rebin the asteroid lightcurve 
+			str_minus_sky, sigma_row_star, str_sky_avg = take_lightcurve(img_star_rotated, star_trail_start, star_trail_end, fwhm=fwhm, display=False, err=True, gain=gain, rd_noise=rd_noise, height_correction=st_height_correction)
 
-			dt = 60 * ast_height_correction / ast_trail_length
+		norm = np.median(str_minus_sky)
 
-			x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(sky_corrected_lightcurve))
+		centroids   .append(reverse_rotation ( x_0_ , y_0_ , angle_from_initial , img ) )
+		norms       .append(norm)
+		row_flux    .append(str_minus_sky /norm)
+		row_errs    .append(sigma_row_star/norm)
+		trail_starts.append(star_trail_start)
+		trail_ends  .append(star_trail_end  )
+		residuals   .append(residual)
+		stars       .append(np.hstack((str_param, a, flux)))
 
-			directory_name = d.split('/')[1]
+		dt          .append(60 * st_height_correction / L)
 
-			# if write_output == 'True':
-				# np.savetxt(f'{f[:-4]}_params.txt'    , stars )
-				# np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
-			np.savetxt(f'{output_for_bryce}lightcurve_asteroid.dat', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
+		# start_time + dt/(60*60*24) , start_time + exp_time/(60*60*24) - dt/(60*60*24) 
+
+		to_write = np.array ( [ np.linspace( start_time , start_time + exp_time/(60*60*24) , len(str_minus_sky) ) , str_minus_sky , sigma_row_star] ).T
+
+		np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write )
+
+		print(' ')
+		i+=1
+		
+	row_flux = np.array(row_flux)
+	row_errs = np.array(row_errs)
+
+	stars 		 = np.array(stars)
+	residuals    = np.array(residuals)
+	trail_starts = np.array(trail_starts)
+	trail_ends   = np.array(trail_ends)
+	norms 		 = np.array(norms)
+	dt 			 = np.array(dt)
+	centroids    = np.array(centroids)
+
+	print('initially, ', stars.shape[0])
+
+	s_std        = np.std(stars[:,0])
+	length_std   = np.std(stars[:,1])
+	angle_std    = np.std(stars[:,2])
+
+	s_mean  	 = np.mean(stars[:,0])
+	length_mean  = np.mean(stars[:,1])
+	angle_mean   = np.mean(stars[:,2])
+
+	# throwing away outliers, ig. 
+	# TODO: fit more stars and increase threshold? 
+	threshold = 2 # sigmas
+
+	star_filter  = np.where( (stars[:,0]<=s_mean+threshold*s_std) & (stars[:,0]>=s_mean-threshold*s_std) & (stars[:,1]<=length_mean+threshold*length_std) & (stars[:,1]>=length_mean-threshold*length_std) & (stars[:,2]<=angle_mean+threshold*angle_std) & (stars[:,2]>=angle_mean-threshold*angle_std) )
+	stars        = stars       [star_filter]
+	trail_starts = trail_starts[star_filter]
+	trail_ends   = trail_ends  [star_filter]
+	residuals    = residuals   [star_filter]
+	# total_flux   = total_flux  [star_filter]
+	norms        = norms 	   [star_filter]
+	centroids    = centroids   [star_filter]
+
+	row_flux = row_flux[star_filter]
+	row_errs = row_errs[star_filter]
+	dt 		 = dt 	   [star_filter]
+
+	print('filtering: ', stars.shape[0])
+
+	for ii in range( len(row_flux) ):
+		n       = norms[ii]
+		lc_flux = row_flux[ii] * n
+		lc_errs = row_errs[ii] * n
+
+		T  = np.linspace( start_time  , start_time + exp_time/(60*60*24) , len(lc_flux))
+		to_write = np.array ( [T , lc_flux , lc_errs ] ).T
+
+		np.savetxt ( f'{output_for_bryce}lightcurve_star_{str(i)}.dat' , to_write , header='jd flux flux_err' )
+
+	# sorting by residuals from biiiig fit
+	# res_filter   = np.argsort(residuals)
+	# residuals    = residuals   [res_filter]
+	# stars        = stars       [res_filter]
+	# trail_starts = trail_starts[res_filter]
+	# trail_ends   = trail_ends  [res_filter]
+	# total_flux   = total_flux  [res_filter]
+
+	
+
+	ra_dec = utils.pixel_to_skycoord ( centroids[:,0] , centroids[:,1] , w )
+	to_write = np.hstack([ np.array([np.arange(len(centroids)) , ra_dec.ra.deg , ra_dec.dec.deg]).T , stars , centroids ])
+	print(to_write.shape)
+	header = 'id ra dec s L A b x y a flux x_0 y_0'
+	np.savetxt(f'{output_for_bryce}star_params.dat' , to_write , header=header)
+
+	# row_flux = row_flux[res_filter][:10]
+	row_flux = row_flux[:10]
+
+	print('row_sums_smooth shape: ', row_flux.shape)
+
+	row_avgs = np.nanmean(row_flux, axis=0)
+
+	avgs_err = np.sum(row_errs ** 2, axis=0) ** .5 * .1
+
+	# norm = np.nanmean(row_avgs)
+	# row_avgs/=norm
+
+	#sky_corrected_lightcurve = obj_minus_sky[ast_start:ast_end] / row_avgs_smooth # this is the actual sky correction 
+
+	if rebin:
+		obj_minus_sky, sigma_row, sky_row_avg = take_lightcurve(img_rotated, ast_trail_start, ast_trail_end, fwhm=ast_fwhm, height_correction=ast_height_correction, display=False, err=True, gain=gain, rd_noise=rd_noise) 
 
 
-			print()
-			file.close()
+	sky_corrected_lightcurve = obj_minus_sky / row_avgs
+
+	sky_corrected_errs = (sigma_row / row_avgs) ** 2 + (avgs_err * obj_minus_sky / row_avgs**2) ** 2
+	sky_corrected_errs = sky_corrected_errs ** .5
+
+	dt = 60 * ast_height_correction / ast_trail_length
+
+	x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(sky_corrected_lightcurve))
+
+	directory_name = d.split('/')[1]
+
+	# if write_output == 'True':
+		# np.savetxt(f'{f[:-4]}_params.txt'    , stars )
+		# np.savetxt(f'{f[:-4]}_lightcurve.txt', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
+	np.savetxt(f'{output_for_bryce}lightcurve_asteroid.dat', np.array([ x , sky_corrected_lightcurve , sky_corrected_errs ]).T )
+
+
+	print()
+	file.close()
 			# if True: break
 
 			# ax[0].legend()
