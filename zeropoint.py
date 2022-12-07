@@ -67,7 +67,7 @@ for d in dir_names:
 
 			if not 'ref' in f: continue
 			
-			if not '1o' in f: continue
+			if not '15o' in f: continue
 
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
@@ -151,7 +151,7 @@ for d in dir_names:
 
 	ax.plot (mags , line_one(mags , *param_1) , label=f'y=x + {param_1[0]:.1f}' , color='red')
 
-	plt.show()
+	# plt.show()
 
 	print(d+ img_name+'.zp')
 

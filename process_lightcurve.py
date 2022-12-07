@@ -11,6 +11,8 @@ from magic_star import point_rotation, reverse_rotation
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 from astroquery.jplhorizons import Horizons
+from PyAstronomy.pyTiming import pyPeriod
+
 
 def line ( x , m , b): return m * x + b
 
@@ -33,15 +35,17 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 r_mags = []
 r_errs = []
+r_time = []
 g_mags = []
 g_errs = []
+g_time = []
 i_mags = []
 i_errs = []
-
+i_time = []
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'GE1' in d: continue
+	if not 'EV84' in d: continue
 
 	times , mags , mags_err  = [] , [] , [] 
 	fig_combined, ax_combined = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -85,22 +89,52 @@ for d in dir_names:
 			ax.errorbar ( time - np.min(time) , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 
 			ax.plot ( time - np.min(time) , line(time, *param) , color='red' )
+			ax.invert_yaxis()
+			ax.set_xlabel('Seconds from start')
+			ax.set_ylabel('Instrumental Magnitude')
+			plt.tight_layout()
 
 			corr_mag = mag - line(time, *param) 
 			# corr_err = mag_err - line(time, *param)
 			corr_err = mag_err
 
+			seconds_from_start = (time - np.min(time)) * 24 * 3600
+
 			ax.errorbar ( time - np.min(time) , corr_mag  , corr_err , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+			
+			fapLevels = np.array([ 0.35, 0.05, 0.005])
+			clp = pyPeriod.Gls(( seconds_from_start , corr_mag , corr_err )  , verbose=False )
+			plevel = clp.powerLevel(fapLevels)
+
+			fig_p , ax_p = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+			ax_p.plot( 1/clp.freq  , clp.power, color='grey' , label='PyAstronomy GLs')
+			# ax_p.plot( period , power )
+			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
+			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+
+			ax_p.legend()
+			ax_p.set_xlabel('Period [s]')
+			ax_p.set_xlim([0 , 60])
+			# ax_p.set_xscale('log')
+			ax_p.set_ylim([0 , 1])
+			plt.tight_layout()
+			# plt.savefig(join(ld,img_name)+'/periodogram_figs/periodogram.png')
+
+			print( f'PyAstronomy GLs best period: {1/clp.freq[np.argmax(clp.power)]}s'  )
 
 			if img_filter == 'r': 
 				r_mags.append(mag)
 				r_errs.append(mag_err)
+				r_time.append(time)
 			elif img_filter == 'g':
 				g_mags.append(mag)
 				g_errs.append(mag_err)
+				g_time.append(time)
 			elif img_filter == 'i':
 				i_mags.append(mag)
 				i_errs.append(mag_err)
+				i_time.append(time)
 
 			np.savetxt ( join(ld,img_name)+'_flat_lightcurve.txt' , np.vstack([time , corr_mag , corr_err ]).T )
 
@@ -108,16 +142,21 @@ for d in dir_names:
 			mags.append(corr_mag)
 			mags_err.append(corr_err)
 
+			print()
+
 	times = np.hstack(times) 
 	mags  = np.hstack(mags)
 	mags_err  = np.hstack(mags_err)
 
 	r_mags = np.hstack(r_mags)
 	r_errs = np.hstack(r_errs)
+	r_time = np.hstack(r_time)
 	g_mags = np.hstack(g_mags)
 	g_errs = np.hstack(g_errs)
+	g_time = np.hstack(g_time)
 	i_mags = np.hstack(i_mags)
 	i_errs = np.hstack(i_errs)
+	i_time = np.hstack(i_time)
 
 	t_0 = np.min(times)
 
@@ -127,7 +166,100 @@ for d in dir_names:
 	print(f'g-r={g_mean-r_mean:.2f}')
 	print(f'r-i={r_mean-i_mean:.2f}')
 
+	seconds_from_start = (times - t_0)*24*3600
+
 	fig1 , ax1 = plt.subplots( figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
-	ax1.errorbar((times - t_0)*24*3600 , mags + r_mean, mags_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+	ax1.errorbar( seconds_from_start , mags + r_mean, mags_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 	np.savetxt ( d + 'flat_norm_timeseries.txt' , np.vstack ([ times , mags + r_mean , mags_err]).T , header=' '.join(lc_dirs) )
+
+
+	fapLevels = np.array([ 0.35, 0.05, 0.005])
+	clp = pyPeriod.Gls(( seconds_from_start , mags + r_mean , mags_err )  , verbose=False )
+	plevel = clp.powerLevel(fapLevels)
+
+	fig_a , ax_a = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+	ax_a.plot( 1/clp.freq  , clp.power, color='grey' , label='PyAstronomy GLs')
+	# ax_p.plot( period , power )
+	ax_a.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
+	ax_a.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+	ax_a.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+
+	ax_a.set_title('combined LS')
+	ax_a.legend()
+	ax_a.set_xlabel('Period [s]')
+	ax_a.set_xlim([min(1/clp.freq) , max(1/clp.freq)])
+	ax_a.set_xscale('log')
+	ax_a.set_ylim([0 , 1])
+	plt.tight_layout()
+	print( f'PyAstronomy GLs best period: {1/clp.freq[np.argmax(clp.power)]}s'  )
+
+
+
+	clp_r    = pyPeriod.Gls(( (r_time-min(r_time))*24*3600 , r_mags + r_mean , r_errs )  , verbose=False )
+	plevel_r = clp.powerLevel(fapLevels)
+
+	fig_r , ax_r = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+	ax_r.plot( 1/clp_r.freq  , clp_r.power, color='grey' , label='PyAstronomy GLs')
+	# ax_p.plot( period , power )
+	ax_r.plot([min(1/clp_r.freq), max(1/clp_r.freq)], [plevel_r[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
+	ax_r.plot([min(1/clp_r.freq), max(1/clp_r.freq)], [plevel_r[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+	ax_r.plot([min(1/clp_r.freq), max(1/clp_r.freq)], [plevel_r[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+
+	ax_r.set_title('r LS')
+	ax_r.legend()
+	ax_r.set_xlabel('Period [s]')
+	ax_r.set_xlim([min(1/clp_r.freq) , max(1/clp_r.freq)])
+	ax_r.set_xscale('log')
+	ax_r.set_ylim([0 , 1])
+	plt.tight_layout()
+	print( f'PyAstronomy GLs best period: {1/clp_r.freq[np.argmax(clp_r.power)]}s for r'  )
+
+	clp_i    = pyPeriod.Gls(( (i_time-min(i_time))*24*3600 , i_mags + r_mean , i_errs )  , verbose=False )
+	plevel_i = clp.powerLevel(fapLevels)
+
+	fig_i , ax_i = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+	ax_i.plot( 1/clp_i.freq  , clp_i.power, color='grey' , label='PyAstronomy GLs')
+	# ax_p.plot( period , power )
+	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
+	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+
+	ax_i.set_title('i LS')
+	ax_i.legend()
+	ax_i.set_xlabel('Period [s]')
+	ax_i.set_xlim([min(1/clp_i.freq) , max(1/clp_i.freq)])
+	ax_i.set_xscale('log')
+	ax_i.set_ylim([0 , 1])
+	plt.tight_layout()
+	print( f'PyAstronomy GLs best period: {1/clp_i.freq[np.argmax(clp_i.power)]}s for i'  )
+
+
+	clp_g    = pyPeriod.Gls(( (g_time-min(g_time))*24*3600 , g_mags + r_mean , g_errs )  , verbose=False )
+	plevel_g = clp.powerLevel(fapLevels)
+
+	fig_g , ax_g = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+	ax_g.plot( 1/clp_g.freq  , clp_g.power, color='grey' , label='PyAstronomy GLs')
+	# ax_p.plot( period , power )
+	ax_g.plot([min(1/clp_g.freq), max(1/clp_g.freq)], [plevel_g[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
+	ax_g.plot([min(1/clp_g.freq), max(1/clp_g.freq)], [plevel_g[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+	ax_g.plot([min(1/clp_g.freq), max(1/clp_g.freq)], [plevel_g[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+
+	ax_g.set_title('g LS')
+	ax_g.legend()
+	ax_g.set_xlabel('Period [s]')
+	ax_g.set_xlim([min(1/clp_g.freq) , max(1/clp_g.freq)])
+	ax_g.set_xscale('log')
+	ax_g.set_ylim([0 , 1])
+	plt.tight_layout()
+	print( f'PyAstronomy GLs best period: {1/clp_g.freq[np.argmax(clp_g.power)]}s for g'  )
+
+
+
+
+	print()
+	# plt.savefig(join(ld,img_name)+'/periodogram_figs/periodogram.png')
+
+
+
+
 	plt.show()
