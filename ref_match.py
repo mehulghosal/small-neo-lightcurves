@@ -10,6 +10,7 @@ from astropy.wcs import WCS, utils
 from magic_star import point_rotation, reverse_rotation
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+import convert_ps1_to_sdss_functions as mag_convert
 
 def line( x , m , b): return m * x + b
 
@@ -56,7 +57,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('FF14' in f and '04o' in f): continue
+			if not ('EV84' in f ): continue
 			# if not '66o' in f: continue
 
 
@@ -207,11 +208,18 @@ for d in dir_names:
 
 			g_r_err = (g_err**2 + r_err**2) **.5
 			r_i_err = (i_err**2 + r_err**2) **.5
+
+			sdss_g , sdss_g_err = mag_convert.convert_ps1_g_to_sdss_g (g_mag , g_err , g_r , g_r_err )
+			sdss_r , sdss_r_err = mag_convert.convert_ps1_r_to_sdss_r (r_mag , r_err , g_r , g_r_err)
+			sdss_i , sdss_i_err = mag_convert.convert_ps1_i_to_sdss_i (i_mag , i_err , g_r , g_r_err)
+
+
 			# dont implement this fully just yet! i need more solar analogs lmfao
 			# color_filter = np.where( (g_r >= .35) & (g_r <= .5) & (r_i >= .05) & (r_i <= .15) )
 
 			# f7-->g7
-			color_filter = np.where( (g_r >= .35) & (g_r <= .55) )
+			# color_filter = np.where( (g_r >= .35) & (g_r <= .55) )
+			color_filter = np.where( (sdss_g-sdss_r >= .35) & (sdss_g-sdss_r <= .55) )
 
 			print( 'g-r colors: ' , g_r[color_filter] )
 			print( 'r-i colors: ' , r_i[color_filter] )
@@ -256,10 +264,11 @@ for d in dir_names:
 			plt.tight_layout()
 			print()
 
+			
 			output_name = '/'.join(f.split('/')[:-1]) + '/ref.cat'
 			header = f'id mag dmag g dg r dr i di //filter={hdr["FILTER"][0]} //zp={zp:.2f} +/- {zp_err:.2f}'
 
-			to_write = np.vstack([star_id[dist_filter] [ color_filter ] , instrumental_mag , instrumental_err , g_mag[color_filter] , g_err[color_filter] , r_mag[color_filter] , r_err[color_filter] , i_mag[color_filter] , i_err[color_filter] , ]).T
+			to_write = np.vstack([star_id[dist_filter] [ color_filter ] , instrumental_mag , instrumental_err , sdss_g[color_filter] , sdss_g_err[color_filter] , sdss_r[color_filter] , sdss_r_err[color_filter] , sdss_i[color_filter] , sdss_i_err[color_filter] , ]).T
 			# print(to_write)
 
 			np.savetxt (output_name , to_write , header=header , comments='')

@@ -67,7 +67,7 @@ for d in dir_names:
 
 			if not 'ref' in f: continue
 			
-			if not '15o' in f: continue
+			if not '1o' in f: continue
 
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
@@ -140,7 +140,7 @@ for d in dir_names:
 
 	ax.plot (mags , line_one(mags , *param) , label=f'y=x + {param[0]:.1f}' , color='blue')
 
-	s = 100
+	s = 200
 
 	outliers_filter = np.where( (ref_mag > line_one(mags , *param) - s*np.diag(param_cov)[0]**.5) & (ref_mag < line_one(mags , *param) + s*np.diag(param_cov)[0]**.5) )
 	# print(outliers_filter)

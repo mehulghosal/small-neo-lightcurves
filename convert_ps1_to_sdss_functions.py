@@ -1,3 +1,5 @@
+import numpy as np
+
 def convert_ps1_g_to_sdss_g(ps1_g, ps1_g_err, ps1_g_minus_r, ps1_g_minus_r_error):
     B_0, B_1, B_err = -0.012, -0.139, 0.007
     x = ps1_g_minus_r

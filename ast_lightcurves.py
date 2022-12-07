@@ -33,7 +33,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'EV84' in d: continue
+	if not 'GE1' in d: continue
 
 	times , mags , mags_err  = [] , [] , [] 
 	zps , zps_err = [] , []
@@ -82,8 +82,11 @@ for d in dir_names:
 			hdr = fits_file[0].header
 			img = fits_file[0].data
 
-			
-			t , flux , flux_err, _,_ = np.loadtxt(f , unpack=True)
+			try:
+				t , flux , flux_err, _ , _ = np.loadtxt(f , unpack=True)
+			except Exception as e:
+				print(e)
+				t , flux , flux_err = np.loadtxt(f , unpack=True)
 
 			# t -= t[0]
 			# t *= 24*3600
