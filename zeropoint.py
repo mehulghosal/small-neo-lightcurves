@@ -41,7 +41,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'EV84' in d: continue
+	if not 'EU84' in d: continue
 	
 	fig, ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 	mags , mags_err , ref_mag , ref_mag_err = [] , [] , [] , [] 
@@ -57,9 +57,6 @@ for d in dir_names:
 		# print(ld)
 
 		lc_files = [join(ld,f) for f in os.listdir(ld) if isfile(join(ld,f))]
-
-		# print( lc_files )
-
 		
 		# print(lc_files)
 
@@ -67,7 +64,9 @@ for d in dir_names:
 
 			if not 'ref' in f: continue
 			
-			if not '15o' in f: continue
+			if not '09o' in f: continue
+
+			# if '86on' in f : continue
 
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
@@ -142,14 +141,14 @@ for d in dir_names:
 
 	s = 200
 
-	outliers_filter = np.where( (ref_mag > line_one(mags , *param) - s*np.diag(param_cov)[0]**.5) & (ref_mag < line_one(mags , *param) + s*np.diag(param_cov)[0]**.5) )
-	# print(outliers_filter)
+	# outliers_filter = np.where( (ref_mag > line_one(mags , *param) - s*np.diag(param_cov)[0]**.5) & (ref_mag < line_one(mags , *param) + s*np.diag(param_cov)[0]**.5) )
+	# # print(outliers_filter)
 
-	ax.errorbar ( mags[outliers_filter] , ref_mag[outliers_filter] , ref_mag_err[outliers_filter] , mags_err[outliers_filter] , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
-	param_1 , param_cov_1 = curve_fit ( line_one , mags [outliers_filter], ref_mag[outliers_filter] , sigma=ref_mag_err[outliers_filter] , absolute_sigma=True )
-	print( 'line, outliers removed: ',  param[0] , np.diag(param_cov)[0]**.5)
+	# ax.errorbar ( mags[outliers_filter] , ref_mag[outliers_filter] , ref_mag_err[outliers_filter] , mags_err[outliers_filter] , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
+	# param_1 , param_cov_1 = curve_fit ( line_one , mags [outliers_filter], ref_mag[outliers_filter] , sigma=ref_mag_err[outliers_filter] , absolute_sigma=True )
+	# print( 'line, outliers removed: ',  param[0] , np.diag(param_cov)[0]**.5)
 
-	ax.plot (mags , line_one(mags , *param_1) , label=f'y=x + {param_1[0]:.1f}' , color='red')
+	# ax.plot (mags , line_one(mags , *param_1) , label=f'y=x + {param_1[0]:.1f}' , color='red')
 
 	# plt.show()
 

@@ -742,7 +742,7 @@ if __name__ == '__main__':
 	# box_x_width = 30
 	# box_y_width = ast_trail_length * 2
 
-	p0           = np.array([trail_spread[0], ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
+	p0           = np.array([4, ast_trail_length, 90, 200, trail_centroid[0], trail_centroid[1]])
 
 	# TRAIL FITTING ATTEMPT WITH scipy.optimize.least_squares()
 	# fit          = least_squares(residual, p0, loss='linear', ftol=0.05, xtol=0.05, gtol=0.05, bounds=param_bounds)
@@ -800,13 +800,8 @@ if __name__ == '__main__':
 
 	# source extractor !!
 	# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-	try:
-		se_index = [x for x in se_files if (f.split('/')[1] in x and f.split("/")[2].split(".")[0] in x)][0]
-	except Exception as e:
-		print(e)
-		sys.exit()
 
-	sex_output = np.loadtxt(se_index, skiprows=9)
+	sex_output = np.loadtxt ( output_for_bryce + 'sex.cat'  , skiprows=9 )
 	print('SExtractor found stars: ', sex_output.shape[0])
 	star_x = sex_output[:,5]
 	star_y = sex_output[:,6]

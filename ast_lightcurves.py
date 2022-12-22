@@ -33,7 +33,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'EV84' in d: continue
+	if not 'EU84' in d: continue
 
 	times , mags , mags_err  = [] , [] , [] 
 	zps , zps_err = [] , []
@@ -59,6 +59,7 @@ for d in dir_names:
 		for f in lc_files :
 
 			if not 'lightcurve_asteroid' in f: continue
+			# if '95o' in f: continue
 			
 			# if not ( '66' in f or '67' in f or '68' in f or '69' in f or '70o' in f or '71o' in f or '71o' in f)  : continue
 
@@ -92,15 +93,15 @@ for d in dir_names:
 			# t *= 24*3600
 
 
-			fig , ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-			ax.errorbar ( t , flux , flux_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
+			# fig , ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+			# ax.errorbar ( t , flux , flux_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
 			# ax.set_xlim(0,60)
 
 			mag = -2.5 * np.log10 ( flux )
-			mag_err = 1.0875 * flux_err / flux 
+			mag_err = np.abs(1.0875 * flux_err / flux )
 
-			fig_mag, ax_mag = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-			ax_mag.errorbar ( t , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+			# fig_mag, ax_mag = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+			# ax_mag.errorbar ( t , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 			# ax_mag.set_xlim(0,60)
 
 			zp , zp_err = np.loadtxt(d+ img_name+'.zp' , unpack=True)

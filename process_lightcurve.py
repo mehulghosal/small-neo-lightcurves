@@ -47,7 +47,7 @@ for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
 	if not 'EV84' in d: continue
 
-	times , mags , mags_err  = [] , [] , [] 
+	times , mags , mags_err, uncor  = [] , [] , [] , []
 	fig_combined, ax_combined = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 
 
@@ -85,37 +85,41 @@ for d in dir_names:
 			param , param_cov = curve_fit (line , time , mag , sigma=mag_err , absolute_sigma=True)
 			print(param)
 
-			fig, ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-			ax.errorbar ( time - np.min(time) , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+			seconds_from_start = (time - np.min(time)) * 24 * 3600
 
-			ax.plot ( time - np.min(time) , line(time, *param) , color='red' )
+			fig, ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+			ax.errorbar ( seconds_from_start , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+
+			# ax.plot ( time - np.min(time) , line(time, *param) , color='red' )
 			ax.invert_yaxis()
 			ax.set_xlabel('Seconds from start')
-			ax.set_ylabel('Instrumental Magnitude')
+			ax.set_ylabel('Calibrated Magnitude')
+			ax.set_xlim([-1 , 61])
 			plt.tight_layout()
 
 			corr_mag = mag - line(time, *param) 
 			# corr_err = mag_err - line(time, *param)
 			corr_err = mag_err
 
-			seconds_from_start = (time - np.min(time)) * 24 * 3600
-
-			ax.errorbar ( time - np.min(time) , corr_mag  , corr_err , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 			
-			fapLevels = np.array([ 0.35, 0.05, 0.005])
+
+			# ax.errorbar ( time - np.min(time) , corr_mag  , corr_err , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+			
+			fapLevels = np.array([ 0.32, 0.05, 0.005, 5e-5])
 			clp = pyPeriod.Gls(( seconds_from_start , corr_mag , corr_err )  , verbose=False )
 			plevel = clp.powerLevel(fapLevels)
 
 			fig_p , ax_p = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-			ax_p.plot( 1/clp.freq  , clp.power, color='grey' , label='PyAstronomy GLs')
+			ax_p.plot( 1/clp.freq  , clp.power, color='black' , label='PyAstronomy GLs')
 			# ax_p.plot( period , power )
 			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
-			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
-			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+			# ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[2]]*2, ':', c='black'  ,lw=3,label =r'$3\sigma$')
+			ax_p.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[3]]*2, '--', c='red'  ,lw=3,label =r'$5\sigma$')
 
 			ax_p.legend()
 			ax_p.set_xlabel('Period [s]')
-			ax_p.set_xlim([0 , 60])
+			ax_p.set_xlim([min(1/clp.freq) , 60])
 			# ax_p.set_xscale('log')
 			ax_p.set_ylim([0 , 1])
 			plt.tight_layout()
@@ -141,12 +145,14 @@ for d in dir_names:
 			times.append(time)
 			mags.append(corr_mag)
 			mags_err.append(corr_err)
+			uncor.append(mag)
 
 			print()
 
 	times = np.hstack(times) 
 	mags  = np.hstack(mags)
 	mags_err  = np.hstack(mags_err)
+	uncor = np.hstack(uncor)
 
 	r_mags = np.hstack(r_mags)
 	r_errs = np.hstack(r_errs)
@@ -168,6 +174,19 @@ for d in dir_names:
 
 	seconds_from_start = (times - t_0)*24*3600
 
+	fig_cal , ax_cal = plt.subplots( figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
+	ax_cal.errorbar( seconds_from_start , uncor, mags_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+	ax_cal.hlines(g_mean, 0, max(seconds_from_start) , colors='red' , linestyle='--' , label=f'g mean={g_mean:.2f}')
+	ax_cal.hlines(r_mean, 0, max(seconds_from_start) , colors='red' , linestyle=':' , label=f'r mean={r_mean:.2f}')
+	ax_cal.hlines(i_mean, 0, max(seconds_from_start) , colors='red' , linestyle='-.' , label=f'i mean={i_mean:.2f}')
+	ax_cal.legend()
+	ax_cal.set_xlim(-1,max(seconds_from_start)+1)
+	ax_cal.set_xticks(np.arange(0, max(seconds_from_start) , 60))
+	ax_cal.set_xlabel('Seconds from exposure start')
+	ax_cal.set_ylabel('Calibrated Magnitude')
+	plt.gca().invert_yaxis()
+	plt.tight_layout()
+
 	fig1 , ax1 = plt.subplots( figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin) )
 	ax1.errorbar( seconds_from_start , mags + r_mean, mags_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 	np.savetxt ( d + 'flat_norm_timeseries.txt' , np.vstack ([ times , mags + r_mean , mags_err]).T , header=' '.join(lc_dirs) )
@@ -178,7 +197,7 @@ for d in dir_names:
 	plevel = clp.powerLevel(fapLevels)
 
 	fig_a , ax_a = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-	ax_a.plot( 1/clp.freq  , clp.power, color='grey' , label='PyAstronomy GLs')
+	ax_a.plot( 1/clp.freq  , clp.power, color='black' , label='PyAstronomy GLs')
 	# ax_p.plot( period , power )
 	ax_a.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
 	ax_a.plot([min(1/clp.freq), max(1/clp.freq)], [plevel[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
@@ -199,7 +218,7 @@ for d in dir_names:
 	plevel_r = clp.powerLevel(fapLevels)
 
 	fig_r , ax_r = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-	ax_r.plot( 1/clp_r.freq  , clp_r.power, color='grey' , label='PyAstronomy GLs')
+	ax_r.plot( 1/clp_r.freq  , clp_r.power, color='black' , label='PyAstronomy GLs')
 	# ax_p.plot( period , power )
 	ax_r.plot([min(1/clp_r.freq), max(1/clp_r.freq)], [plevel_r[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
 	ax_r.plot([min(1/clp_r.freq), max(1/clp_r.freq)], [plevel_r[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
@@ -218,7 +237,7 @@ for d in dir_names:
 	plevel_i = clp.powerLevel(fapLevels)
 
 	fig_i , ax_i = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-	ax_i.plot( 1/clp_i.freq  , clp_i.power, color='grey' , label='PyAstronomy GLs')
+	ax_i.plot( 1/clp_i.freq  , clp_i.power, color='black' , label='PyAstronomy GLs')
 	# ax_p.plot( period , power )
 	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
 	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
