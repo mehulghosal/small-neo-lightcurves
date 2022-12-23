@@ -857,7 +857,7 @@ if __name__ == '__main__':
 
 	while True:
 
-		if i >= len(star_x) or i == 50: break
+		if i >= len(star_x) or i == 35: break
 		# if i == 3: break
 
 		
@@ -1026,7 +1026,7 @@ if __name__ == '__main__':
 
 	x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(sky_corrected_lightcurve))
 
-	directory_name = d.split('/')[1]
+	# directory_name = d.split('/')[1]
 
 	# if write_output == 'True':
 		# np.savetxt(f'{f[:-4]}_params.txt'    , stars )
