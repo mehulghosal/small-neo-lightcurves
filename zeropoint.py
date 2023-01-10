@@ -41,7 +41,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'XR169' in d: continue
+	if not 'XD169' in d: continue
 	
 	fig, ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 	mags , mags_err , ref_mag , ref_mag_err = [] , [] , [] , [] 
@@ -64,7 +64,7 @@ for d in dir_names:
 
 			if not 'ref' in f: continue
 			
-			if not '52o' in f: continue
+			if not '58o' in f: continue
 
 			# if '86on' in f : continue
 
@@ -150,7 +150,7 @@ for d in dir_names:
 
 	# ax.plot (mags , line_one(mags , *param_1) , label=f'y=x + {param_1[0]:.1f}' , color='red')
 
-	# plt.show()
+	plt.show()
 
 	print(d+ img_name+'.zp')
 
