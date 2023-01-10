@@ -41,7 +41,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'XD169' in d: continue
+	if not 'VH1_2015_11_07' in d: continue
 	
 	fig, ax = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 	mags , mags_err , ref_mag , ref_mag_err = [] , [] , [] , [] 
@@ -64,7 +64,7 @@ for d in dir_names:
 
 			if not 'ref' in f: continue
 			
-			if not '58o' in f: continue
+			if not '08o' in f: continue
 
 			# if '86on' in f : continue
 

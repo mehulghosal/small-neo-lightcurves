@@ -45,7 +45,7 @@ i_time = []
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'CD31' in d: continue
+	if not 'VH1_2015_11_06' in d: continue
 
 	times , mags , mags_err, uncor  = [] , [] , [] , []
 	fig_combined, ax_combined = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))

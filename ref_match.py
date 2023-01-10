@@ -57,7 +57,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('LT1_2016_06_06' in f ): continue
+			if not ('NM15' in f ): continue
 			# if not '66o' in f: continue
 
 

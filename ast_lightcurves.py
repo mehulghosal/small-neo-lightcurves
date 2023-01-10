@@ -33,7 +33,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'XD169' in d: continue
+	if not 'NM15' in d: continue
 
 	times , mags , mags_err  = [] , [] , [] 
 	zps , zps_err = [] , []
@@ -45,7 +45,7 @@ for d in dir_names:
 	for ld in lc_dirs :
 
 		if 'data/LCLIST' in ld or 'git' in ld: continue
-		# if not ('51' in ld): continue
+		# if not ('59' in ld): continue
 
 		# print(ld)
 
@@ -59,7 +59,7 @@ for d in dir_names:
 		for f in lc_files :
 
 			if not 'lightcurve_asteroid' in f: continue
-			if '59o' in f: continue
+			if '13o' in f: continue
 			
 			# if not ( '66' in f or '67' in f or '68' in f or '69' in f or '70o' in f or '71o' in f or '71o' in f)  : continue
 
