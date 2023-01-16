@@ -5,7 +5,7 @@
 # For i in row:
 # sbatch ./my_python_executor.slurm $arg1 $arg2 $arg3 $arg4 $arg5
 
-input="ast_files.txt"
+input="2016_jb3_ast.txt"
 while read -r line
 do
 	echo $line
