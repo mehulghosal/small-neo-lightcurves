@@ -693,6 +693,12 @@ if __name__ == '__main__':
 	hdr = file[0].header
 	img = file[0].data
 
+	# import matplotlib.pyplot as plt
+	# fig ,  ax = plt.subplots( )
+	# ax.imshow( img , cmap='gray' , vmin=100 , vmax=1000)
+	# print(hdr['FILTER'][0])
+	# plt.show()
+
 	exp_time   = float(hdr['EXPMEAS'])
 	gain       = float(hdr['GAIN'])
 	rd_noise   = float(hdr['RDNOISE'])
@@ -703,6 +709,7 @@ if __name__ == '__main__':
 	obj_id = obj_id[0][2:] + ' ' + obj_id[1]
 
 	obj_rows = input_file[np.where(input_file[:,1]==obj_id),:][0]
+	# print('here1')
 	
 	try:
 		obj = obj_rows[np.where(obj_rows[:,0]==f.split('/')[-1])][0]
@@ -713,6 +720,7 @@ if __name__ == '__main__':
 		# print(f,obj[-4:-2],obj[-2:])
 		# plt.close()
 		sys.exit()
+	# print('here')
 
 	# global variable flux to capture the total flux of the trail
 	flux = 0

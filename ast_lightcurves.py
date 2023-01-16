@@ -33,11 +33,12 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'NM15' in d: continue
+	if not 'LT1_2016_06_06' in d: continue
 
 	times , mags , mags_err  = [] , [] , [] 
 	zps , zps_err = [] , []
 	fig_combined, ax_combined = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+	# print(lc_dirs)
 
 
 	img_name = ''	
@@ -52,6 +53,7 @@ for d in dir_names:
 		lc_files = [join(ld,f) for f in os.listdir(ld) if isfile(join(ld,f))]
 
 		# print( lc_files )
+		# if True:break
 
 		
 		# print(lc_files)
@@ -59,17 +61,26 @@ for d in dir_names:
 		for f in lc_files :
 
 			if not 'lightcurve_asteroid' in f: continue
-			if '13o' in f: continue
+			# if '13o' in f: continue
 			
 			# if not ( '66' in f or '67' in f or '68' in f or '69' in f or '70o' in f or '71o' in f or '71o' in f)  : continue
 
 
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
+			another_fits = fits_name.split('/')[-1][:7]
+			# print(another_fits)
+			for ii in lc_dirs : 
+				if another_fits in ii and 'on' in ii:
+					another_fits = ii+ '.fits'
+					break
+			# print(another_fits)
+			# if True: break
 			# if 'on' in f : fits_name = ('/'.join(f.split('/')[:-1]) + '.fits')
 			# else: continue
 
 			try:
 				fits_file = fits.open(fits_name)
+				another_fits_file = fits.open(another_fits)
 				img_name  = f.split('/')[2].split('o')[0]
 				print(fits_name)
 			except Exception as e:
@@ -83,12 +94,20 @@ for d in dir_names:
 			hdr = fits_file[0].header
 			img = fits_file[0].data
 
+			fig_im , ax_im = plt.subplots()
+			ax_im.imshow(img , vmin=mins[hdr['FILTER'][0]] , vmax=1000 , cmap='gray')
+			ax_im.set_title(fits_name)
+
+
+
 			try:
 				t , flux , flux_err, _ , _ = np.loadtxt(f , unpack=True)
 			except Exception as e:
-				print(e)
+				# print(e)
 				t , flux , flux_err = np.loadtxt(f , unpack=True)
-
+			
+			start_time = float(hdr['MJD-OBS'])
+			t = np.linspace(start_time , start_time + 60/(24*3600) , len(flux))
 			# t -= t[0]
 			# t *= 24*3600
 
@@ -106,14 +125,16 @@ for d in dir_names:
 			# ax_mag.errorbar ( t , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 			# ax_mag.set_xlim(0,60)
 
-			zp , zp_err = np.loadtxt(d+ img_name+'.zp' , unpack=True)
+			# zp , zp_err = np.loadtxt(d+ img_name+'.zp' , unpack=True)
+			zp , zp_err = float(another_fits_file[0].header['PHOT_C']) , float(another_fits_file[0].header['PHOT_CS'])
 
 			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 			ax_cal.errorbar ( t , mag + zp , (mag_err**2 + zp_err**2)**.5 , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 			# ax_cal.set_xlim(0,60)
+			ax_cal.set_title(fits_name)
 
 			# ax_combined.errorbar(t , mag + zp , (mag_err**2 + zp_err**2)**.5 , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
-
+			# print(t[0])
 			times.append(t)
 			mags.append (mag + zp )
 			mags_err.append((mag_err**2 + zp_err**2)**.5)
@@ -121,6 +142,12 @@ for d in dir_names:
 			zps_err.append(zp_err)
 
 			np.savetxt ( join(ld,img_name)+'_calibrated_lightcurve.txt' , np.vstack([t , mag+zp , (mag_err**2 + zp_err**2)**.5 ]).T , header=f'zp={zp}')
+
+
+			# print(  )
+			ast = Horizons ( id=' '.join(ld.split('/')[-2].split('_')[:2] ) , epochs=[ t[0] ] )
+			print(ast.ephemerides() ['datetime_str' , 'V'])
+			print( )
 
 			# plt.show()
 
@@ -137,7 +164,7 @@ for d in dir_names:
 	# if True: break
 
 	# for i in range(len(times)):
-	ax_combined.errorbar((times - t_0)*24*3600 , mags, mags_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
+	ax_combined.errorbar((times - t_0) , mags, mags_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 
 	print( )
 	np.savetxt ( d + 'corrected_timeseries.txt' , np.vstack ([ times , mags , mags_err]).T , header=' '.join(lc_dirs) )
