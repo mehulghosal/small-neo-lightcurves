@@ -13,8 +13,16 @@ from astropy import units as u
 from astroquery.jplhorizons import Horizons
 from PyAstronomy.pyTiming import pyPeriod
 
+def mag2flux ( mag , mag_err ): 
+	f = 10 ** ( mag/ (-2.5) )
+	return f , mag_err * f / 1.0875
 
-def bin_lightcurve ( time , flux , flux_err , n=2 ):
+def flux2mag ( flux , flux_err ): 
+	return -2.5 * np.log10 ( flux ) , 1.0875 * flux_err / flux
+
+def bin_lightcurve_ ( time , flux , flux_err , n=2 ):
+
+	flux = mag2flux ( flux , flux_err )
 
 	t = []
 	f = []
@@ -23,7 +31,18 @@ def bin_lightcurve ( time , flux , flux_err , n=2 ):
 		t.append(time[i])
 		f.append ( np.sum (flux[i:i+n]) )
 		f_e.append( (np.sum ( flux_err[i:i+n]**2 ))**.5 )
-	return np.array(t) , np.array(f) , np.array(f_e)
+	return (np.array(t) , *flux2mag(np.array(f), np.array(f_e)) )
+
+def bin_lightcurve ( time , mag , mag_err , n=2 ):
+
+	t = []
+	f = []
+	f_e = []
+	for i in range( 0 , len(time)-n , n ):
+		t.append(time[i])
+		f.append ( np.average ( mag[i:i+n] , weights=1/mag_err[i:i+n]**2 ) )
+		f_e.append( (np.sum ( mag_err[i:i+n]**2 ))**.5 )
+	return np.array(t) , np.array(f), np.array(f_e)  
 
 def line ( x , m , b): return m * x + b
 
@@ -73,7 +92,7 @@ for d in dir_names:
 		for f in lc_files :
 
 			if not 'calibrated_lightcurve' in f: continue
-			if '35o' in f : continue
+			# if '32o' in f : continue
 			
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 
@@ -94,8 +113,14 @@ for d in dir_names:
 
 			time , mag , mag_err = np.loadtxt ( f , unpack=True)
 
+			# time , mag , mag_err = bin_lightcurve ( time , mag , mag_err , n=2)
+
+			# print(time)
+			# print(mag)
+			# print(mag_err)
+
 			param , param_cov = curve_fit (line , time , mag , sigma=mag_err , absolute_sigma=True)
-			print(param)
+			# print(param)
 
 			seconds_from_start = (time - np.min(time)) * 24 * 3600
 
@@ -218,7 +243,7 @@ for d in dir_names:
 	ax_a.set_title('combined LS')
 	ax_a.legend()
 	ax_a.set_xlabel('Period [s]')
-	ax_a.set_xlim([min(1/clp.freq) , max(1/clp.freq)])
+	ax_a.set_xlim([min(1/clp.freq) , max(seconds_from_start)/2])
 	ax_a.set_xscale('log')
 	ax_a.set_ylim([0 , 1])
 	plt.tight_layout()
@@ -247,24 +272,24 @@ for d in dir_names:
 	plt.tight_layout()
 	print( f'PyAstronomy GLs best period: {1/clp_r.freq[np.argmax(clp_r.power)]}s for r'  )
 
-	# clp_i    = pyPeriod.Gls(( (i_time-min(i_time))*24*3600 , i_mags + r_mean , i_errs )  , verbose=False )
-	# plevel_i = clp.powerLevel(fapLevels)
+	clp_i    = pyPeriod.Gls(( (i_time-min(i_time))*24*3600 , i_mags + r_mean , i_errs )  , verbose=False )
+	plevel_i = clp.powerLevel(fapLevels)
 
-	# fig_i , ax_i = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
-	# ax_i.plot( 1/clp_i.freq  , clp_i.power, color='black' , label='PyAstronomy GLs')
-	# # ax_p.plot( period , power )
-	# ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
-	# ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
-	# ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
+	fig_i , ax_i = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
+	ax_i.plot( 1/clp_i.freq  , clp_i.power, color='black' , label='PyAstronomy GLs')
+	# ax_p.plot( period , power )
+	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[0]]*2, '-.', c='black',lw=3,label =r'$1\sigma$')
+	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[1]]*2, ':' , c='black',lw=3,label =r'$2\sigma$')
+	ax_i.plot([min(1/clp_i.freq), max(1/clp_i.freq)], [plevel_i[2]]*2, '--', c='red'  ,lw=3,label =r'$3\sigma$')
 
-	# ax_i.set_title('i LS')
-	# ax_i.legend()
-	# ax_i.set_xlabel('Period [s]')
-	# ax_i.set_xlim([min(1/clp_i.freq) , max(1/clp_i.freq)])
-	# ax_i.set_xscale('log')
-	# ax_i.set_ylim([0 , 1])
-	# plt.tight_layout()
-	# print( f'PyAstronomy GLs best period: {1/clp_i.freq[np.argmax(clp_i.power)]}s for i'  )
+	ax_i.set_title('i LS')
+	ax_i.legend()
+	ax_i.set_xlabel('Period [s]')
+	ax_i.set_xlim([min(1/clp_i.freq) , max(1/clp_i.freq)])
+	ax_i.set_xscale('log')
+	ax_i.set_ylim([0 , 1])
+	plt.tight_layout()
+	print( f'PyAstronomy GLs best period: {1/clp_i.freq[np.argmax(clp_i.power)]}s for i'  )
 
 
 	clp_g    = pyPeriod.Gls(( (g_time-min(g_time))*24*3600 , g_mags + r_mean , g_errs )  , verbose=False )
