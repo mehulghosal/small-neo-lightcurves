@@ -10,4 +10,4 @@ while read -r line
 do
 	echo $line
 	sbatch ./new_magic.slurm $line
-done <fits_files.txt
+done <fits_files_all_chips.txt
