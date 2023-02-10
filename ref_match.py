@@ -57,7 +57,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('NM15' in f ): continue
+			if not ('EL157' in f ): continue
 			# if not '66o' in f: continue
 
 
@@ -105,16 +105,67 @@ for d in dir_names:
 
 			refcat = []
 
-			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir 00_m_16/ -all'
+			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/00_m_16/" -all'
+			args_str1 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/16_m_17/" -all'
+			args_str2 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/17_m_18/" -all'
+			args_str3 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/18_m_19/" -all'
+			args_str4 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/19_m_20/" -all'
+			
 			# 1.554579469893714077e+02 5.803648468633650026e+00
 			# args_str = f'./refcat {155.457} {5.803648} -rad 2 -dir 00_m_16/ -all'
 			print ( 'refcat call to terminal: ' , args_str )
 			ref_stars = np.array(os.popen(args_str).read().split('\n')[1:-1])
+			ref_stars1 = np.array(os.popen(args_str1).read().split('\n')[1:-1])
+			ref_stars2 = np.array(os.popen(args_str2).read().split('\n')[1:-1])
+			ref_stars3 = np.array(os.popen(args_str3).read().split('\n')[1:-1])
+			ref_stars4 = np.array(os.popen(args_str4).read().split('\n')[1:-1])
 			# print(ref_stars)
+			counter = 0
 			for j in ref_stars:
-				try: refcat.append(np.array(j.split(), dtype=float))
+				try: 
+					refcat.append(np.array(j.split(), dtype=float))
+					counter+=1
 				except Exception as e:
 					continue
+			print(f'Found {counter} stars M < 16')
+			counter = 0
+
+			for j in ref_stars1:
+				try: 
+					refcat.append(np.array(j.split(), dtype=float))
+					counter += 1
+				except Exception as e:
+					continue
+			print(f'Found {counter} stars 16 < M < 17')
+			counter = 0
+
+			for j in ref_stars2:
+				try: 
+					refcat.append(np.array(j.split(), dtype=float))
+					counter+=1
+				except Exception as e:
+					continue
+			print(f'Found {counter} stars 17 < M < 18')
+			counter = 0
+
+			for j in ref_stars3:
+				try: 
+					refcat.append(np.array(j.split(), dtype=float))
+					counter += 1
+				except Exception as e:
+					continue
+
+			print(f'Found {counter} stars 18 < M < 19')
+			counter = 0
+
+			for j in ref_stars4:
+				try: 
+					refcat.append(np.array(j.split(), dtype=float))
+					counter+=1
+				except Exception as e:
+					continue
+			print(f'Found {counter} stars 19 < M < 20')
+			
 			refcat = np.array(refcat)
 			print( f'Queried {len(refcat)} stars')
 			# end refcat magic
