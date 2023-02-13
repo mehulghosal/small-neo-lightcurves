@@ -13,6 +13,8 @@ from astropy import units as u
 from astroquery.jplhorizons import Horizons
 from PyAstronomy.pyTiming import pyPeriod
 
+plt.rcParams.update({'font.size': 22})
+
 def mag2flux ( mag , mag_err ): 
 	f = 10 ** ( mag/ (-2.5) )
 	return f , mag_err * f / 1.0875
@@ -75,7 +77,7 @@ i_time = []
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'LT1_2016_06_06' in d: continue
+	if not 'LT1_2016_06_07' in d: continue
 
 	times , mags , mags_err, uncor  = [] , [] , [] , []
 	fig_combined, ax_combined = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -91,7 +93,7 @@ for d in dir_names:
 
 		for f in lc_files :
 
-			if not 'calibrated_lightcurve' in f: continue
+			if not 'calibrated_lightcurve.txt' in f: continue
 			# if '32o' in f : continue
 			
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
@@ -120,7 +122,7 @@ for d in dir_names:
 			outliers = np.where ( (mag < a + e) & (mag > a - e)  )
 			time , mag , mag_err = time[outliers] , mag[outliers] , mag_err[outliers] , 
 
-			# time , mag , mag_err = bin_lightcurve ( time , mag , mag_err , n=2)
+			time , mag , mag_err = bin_lightcurve ( time , mag , mag_err , n=2)
 
 			# print(time)
 			# print(mag)
@@ -139,6 +141,7 @@ for d in dir_names:
 			ax.set_xlabel('Seconds from start')
 			ax.set_ylabel('Calibrated Magnitude')
 			ax.set_xlim([-1 , 61])
+			# ax.set_title(f)
 			plt.tight_layout()
 
 			corr_mag = mag - line(time, *param) 
@@ -185,6 +188,17 @@ for d in dir_names:
 				i_time.append(time)
 
 			np.savetxt ( join(ld,img_name)+'_flat_lightcurve.txt' , np.vstack([time , corr_mag , corr_err ]).T )
+			
+			fig_dir = '/'.join(f.split('/')[:-2])+'/figs/'
+			if not isdir(fig_dir):
+				os.mkdir(fig_dir)
+
+			print(fig_dir + img_name + '_elixir_calibrated_lightcurve.png')
+			fig_p.savefig(fig_dir + img_name + '_elixir_calibrated_ls.png')
+			fig.savefig(fig_dir + img_name + '_elixir_calibrated_lightcurve.png')
+
+			# np.savetxt ( join(ld,img_name)+'_flat_lightcurve.txt' , np.vstack([time , corr_mag , corr_err ]).T )
+			# if True: break
 
 			times.append(time)
 			mags.append(corr_mag)

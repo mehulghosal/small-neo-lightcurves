@@ -26,7 +26,7 @@ if __name__ == '__main__':
 		for f in file_names:
 			# only working on new files around asteroid chip
 			if not 'on' in f: continue
-			if not ('EL157' in f ): continue
+			if not ('GE1' in f or 'FF14' in f or  'EL157' in f): continue
 
 			try:
 				file = fits.open (f)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 	
 	# for i in cmd_list: print(i)
 	# output = open('ast_files.txt', 'w+')
-	output = open('fits_files_all_chips.txt', 'w+')
+	output = open('fits_files_all_chips1.txt', 'w+')
 	output.writelines( cmd_list )
 
 
