@@ -33,7 +33,7 @@ mins = {'g':100, 'r': 150, 'i': 250}
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'VH1_2015_11_06' in d: continue
+	if not 'EL157' in d: continue
 
 	times , mags , mags_err  = [] , [] , [] 
 	zps , zps_err = [] , []
@@ -61,7 +61,7 @@ for d in dir_names:
 		for f in lc_files :
 
 			if not 'lightcurve_asteroid' in f: continue
-			# if '13o' in f: continue
+			if '10o' in f: continue
 			
 			# if not ( '66' in f or '67' in f or '68' in f or '69' in f or '70o' in f or '71o' in f or '71o' in f)  : continue
 
@@ -125,8 +125,8 @@ for d in dir_names:
 			# ax_mag.errorbar ( t , mag , mag_err , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
 			# ax_mag.set_xlim(0,60)
 
-			# zp , zp_err = np.loadtxt(d+ img_name+'.zp' , unpack=True)
-			zp , zp_err = float(another_fits_file[0].header['PHOT_C']) , float(another_fits_file[0].header['PHOT_CS'])
+			zp , zp_err = np.loadtxt(d+ img_name+'.zp' , unpack=True)
+			# zp , zp_err = float(another_fits_file[0].header['PHOT_C']) , float(another_fits_file[0].header['PHOT_CS'])
 
 			fig_cal , ax_cal = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
 			ax_cal.errorbar ( t , mag + zp , (mag_err**2 + zp_err**2)**.5 , fmt='s' , markerfacecolor='blue' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3   )
@@ -169,4 +169,4 @@ for d in dir_names:
 	print( )
 	np.savetxt ( d + 'corrected_timeseries.txt' , np.vstack ([ times , mags , mags_err]).T , header=' '.join(lc_dirs) )
 
-	# plt.show()
+	plt.show()

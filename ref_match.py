@@ -57,7 +57,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('EL157' in f ): continue
+			if not ('GE1' in f ): continue
 			# if not '66o' in f: continue
 
 
@@ -108,8 +108,8 @@ for d in dir_names:
 			args_str = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/00_m_16/" -all'
 			args_str1 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/16_m_17/" -all'
 			args_str2 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/17_m_18/" -all'
-			args_str3 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/18_m_19/" -all'
-			args_str4 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/19_m_20/" -all'
+			args_str3 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/18_m_19/" -all -mlim 20'
+			args_str4 = f'./refcat {np.mean(ra_dec.ra.deg)} {np.mean(ra_dec.dec.deg)} -rad .5 -dir "/run/media/mehul/OWC HD/refcat/19_m_20/" -all -mlim 20'
 			
 			# 1.554579469893714077e+02 5.803648468633650026e+00
 			# args_str = f'./refcat {155.457} {5.803648} -rad 2 -dir 00_m_16/ -all'
