@@ -5,7 +5,7 @@ from astropy.io import fits
 import os
 from os.path import isdir, isfile, join
 
-dir_name = './small_asteroid_lightcurve_CFHT_data/'
+dir_name = '/run/media/mehul/OWC HD/small_asteroid_lightcurve_CFHT_data/'
 
 file_names = [dir_name + f for f in os.listdir(dir_name) if isfile(join(dir_name,f)) ]
 # print(file_names)
@@ -59,35 +59,37 @@ for f in file_names:
 		
 	print( 'file id: ', f , input_file[ind , 1] , input_file[ind , 10] , input_file [ ind , 9 ] )
 	print(dir_names[dir_ind])
+	if not ('GE1' in input_file[ind , 1] or 'FF14' in input_file[ind , 1] ): continue
 
 	chip_id = input_file[ind , 10]
 
-	chips_i_want = []
+	# chips_i_want = []
 
-	# +1 to actual chip numbers for indexing reasons
-	if   chip_id=='04' : chips_i_want = [4,6,13,14,15]
-	elif chip_id=='13' : chips_i_want = [4,5,6,13,15,22,23,24]
-	elif chip_id=='22' : chips_i_want = [13,15,22,24,31,32,33]
-	elif chip_id=='31' : chips_i_want = [22,23,24,31,33]
+	# # +1 to actual chip numbers for indexing reasons
+	# if   chip_id=='04' : chips_i_want = [4,6,13,14,15]
+	# elif chip_id=='13' : chips_i_want = [4,5,6,13,15,22,23,24]
+	# elif chip_id=='22' : chips_i_want = [13,15,22,24,31,32,33]
+	# elif chip_id=='31' : chips_i_want = [22,23,24,31,33]
 
 	# fits_header = file[0].header
 	primary_hdu = file[0]
 
 	try:
-		fits_images = [ file[i].data for i in chips_i_want ]
+		fits_images  = [ file[i].data for i in range(1,len(file)) ]
+		fits_headers = [ file[i].header for i in range(1,len(file)) ]
 	except Exception as e:
-		print(e , chips_i_want)
+		print(e)
 		continue
 	print(len(fits_images) )
 
-	for i in range(len(chips_i_want)) : 
-		c     = chips_i_want[i]
+	for i in range(len(fits_images)) : 
+		c     = fits_headers[i]['EXTVER']
 		image = fits_images[i]
 
 		save_to = dir_names[dir_ind] + input_file [ ind , 9 ] + 'on' + str(c) + '.fits'
 		print(save_to)
 
-		fits.writeto ( save_to , image , header=file[i+1].header , overwrite=True  )
+		fits.writeto ( save_to , image , header=fits_headers[i] , overwrite=True  )
 	# print( i.shape for i in fits_images )
 
 
