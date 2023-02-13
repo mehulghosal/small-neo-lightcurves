@@ -59,7 +59,7 @@ for f in file_names:
 		
 	print( 'file id: ', f , input_file[ind , 1] , input_file[ind , 10] , input_file [ ind , 9 ] )
 	print(dir_names[dir_ind])
-	if not ('GE1' in input_file[ind , 1] or 'FF14' in input_file[ind , 1] ): continue
+	if not ( 'EN156' in input_file[ind , 1] ): continue
 
 	chip_id = input_file[ind , 10]
 

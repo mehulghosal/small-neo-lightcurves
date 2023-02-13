@@ -64,7 +64,7 @@ for d in dir_names:
 
 			if not 'ref' in f: continue
 			
-			if not '02o' in f: continue
+			if not '06o' in f: continue
 
 			# if '86on' in f : continue
 
@@ -139,22 +139,22 @@ for d in dir_names:
 
 	ax.plot (mags , line_one(mags , *param) , label=f'y=x + {param[0]:.1f}' , color='blue')
 
-	s = 200
+	s = 2
 
-	# outliers_filter = np.where( (ref_mag > line_one(mags , *param) - s*np.diag(param_cov)[0]**.5) & (ref_mag < line_one(mags , *param) + s*np.diag(param_cov)[0]**.5) )
-	# # print(outliers_filter)
+	outliers_filter = np.where( (ref_mag > line_one(mags , *param) - s) & (ref_mag < line_one(mags , *param) + s) )
+	# print(outliers_filter)
 
-	# ax.errorbar ( mags[outliers_filter] , ref_mag[outliers_filter] , ref_mag_err[outliers_filter] , mags_err[outliers_filter] , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
-	# param_1 , param_cov_1 = curve_fit ( line_one , mags [outliers_filter], ref_mag[outliers_filter] , sigma=ref_mag_err[outliers_filter] , absolute_sigma=True )
-	# print( 'line, outliers removed: ',  param[0] , np.diag(param_cov)[0]**.5)
+	ax.errorbar ( mags[outliers_filter] , ref_mag[outliers_filter] , ref_mag_err[outliers_filter] , mags_err[outliers_filter] , fmt='s' , markerfacecolor='red' , markeredgecolor='black' , ecolor='black' , capthick=2 , markersize=7 , capsize=3  )
+	param_1 , param_cov_1 = curve_fit ( line_one , mags [outliers_filter], ref_mag[outliers_filter] , sigma=ref_mag_err[outliers_filter] , absolute_sigma=True )
+	print( 'line, outliers removed: ',  param_1[0] , np.diag(param_cov_1)[0]**.5)
 
-	# ax.plot (mags , line_one(mags , *param_1) , label=f'y=x + {param_1[0]:.1f}' , color='red')
+	ax.plot (mags , line_one(mags , *param_1) , label=f'y=x + {param_1[0]:.1f}' , color='red')
 
 	plt.show()
 
 	print(d+ img_name+'.zp')
 
-	np.savetxt ( d+ img_name+'.zp' , [param[0] , np.diag(param_cov)[0]**.5] )
+	np.savetxt ( d+ img_name+'.zp' , [param_1[0] , np.diag(param_cov_1)[0]**.5] )
 
 
 	# if True: break

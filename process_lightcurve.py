@@ -77,7 +77,7 @@ i_time = []
 
 for d in dir_names:
 	lc_dirs = [d+f for f in os.listdir(d) if isdir(join(d,f))] 
-	if not 'LT1_2016_06_07' in d: continue
+	if not 'EL157' in d: continue
 
 	times , mags , mags_err, uncor  = [] , [] , [] , []
 	fig_combined, ax_combined = plt.subplots(figsize=((paperwidth*1.15) - 2 * margin, (paperheight*1.15) - 2 * margin))
@@ -94,7 +94,7 @@ for d in dir_names:
 		for f in lc_files :
 
 			if not 'calibrated_lightcurve.txt' in f: continue
-			# if '32o' in f : continue
+			if '52o' in f  : continue
 			
 			fits_name = ('/'.join(f.split('/')[:-1]) + '.flt')
 
@@ -115,6 +115,8 @@ for d in dir_names:
 
 			time , mag , mag_err = np.loadtxt ( f , unpack=True)
 
+			time , mag , mag_err = time[np.isfinite(mag) * np.isfinite(mag_err)] , mag[np.isfinite(mag) * np.isfinite(mag_err)] , mag_err[np.isfinite(mag) * np.isfinite(mag_err)]
+
 			a = np.average ( mag , weights=1/mag_err**2 )
 			# e = 1 / np.sum ( 1 / mag_err**2 )
 			# print(e)
@@ -122,7 +124,7 @@ for d in dir_names:
 			outliers = np.where ( (mag < a + e) & (mag > a - e)  )
 			time , mag , mag_err = time[outliers] , mag[outliers] , mag_err[outliers] , 
 
-			time , mag , mag_err = bin_lightcurve ( time , mag , mag_err , n=2)
+			# time , mag , mag_err = bin_lightcurve ( time , mag , mag_err , n=3)
 
 			# print(time)
 			# print(mag)
