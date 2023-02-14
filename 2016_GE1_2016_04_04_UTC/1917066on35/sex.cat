@@ -1,0 +1,19 @@
+#   1 NUMBER                 Running object number                                     
+#   2 XMIN_IMAGE             Minimum x-coordinate among detected pixels                 [pixel]
+#   3 YMIN_IMAGE             Minimum y-coordinate among detected pixels                 [pixel]
+#   4 XMAX_IMAGE             Maximum x-coordinate among detected pixels                 [pixel]
+#   5 YMAX_IMAGE             Maximum y-coordinate among detected pixels                 [pixel]
+#   6 X_IMAGE                Object position along x                                    [pixel]
+#   7 Y_IMAGE                Object position along y                                    [pixel]
+#   8 X2_IMAGE               Variance along x                                           [pixel**2]
+#   9 Y2_IMAGE               Variance along y                                           [pixel**2]
+         1       1394        178       1509        381   1450.7213    279.4521   9.3530817218e+02   3.2437754309e+03
+         2          1        218          9        262      3.6166    241.2473   4.5625303702e+00   9.8164504051e+01
+         3         14        267         30        313     21.6954    284.9445   1.5129364170e+01   1.0706333218e+02
+         4       1923        738       2039        944   1980.4194    841.1292   9.3830839688e+02   3.2326095191e+03
+         5         87       2915        198       3111    141.6123   3013.1570   9.2422301059e+02   3.1484978022e+03
+         6         33          2        159       4611     75.7191    354.6501   6.7658219228e+02   1.3546340156e+05
+         7       1713       3999       1821       4194   1766.5184   4094.9443   9.1109425234e+02   3.0799189166e+03
+         8        852       4576        882       4611    865.5125   4594.9702   3.4263321368e+01   8.8887165837e+01
+         9       2057       4585       2080       4611   2072.7927   4604.3496   3.1744925580e+01   3.0454073665e+01
+        10       1966       4151       2080       4365   2023.9146   4252.2202   9.5525047970e+02   3.2064428799e+03

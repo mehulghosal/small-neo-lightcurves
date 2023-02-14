@@ -36,7 +36,8 @@ if __name__ == '__main__':
 		yea = False
 
 		# if '00_m_16' in d or 'small_asteroid_lightcurve' in d: continue
-		if not ('HD3' in d or 'VH65' in d or 'XD169' in d or 'XR169' in d or 'CE3' in d or 'CG18' in d or 'CW30' in d or 'EN156' in d or 'JB' in d or 'LT1' in d): continue
+		# if not ('HD3' in d or 'VH65' in d or 'XD169' in d or 'XR169' in d or 'CE3' in d or 'CG18' in d or 'CW30' in d or 'EN156' in d or 'JB' in d or 'LT1' in d): continue
+		if not ('EN156' in d or 'EL157' in d or 'FF14' in d or 'GE1' in d) : continue
 
 		start_times = []
 		lightcurves = []
