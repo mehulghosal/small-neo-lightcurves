@@ -26,7 +26,7 @@ if __name__ == '__main__':
 		for f in file_names:
 			# only working on new files around asteroid chip
 			if not 'on' in f: continue
-			if not (  'EN156' in f): continue
+			if not (  'EL157' in f or 'FF14' in f or 'GE1' in f or 'EN156' in f): continue
 
 			try:
 				file = fits.open (f)
