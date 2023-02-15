@@ -57,7 +57,7 @@ for d in dir_names:
 
 		for f in lc_files :
 			if not 'star_params' in f: continue
-			if not ('GE1' in f ): continue
+			if not ('FF14' in f ): continue
 			# if not '66o' in f: continue
 
 
@@ -270,7 +270,7 @@ for d in dir_names:
 
 			# f7-->g7
 			# color_filter = np.where( (g_r >= .35) & (g_r <= .55) )
-			color_filter = np.where( (sdss_g-sdss_r >= .35) & (sdss_g-sdss_r <= .55) )
+			color_filter = np.where( (sdss_g-sdss_r >= -.25) & (sdss_g-sdss_r <= 1) )
 
 			print( 'g-r colors: ' , g_r[color_filter] )
 			print( 'r-i colors: ' , r_i[color_filter] )
@@ -326,7 +326,7 @@ for d in dir_names:
 
 
 
-
+			fits_file.close()
 
 
 
