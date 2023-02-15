@@ -175,7 +175,7 @@ def take_lightcurve(img, trail_start, trail_end, fwhm=4, b=None, height_correcti
 		obj_row_sums = bin_lightcurve(obj_row_sums, binning)
 		sky_row_sum  = bin_lightcurve(sky_row_sum , binning)
 
-	sky_n_pixels      = sky_left_row_sum.size+sky_right_row_sum.size		# num sky pixels
+	sky_n_pixels      = sky_left.shape[1]+sky_right.shape[1]		# num sky pixels
 	sky_row_avg       = sky_row_sum/sky_n_pixels							# sky counts/n_px
 
 	if b is not None:
@@ -787,7 +787,8 @@ if __name__ == '__main__':
 	ast_fwhm			  = ast_param[0] * 2.355
 	ast_trail_length	  = ast_param[1]
 
-	ast_height_correction = - int( ast_fwhm )
+	# ast_height_correction = - int( ast_fwhm )
+	ast_height_correction = 0
 	
 	trail_centroid 		  = np.array([ast_param[4], ast_param[5]])
 
@@ -798,13 +799,10 @@ if __name__ == '__main__':
 	
 	print( 'asteroid trail length: ', len(obj_minus_sky) )
 
-	# dt = 60 * ast_height_correction / ast_trail_length
 
 	x = np.linspace(start_time , start_time + exp_time/(60*60*24) , len(obj_minus_sky))
 	to_write = np.array ( [x , obj_minus_sky , sigma_row] )
 	np.savetxt(f'{output_for_bryce}lightcurve_uncorrected_asteroid.dat' , to_write )
-	# if True: continue
-
 
 	# source extractor !!
 	# sex = subprocess.run(['sex', f, '-DETECT_MINAREA', str(trail_length*fwhm), '-CATALOG_NAME', '_'.join(f.split("/")[1:])[:-4] + '.cat'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
